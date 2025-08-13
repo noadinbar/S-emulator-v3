@@ -1,5 +1,4 @@
-package parser;
-import java.nio.file.Path;
+package utils;
 import xmlmodel.SProgram;
 
 public interface ProgramParser {

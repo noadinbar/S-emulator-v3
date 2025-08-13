@@ -1,7 +1,5 @@
-package parser;
-import structure.Program;
+package utils;
 import xmlmodel.SProgram;
-import java.util.List;
 
 public final class ParseResult {
 

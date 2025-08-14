@@ -1,29 +1,20 @@
 package utils;
 import structure.program.SProgram;
-
-public final class ParseResult {
-
+public class ParseResult {
     private final boolean success;
     private final String message;
-    private final SProgram program;
 
-    // בנאי פרטי כדי לשלוט על יצירת האובייקט
-    private ParseResult(boolean success, String message, SProgram program) {
+    private ParseResult(boolean success, String message) {
         this.success = success;
         this.message = message;
-        this.program = program;
     }
 
-    // יצירת תוצאה מוצלחת
-    public static ParseResult success(SProgram program) {
-        return new ParseResult(true,
-                "Program '" + program.getName() + "' loaded successfully.",
-                program);
+    public static ParseResult success(String message) {
+        return new ParseResult(true, message);
     }
 
-    // יצירת תוצאה שגויה
     public static ParseResult error(String message) {
-        return new ParseResult(false, message, null);
+        return new ParseResult(false, message);
     }
 
     public boolean isSuccess() {
@@ -32,9 +23,5 @@ public final class ParseResult {
 
     public String getMessage() {
         return message;
-    }
-
-    public SProgram getProgram() {
-        return program;
     }
 }

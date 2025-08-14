@@ -9,6 +9,6 @@ public interface Instruction {
     String getName();
     Label execute(ExecutionContext context);
     int cycles();
-    Label getLabel();
+    Label getMyLabel();
     Variable getVariable();
 }

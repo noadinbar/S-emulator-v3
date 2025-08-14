@@ -1,14 +1,21 @@
 package structure.program;
 
 import structure.instruction.Instruction;
+import structure.instruction.JumpNotZeroInstruction;
+import structure.label.FixedLabel;
+import structure.label.Label;
+import utils.ParseResult;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 public class ProgramImpl implements Program {
 
     private final String name;
     private final List<Instruction> instructions;
+
 
     public ProgramImpl(String name) {
         this.name = name;
@@ -30,11 +37,37 @@ public class ProgramImpl implements Program {
         return instructions;
     }
 
-    //need to implement
     @Override
-    public boolean validate() {
-        return false;
+    public ParseResult validate() {
+        Set<String> definedLabels = new HashSet<>();
+        for (Instruction instr : instructions) {
+            Label label = instr.getMyLabel();
+            if (label != null && label != FixedLabel.EMPTY) {
+                definedLabels.add(label.getLabelRepresentation());
+            }
+        }
+
+        for (Instruction instr : instructions) {
+            Label targetLabel = null;
+
+            if (instr instanceof JumpNotZeroInstruction) {
+                targetLabel = ((JumpNotZeroInstruction) instr).getTargetLabel();
+            }
+
+            if (targetLabel != null &&
+                    targetLabel != FixedLabel.EMPTY &&
+                    targetLabel != FixedLabel.EXIT &&
+                    !definedLabels.contains(targetLabel.getLabelRepresentation())) {
+
+                return ParseResult.error(
+                        "Label '" + targetLabel.getLabelRepresentation() + "' is referenced but not defined."
+                );
+            }
+        }
+
+        return ParseResult.success("Program validation passed successfully.");
     }
+
 
     //need to implement
     @Override

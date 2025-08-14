@@ -1,6 +1,7 @@
 package structure.program;
 
 import structure.instruction.Instruction;
+import utils.ParseResult;
 
 import java.util.List;
 
@@ -10,7 +11,7 @@ public interface Program {
     void addInstruction(Instruction instruction);
     List<Instruction> getInstructions();
 
-    boolean validate();
+    ParseResult validate();
     int calculateMaxDegree();
     int calculateCycles();
 

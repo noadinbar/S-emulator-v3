@@ -8,7 +8,7 @@ import structure.variable.Variable;
 
 public class JumpNotZeroInstruction extends AbstractInstruction{
 
-    private final Label jnzLabel;
+    private final Label targetLabel;
 
     public JumpNotZeroInstruction(Variable variable, Label jnzLabel) {
         this(variable, jnzLabel, FixedLabel.EMPTY);
@@ -16,7 +16,11 @@ public class JumpNotZeroInstruction extends AbstractInstruction{
 
     public JumpNotZeroInstruction(Variable variable, Label jnzLabel, Label label) {
         super(InstructionType.JUMP_NOT_ZERO, variable, label);
-        this.jnzLabel = jnzLabel;
+        this.targetLabel = jnzLabel;
+    }
+
+    public Label getTargetLabel() {
+        return targetLabel;
     }
 
     @Override
@@ -24,7 +28,7 @@ public class JumpNotZeroInstruction extends AbstractInstruction{
         long variableValue = context.getVariableValue(getVariable());
 
         if (variableValue != 0) {
-            return jnzLabel;
+            return targetLabel;
         }
         return FixedLabel.EMPTY;
 

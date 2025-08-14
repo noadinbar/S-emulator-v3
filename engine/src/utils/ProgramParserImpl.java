@@ -1,7 +1,9 @@
 package utils;
 
 import jakarta.xml.bind.*;
-import xmlmodel.*;
+import structure.instruction.SInstruction;
+import structure.instruction.SInstructionArgument;
+import structure.program.SProgram;
 
 import java.io.File;
 import java.util.HashSet;

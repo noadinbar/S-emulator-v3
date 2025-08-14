@@ -5,12 +5,17 @@
 //
 
 
-package xmlmodel;
+package structure;
 
 import javax.xml.namespace.QName;
 import jakarta.xml.bind.JAXBElement;
 import jakarta.xml.bind.annotation.XmlElementDecl;
 import jakarta.xml.bind.annotation.XmlRegistry;
+import structure.instruction.SInstruction;
+import structure.instruction.SInstructionArgument;
+import structure.instruction.SInstructionArguments;
+import structure.instruction.SInstructions;
+import structure.program.SProgram;
 
 
 /**

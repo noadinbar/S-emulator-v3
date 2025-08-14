@@ -5,7 +5,7 @@
 //
 
 
-package xmlmodel;
+package structure.instruction;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -26,7 +26,7 @@ import jakarta.xml.bind.annotation.XmlType;
  *   <complexContent>
  *     <restriction base="{http://www.w3.org/2001/XMLSchema}anyType">
  *       <sequence>
- *         <element ref="{}S-Instruction" maxOccurs="unbounded"/>
+ *         <element ref="{}S-Instruction-Argument" maxOccurs="unbounded"/>
  *       </sequence>
  *     </restriction>
  *   </complexContent>
@@ -37,44 +37,44 @@ import jakarta.xml.bind.annotation.XmlType;
  */
 @XmlAccessorType(XmlAccessType.FIELD)
 @XmlType(name = "", propOrder = {
-    "sInstruction"
+    "sInstructionArgument"
 })
-@XmlRootElement(name = "S-Instructions")
-public class SInstructions {
+@XmlRootElement(name = "S-Instruction-Arguments")
+public class SInstructionArguments {
 
-    @XmlElement(name = "S-Instruction", required = true)
-    protected List<SInstruction> sInstruction;
+    @XmlElement(name = "S-Instruction-Argument", required = true)
+    protected List<SInstructionArgument> sInstructionArgument;
 
     /**
-     * Gets the value of the sInstruction property.
+     * Gets the value of the sInstructionArgument property.
      * 
      * <p>This accessor method returns a reference to the live list,
      * not a snapshot. Therefore any modification you make to the
      * returned list will be present inside the JAXB object.
-     * This is why there is not a <CODE>set</CODE> method for the sInstruction property.</p>
+     * This is why there is not a <CODE>set</CODE> method for the sInstructionArgument property.</p>
      * 
      * <p>
      * For example, to add a new item, do as follows:
      * </p>
      * <pre>
-     * getSInstruction().add(newItem);
+     * getSInstructionArgument().add(newItem);
      * </pre>
      * 
      * 
      * <p>
      * Objects of the following type(s) are allowed in the list
-     * {@link SInstruction }
+     * {@link SInstructionArgument }
      * </p>
      * 
      * 
      * @return
-     *     The value of the sInstruction property.
+     *     The value of the sInstructionArgument property.
      */
-    public List<SInstruction> getSInstruction() {
-        if (sInstruction == null) {
-            sInstruction = new ArrayList<>();
+    public List<SInstructionArgument> getSInstructionArgument() {
+        if (sInstructionArgument == null) {
+            sInstructionArgument = new ArrayList<>();
         }
-        return this.sInstruction;
+        return this.sInstructionArgument;
     }
 
 }

@@ -1,5 +1,5 @@
 package utils;
-import xmlmodel.SProgram;
+import structure.program.SProgram;
 
 public final class ParseResult {
 

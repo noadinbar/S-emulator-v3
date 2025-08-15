@@ -4,8 +4,8 @@ public class LabelImpl implements Label{
 
     private final String label;
 
-    public LabelImpl(int number) {
-        label = "L" + number;
+    public LabelImpl(String l) {
+        label = l;
     }
 
     public String getLabelRepresentation() {

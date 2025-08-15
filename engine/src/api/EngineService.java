@@ -1,6 +1,9 @@
 package api;
+
+import structure.program.SProgram;
 import java.nio.file.Path;
 
+
 public interface EngineService {
-    Object loadFromXml(Path xmlPath);
+    SProgram loadFromXml(Path xmlPath) throws Exception;
 }

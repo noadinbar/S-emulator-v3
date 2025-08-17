@@ -56,7 +56,7 @@ public class XMLToStructure {
                         : new NoOpInstruction(variable);
 
             case JUMP_NOT_ZERO:
-                String targetLabelValue = getArgumentValue(sInstruction, "targetLabel");
+                String targetLabelValue = getArgumentValue(sInstruction, "JNZLabel");
                 Label targetLabel = targetLabelValue != null ? new LabelImpl(targetLabelValue) : null;
                 return label != null
                         ? new JumpNotZeroInstruction(variable, targetLabel, label)

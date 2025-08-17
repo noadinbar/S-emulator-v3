@@ -1,4 +1,5 @@
 import api.XMLLoader;
+import structure.instruction.SInstructionArgument;
 import structure.program.SProgram;
 import structure.program.ProgramImpl;
 import utils.XMLToStructure;
@@ -26,6 +27,8 @@ public class Main {
             program.getInstructions().forEach(instr -> {
                 System.out.println("  " + instr.getClass().getSimpleName() + " -> " + instr);
             });
+
+            System.out.println(program.validate().getMessage());
 
         } catch (JAXBException e) {
             e.printStackTrace();

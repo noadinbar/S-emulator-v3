@@ -32,6 +32,7 @@ public class XMLToStructure {
         // יצירת LabelImpl אם קיים ב-SInstruction
         Label label = sInstruction.getSLabel() != null ? new LabelImpl(sInstruction.getSLabel()) : null;
 
+
         // שליפת ה-variable argument והמרה ל-VariableImpl
         String variableValue = getArgumentValue(sInstruction, "variable");
         Variable variable = null;
@@ -52,7 +53,7 @@ public class XMLToStructure {
                         ? new DecreaseInstruction(variable, label)
                         : new DecreaseInstruction(variable);
 
-            case NO_OP:
+            case NEUTRAL:
                 return label != null
                         ? new NoOpInstruction(variable, label)
                         : new NoOpInstruction(variable);

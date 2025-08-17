@@ -12,11 +12,11 @@ import structure.variable.Variable;
 public class NoOpInstruction extends AbstractInstruction {
 
     public NoOpInstruction(Variable variable) {
-        super(InstructionKind.BASIC, InstructionType.NO_OP, variable);
+        super(InstructionKind.BASIC, InstructionType.NEUTRAL, variable);
     }
 
     public NoOpInstruction(Variable variable, Label label) {
-        super(InstructionKind.BASIC, InstructionType.NO_OP, variable, label);
+        super(InstructionKind.BASIC, InstructionType.NEUTRAL, variable, label);
     }
 
     @Override

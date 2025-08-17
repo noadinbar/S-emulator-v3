@@ -1,7 +1,9 @@
-package structure.instruction;
-
+package structure.instruction.basic;
 
 import structure.execution.ExecutionContext;
+import structure.instruction.AbstractInstruction;
+import structure.instruction.InstructionKind;
+import structure.instruction.InstructionType;
 import structure.label.FixedLabel;
 import structure.label.Label;
 import structure.variable.Variable;
@@ -9,11 +11,11 @@ import structure.variable.Variable;
 public class DecreaseInstruction extends AbstractInstruction {
 
     public DecreaseInstruction(Variable variable) {
-        super(InstructionType.DECREASE, variable);
+        super(InstructionKind.BASIC, InstructionType.DECREASE, variable);
     }
 
     public DecreaseInstruction(Variable variable, Label label) {
-        super(InstructionType.DECREASE, variable, label);
+        super(InstructionKind.BASIC, InstructionType.DECREASE, variable, label);
     }
 
     @Override

@@ -1,7 +1,7 @@
 package structure.program;
 
 import structure.instruction.Instruction;
-import structure.instruction.JumpNotZeroInstruction;
+import structure.instruction.basic.JumpNotZeroInstruction;
 import structure.label.FixedLabel;
 import structure.label.Label;
 import utils.ParseResult;

@@ -3,9 +3,7 @@ package structure.variable;
 public enum VariableType {
     RESULT {
         @Override
-        public String getVariableRepresentation(int number) {
-            return "y";
-        }
+        public String getVariableRepresentation(int number) { return "y";  }
     },
     INPUT {
         @Override

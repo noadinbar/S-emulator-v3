@@ -9,6 +9,7 @@ public interface Instruction {
     String getName();
     Label execute(ExecutionContext context);
     int cycles();
+    char kind();
     Label getMyLabel();
     Variable getVariable();
 }

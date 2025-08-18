@@ -7,7 +7,7 @@ import structure.program.ProgramImpl;
 import java.util.List;
 
 public final class ProgramDisplay {
-    private static final int LABEL_WIDTH = 5;
+    private static final int LABEL_WIDTH = 3;
 
     private ProgramDisplay() {}
 

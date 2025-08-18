@@ -28,4 +28,11 @@ public class GoToInstruction extends AbstractInstruction {
     public Label execute(ExecutionContext context) {
         return target;
     }
+
+    @Override
+    public String formatDisplay() {
+        Label t = getTarget();
+        String ts = (t == null) ? "" : t.getLabelRepresentation();
+        return String.format("GOTO %s", ts);
+    }
 }

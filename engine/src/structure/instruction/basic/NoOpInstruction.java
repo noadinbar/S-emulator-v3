@@ -24,4 +24,11 @@ public class NoOpInstruction extends AbstractInstruction {
         return FixedLabel.EMPTY;
 
     }
+
+    @Override
+    public String formatDisplay() {
+        Variable v = getVariable();
+        String s = (v == null) ? "" : v.getRepresentation();
+        return String.format("%s <- %s", s, s);
+    }
 }

@@ -38,4 +38,12 @@ public class JumpEqualConstantInstruction extends AbstractInstruction {
         }
         return FixedLabel.EMPTY;
     }
+
+    @Override
+    public String formatDisplay() {
+        String v  = (getVariable() == null) ? "" : getVariable().getRepresentation();
+        Label t   = getTargetLabel();
+        String ts = (t == null) ? "" : t.getLabelRepresentation();
+        return String.format("IF %s = %s GOTO %s", v, getConstant(), ts);
+    }
 }

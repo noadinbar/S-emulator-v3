@@ -5,6 +5,7 @@ import structure.instruction.basic.IncreaseInstruction;
 import structure.instruction.basic.JumpNotZeroInstruction;
 import structure.instruction.basic.NoOpInstruction;
 import structure.instruction.synthetic.*;
+import structure.label.FixedLabel;
 import structure.label.LabelImpl;
 import structure.program.ProgramImpl;
 import structure.program.SProgram;
@@ -33,14 +34,8 @@ public class XMLToStructure {
         Label label = sInstruction.getSLabel() != null ? new LabelImpl(sInstruction.getSLabel()) : null;
 
 
-        // שליפת ה-variable argument והמרה ל-VariableImpl
-        String variableValue = getArgumentValue(sInstruction, "variable");
-        Variable variable = null;
-        if (variableValue != null && variableValue.length() > 1) {
-            VariableType varType = VariableType.valueOf(variableValue.substring(0, 1));
-            int varNumber = Integer.parseInt(variableValue.substring(1));
-            variable = new VariableImpl(varType, varNumber);
-        }
+        Variable variable = extractVariable(sInstruction, null);
+        System.out.println(variable);
 
         switch (type) {
             case INCREASE:
@@ -75,17 +70,10 @@ public class XMLToStructure {
                         ? new GoToInstruction(variable, goToLabel, label)
                         : new GoToInstruction(variable, goToLabel);
             case ASSIGNMENT:
-                String srcVal = getArgumentValue(sInstruction, "assignedVariable");
-                char sHead = Character.toLowerCase(srcVal.charAt(0)); // 'x'/'z'/'y'
-                VariableType srcType = (sHead == 'x') ? VariableType.INPUT
-                        : (sHead == 'z') ? VariableType.WORK
-                        : VariableType.RESULT;
-                int srcNum = (sHead == 'y') ? 0 : Integer.parseInt(srcVal.substring(1));
-                Variable src = new VariableImpl(srcType, srcNum);
-
+                Variable source = extractVariable(sInstruction, "assignedVariable");
                 return (label != null)
-                        ? new AssignmentInstruction(variable, src, label)
-                        : new AssignmentInstruction(variable, src);
+                        ? new AssignmentInstruction(variable, source, label)
+                        : new AssignmentInstruction(variable, source);
             case CONSTANT_ASSIGNMENT:
                 int constant = Integer.parseInt(getArgumentValue(sInstruction, "constantValue"));
                 return (label != null)
@@ -106,16 +94,16 @@ public class XMLToStructure {
                         : new JumpEqualConstantInstruction(variable, jumpLabel, constantValue);
 
             case JUMP_EQUAL_VARIABLE:
-                String toCompareValue = getArgumentValue(sInstruction, "variableName");
-                Variable toCompare = new VariableImpl(VariableType.valueOf(toCompareValue.substring(0, 1)), Integer.parseInt(toCompareValue.substring(1)));
-                String argumentValue = getArgumentValue(sInstruction, "JEVariableLabel");
-                Label argumentLabel = argumentValue != null ? new LabelImpl(argumentValue) : null;
-                return label != null
-                        ? new JumpEqualVariableInstruction(variable, argumentLabel, toCompare, label)
-                        : new JumpEqualVariableInstruction(variable, argumentLabel, toCompare);
-
-
-
+                Variable toCompare = extractVariable(sInstruction, "variableName");
+                String jevText = getArgumentValue(sInstruction, "JEVariableLabel");
+                Label jevLabel = null;
+                if (jevText != null && !jevText.isBlank()) {
+                    String normalizedLabel = jevText.trim();
+                    jevLabel = "EXIT".equalsIgnoreCase(normalizedLabel) ? FixedLabel.EXIT : new LabelImpl(normalizedLabel);
+                }
+                return (label != null)
+                        ? new JumpEqualVariableInstruction(variable, jevLabel, toCompare, label)
+                        : new JumpEqualVariableInstruction(variable, jevLabel, toCompare);
             default:
                 throw new IllegalArgumentException("Unknown instruction type: " + type);
     }
@@ -134,6 +122,53 @@ private String getArgumentValue(SInstruction sInstruction, String argName) {
             .orElse(null);
 }
 
+    // בתוך XMLToStructure (הוסף/י import-ים לפי הפרויקט שלך)
+    private Variable extractVariable(SInstruction sInstruction, String sourceName) {
+        // 1) קבלת הטקסט של המשתנה ממקור מתאים
+        String variableText;
+        if (sourceName == null || sourceName.isBlank()) {
+            // מתוך <S-Variable>...</S-Variable>
+            variableText = sInstruction.getSVariable();
+        } else {
+            // מתוך ארגומנט בשם נתון (כמו getArgumentValue שכבר יש לך)
+            variableText = getArgumentValue(sInstruction, sourceName);
+        }
+
+        // 2) נירמול ובדיקה בסיסית
+        if (variableText == null) return null;
+        variableText = variableText.trim();
+        if (variableText.isEmpty()) return null;
+
+        // 3) מיפוי האות ל-VariableType
+        char prefixChar = Character.toLowerCase(variableText.charAt(0)); // x / y / z
+        VariableType type;
+        switch (prefixChar) {
+            case 'x': type = VariableType.INPUT;  break;
+            case 'y': type = VariableType.RESULT; break;
+            case 'z': type = VariableType.WORK;   break;
+            default:
+                throw new IllegalArgumentException(
+                        "Unknown variable prefix: '" + prefixChar + "' in '" + variableText + "'"
+                );
+        }
+
+        // 4) חיתוך האינדקס (אם קיים)
+        int index = 0; // למקרה של "y" בלי מספר
+        if (variableText.length() > 1) {
+            String digits = variableText.substring(1);
+            try {
+                index = Integer.parseInt(digits);
+            } catch (NumberFormatException e) {
+                throw new IllegalArgumentException(
+                        "Invalid variable index in '" + variableText + "' (expected digits after '" + prefixChar + "')",
+                        e
+                );
+            }
+        }
+
+        // 5) בנייה והחזרה
+        return new VariableImpl(type, index);
+    }
 
 }
 

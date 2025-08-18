@@ -1,4 +1,5 @@
 import api.XMLLoader;
+import structure.program.ProgramData;
 import structure.program.SProgram;
 import structure.program.ProgramImpl;
 import utils.XMLToStructure;
@@ -23,10 +24,25 @@ public class Main {
             XMLToStructure mapper = new XMLToStructure();
             ProgramImpl program = mapper.toProgram(sProgram);
 
-            // 3) שימוש בפורמט ההצגה של פקודה 2 (הוראות התוכנית בלבד)
-            String instructionsText = ProgramDisplay.renderInstructions(program);
+            // 3) בניית ProgramData (קלטים + תוויות) כמו validate
+            ProgramData data = ProgramData.build(program);
 
-            // 4) הדפסה למסך (בדיקה זריזה)
+            // 4) הדפסת כותרות (שם תוכנית, קלטים, תוויות)
+            System.out.println("Program: " + program.getName());
+
+            String inputsLine = data.getInputs().isEmpty()
+                    ? "-"
+                    : String.join(", ", data.getInputs());
+            System.out.println("Inputs used: " + inputsLine);
+
+            String labelsLine = data.getLabels().isEmpty()
+                    ? "-"
+                    : String.join(", ", data.getLabels());
+            System.out.println("Labels used: " + labelsLine);
+            System.out.println();
+
+            // 5) הדפסת הוראות התוכנית בפורמט התקני (שורה לכל הוראה)
+            String instructionsText = ProgramDisplay.renderInstructions(program);
             System.out.print(instructionsText);
 
         } catch (Exception e) {

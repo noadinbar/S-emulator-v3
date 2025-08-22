@@ -5,16 +5,16 @@ import structure.instruction.basic.JumpNotZeroInstruction;
 import structure.label.FixedLabel;
 import structure.label.Label;
 import utils.ParseResult;
+import utils.RunHistory;
 
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 public class ProgramImpl implements Program {
 
     private final String name;
     private final List<Instruction> instructions;
+    private final List<RunHistory> runHistory = new ArrayList<>();
+    private int currentRunDegree = 0; // אם לא משתמשים בדרגות, פשוט יישאר 0
 
 
     public ProgramImpl(String name) {
@@ -69,6 +69,20 @@ public class ProgramImpl implements Program {
         return ParseResult.success("Program validation passed successfully.");
     }
 
+    public void setCurrentRunDegree(int degree) { this.currentRunDegree = Math.max(0, degree); }
+
+    public int getCurrentRunDegree() { return currentRunDegree; }
+
+    public void addRunHistory(List<Long> inputs, long yValue, int cycles) {
+        int runNumber = runHistory.size() + 1;
+        runHistory.add(new RunHistory(runNumber, currentRunDegree, inputs, yValue, cycles));
+    }
+
+    public List<RunHistory> getRunHistory() {
+        return Collections.unmodifiableList(runHistory);
+    }
+
+    public void clearRunHistory() { runHistory.clear(); }
 
     //need to implement
     @Override
@@ -83,4 +97,6 @@ public class ProgramImpl implements Program {
         // traverse all commands and calculate cycles
         return 0;
     }
+
+
 }

@@ -12,5 +12,4 @@ public interface Instruction {
     char kind();
     Label getMyLabel();
     Variable getVariable();
-    String formatDisplay();
 }

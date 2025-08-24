@@ -35,7 +35,6 @@ public class XMLToStructure {
 
 
         Variable variable = extractVariable(sInstruction, null);
-        System.out.println(variable);
 
         switch (type) {
             case INCREASE:

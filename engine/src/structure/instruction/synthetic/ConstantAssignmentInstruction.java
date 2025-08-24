@@ -30,10 +30,4 @@ public class ConstantAssignmentInstruction extends AbstractInstruction {
 
         return FixedLabel.EMPTY;
     }
-
-    @Override
-    public String formatDisplay() {
-        String dst = (getVariable() == null) ? "" : getVariable().getRepresentation();
-        return String.format("%s <- %s", dst, getConstant());
-    }
 }

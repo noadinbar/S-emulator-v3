@@ -33,10 +33,4 @@ public class AssignmentInstruction extends AbstractInstruction {
         return FixedLabel.EMPTY;
     }
 
-    @Override
-    public String formatDisplay() {
-        String dst = (getVariable() == null) ? "" : getVariable().getRepresentation();
-        String src = (getToAssign() == null) ? "" : getToAssign().getRepresentation();
-        return String.format("%s <- %s", dst, src);
-    }
 }

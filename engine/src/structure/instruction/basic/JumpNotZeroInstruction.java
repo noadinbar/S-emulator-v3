@@ -36,13 +36,4 @@ public class JumpNotZeroInstruction extends AbstractInstruction {
         return FixedLabel.EMPTY;
 
     }
-
-    @Override
-    public String formatDisplay() {
-        Variable v = getVariable();
-        String s = (v == null) ? "" : v.getRepresentation();
-        Label t = getTargetLabel();
-        String ts = (t == null) ? "" : t.getLabelRepresentation();
-        return String.format("IF %s != 0 GOTO %s", s, ts);
-    }
 }

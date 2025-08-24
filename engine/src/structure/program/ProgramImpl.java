@@ -52,7 +52,6 @@ public class ProgramImpl implements Program {
 
             if (instr instanceof JumpNotZeroInstruction) {
                 targetLabel = ((JumpNotZeroInstruction) instr).getTargetLabel();
-                System.out.println("target label: " + targetLabel);
             }
 
             if (targetLabel != null &&

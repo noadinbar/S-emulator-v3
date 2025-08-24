@@ -2,6 +2,10 @@ package structure.program;
 
 import structure.instruction.Instruction;
 import structure.instruction.basic.JumpNotZeroInstruction;
+import structure.instruction.synthetic.GoToInstruction;
+import structure.instruction.synthetic.JumpEqualConstantInstruction;
+import structure.instruction.synthetic.JumpEqualVariableInstruction;
+import structure.instruction.synthetic.JumpZeroInstruction;
 import structure.label.FixedLabel;
 import structure.label.Label;
 import utils.ParseResult;
@@ -50,9 +54,27 @@ public class ProgramImpl implements Program {
         for (Instruction instr : instructions) {
             Label targetLabel = null;
 
-            if (instr instanceof JumpNotZeroInstruction) {
-                targetLabel = ((JumpNotZeroInstruction) instr).getTargetLabel();
+            switch (instr.getName()) {
+                case "JUMP_NOT_ZERO":
+                    targetLabel = ((JumpNotZeroInstruction) instr).getTargetLabel();
+                    break;
+                case "JUMP_ZERO":
+                    targetLabel = ((JumpZeroInstruction) instr).getTargetLabel();
+                    break;
+                case "JUMP_EQUAL_CONSTANT":
+                    targetLabel = ((JumpEqualConstantInstruction) instr).getTargetLabel();
+                    break;
+                case "JUMP_EQUAL_VARIABLE":
+                    targetLabel = ((JumpEqualVariableInstruction) instr).getTargetLabel();
+                    break;
+                case "GOTO_LABEL":
+                    targetLabel = ((GoToInstruction) instr).getTarget();
+                    break;
+                default:
+                    // שאר ההוראות אינן מפנות לתווית
+                    break;
             }
+
 
             if (targetLabel != null &&
                     targetLabel != FixedLabel.EMPTY &&

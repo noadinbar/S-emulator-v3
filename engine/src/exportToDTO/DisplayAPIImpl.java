@@ -3,6 +3,7 @@ package exportToDTO;
 import api.DisplayAPI;
 import display.Command2DTO;
 
+import execution.HistoryDTO;
 import structure.program.Program;
 
 public class DisplayAPIImpl implements DisplayAPI {
@@ -15,4 +16,7 @@ public class DisplayAPIImpl implements DisplayAPI {
     public api.ExecutionAPI execution() {
         return new ExecutionAPIImpl(program);
     }
+
+    @Override
+    public HistoryDTO getHistory() { return HistoryMapper.toHistory(program); }
 }

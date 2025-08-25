@@ -72,7 +72,11 @@ public class Main {
                 }
 
                 case HISTORY: {
-                    System.out.println("Not implemented yet.\n");
+                    if (displayAPI == null) {
+                        System.out.println("No program loaded. Choose 'Load XML' first.");
+                        break;
+                    }
+                    new screens.HistoryAction(displayAPI).run();
                     break;
                 }
 

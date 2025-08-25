@@ -74,11 +74,13 @@ public class ProgramImpl implements Program {
                     // שאר ההוראות אינן מפנות לתווית
                     break;
             }
+            //System.out.println(targetLabel.getLabelRepresentation());
 
+
+            if (isExit(targetLabel)) continue; // ← זה המפתח
 
             if (targetLabel != null &&
                     targetLabel != FixedLabel.EMPTY &&
-                    targetLabel != FixedLabel.EXIT &&
                     !definedLabels.contains(targetLabel.getLabelRepresentation())) {
 
                 return ParseResult.error(
@@ -118,6 +120,14 @@ public class ProgramImpl implements Program {
         // traverse all commands and calculate cycles
         return 0;
     }
+
+    private static boolean isExit(Label l) {
+        if (l == null) return false;
+        if (l == FixedLabel.EXIT) return true;              // המקרה האידאלי
+        String rep = l.getLabelRepresentation();
+        return "EXIT".equals(rep);                          // גיבוי לפי שם
+    }
+
 
 
 }

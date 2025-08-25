@@ -4,8 +4,8 @@ public enum InstructionType {
 
     INCREASE("INCREASE", 1),
     DECREASE("DECREASE", 1),
-    NEUTRAL("NO_OP", 0),
-    JUMP_NOT_ZERO("JNZ", 3),
+    NEUTRAL("NEUTRAL", 0),
+    JUMP_NOT_ZERO("JUMP_NOT_ZERO", 3),
     ZERO_VARIABLE("ZERO_VARIABLE", 1),
     GOTO_LABEL("GOTO_LABEL", 1),
     ASSIGNMENT("ASSIGNMENT", 4),

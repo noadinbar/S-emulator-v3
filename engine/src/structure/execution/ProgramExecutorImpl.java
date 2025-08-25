@@ -10,21 +10,18 @@ import structure.variable.Variable;
 import structure.variable.VariableImpl;
 import structure.variable.VariableType;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 public class ProgramExecutorImpl implements ProgramExecutor{
 
     private final Program program;
+    private Map<Variable, Long> lastState = new HashMap<>();
 
     public ProgramExecutorImpl(Program program) {
         this.program = program;
     }
 
     public long run(Long... input) {
-
         // 0) שליפת ההוראות
         List<Instruction> instructions = program.getInstructions();
         //if (instructions == null || instructions.isEmpty()) {
@@ -67,11 +64,11 @@ public class ProgramExecutorImpl implements ProgramExecutor{
 
             if (next == FixedLabel.EXIT) {
                 break; // סיום על EXIT
-            } else if (next == null || next == FixedLabel.EMPTY) {
+            } else if (next == FixedLabel.EMPTY) {
                 pc++; // מעבר רגיל לשורה הבאה
             } else {
                 String rep = next.getLabelRepresentation();
-                if (rep == null || rep.isBlank()) {
+                if (rep.isBlank()) {
                     pc++; // אם אין ייצוג ברור—נמשיך רגיל
                 } else {
                     Integer jumpTo = labelToIndex.get(rep.trim());
@@ -85,14 +82,40 @@ public class ProgramExecutorImpl implements ProgramExecutor{
         }
         long y = context.getVariableValue(Variable.RESULT);
 
+        if (context instanceof ExecutionContextImpl) {
+            java.util.Map<String, Long> snap = ((ExecutionContextImpl) context).snapshot();
+            java.util.Map<Variable, Long> state = new java.util.HashMap<>();
+            for (java.util.Map.Entry<String, Long> e : snap.entrySet()) {
+                String name = e.getKey();
+                long val = e.getValue();
+
+                if ("y".equals(name)) {
+                    state.put(Variable.RESULT, val);
+                } else if (name.startsWith("x")) {
+                    try {
+                        int idx = Integer.parseInt(name.substring(1));
+                        state.put(new VariableImpl(VariableType.INPUT, idx), val);
+                    } catch (NumberFormatException ignore) {}
+                } else if (name.startsWith("z")) {
+                    try {
+                        int idx = Integer.parseInt(name.substring(1));
+                        state.put(new VariableImpl(VariableType.WORK, idx), val);
+                    } catch (NumberFormatException ignore) {}
+                }
+            }
+            this.lastState = state;
+        }
+
 // 5) שמירת ההרצה להיסטוריה (פקודה 5)
         ((ProgramImpl) program).addRunHistory(inputsList, y, cycles);
 
 // 6) החזרת התוצאה
         return y;
     }
+
+
     @Override
     public Map<Variable, Long> variableState() {
-        return Map.of();
+        return Collections.unmodifiableMap(lastState);
     }
 }

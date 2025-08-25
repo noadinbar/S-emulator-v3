@@ -6,7 +6,7 @@ import display.InstructionBodyDTO;
 import display.InstructionDTO;
 import types.LabelDTO;
 import types.VarRefDTO;
-import types.VarSpace;
+import types.VarOptionsDTO;
 
 import java.util.SortedSet;
 import java.util.TreeSet;
@@ -35,7 +35,7 @@ public final class InstructionFormatter {
         if (xs == null || xs.isEmpty()) return "-";
         SortedSet<Integer> set = new TreeSet<>();
         for (VarRefDTO v : xs) {
-            if (v != null && v.getSpace() == VarSpace.x) {
+            if (v != null && v.getVariable() == VarOptionsDTO.x) {
                 set.add(v.getIndex());
             }
         }
@@ -88,7 +88,6 @@ public final class InstructionFormatter {
             case ZERO_VARIABLE:
                 // "%s <- 0"
                 return String.format("%s <- 0", formatVar(b.getDest()));
-
             case JUMP_NOT_ZERO:
                 // "IF %s != 0 GOTO %s"
                 return String.format("IF %s != 0 GOTO %s", formatVar(b.getVariable()), formatLabel(b.getJumpTo()));
@@ -121,10 +120,10 @@ public final class InstructionFormatter {
 
     private static String formatVar(VarRefDTO v){
         if (v == null) return "";
-        VarSpace s = v.getSpace();
-        if (s == VarSpace.y) return "y";             // אצלך y בלי אינדקס
-        if (s == VarSpace.x) return "x" + v.getIndex();
-        if (s == VarSpace.z) return "z" + v.getIndex();
+        VarOptionsDTO s = v.getVariable();
+        if (s == VarOptionsDTO.y) return "y";             // אצלך y בלי אינדקס
+        if (s == VarOptionsDTO.x) return "x" + v.getIndex();
+        if (s == VarOptionsDTO.z) return "z" + v.getIndex();
         return "";
     }
 

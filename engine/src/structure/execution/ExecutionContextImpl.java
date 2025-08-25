@@ -22,4 +22,9 @@ public class ExecutionContextImpl implements ExecutionContext {
     void put(String repr, long value) {
         values.put(repr, value);
     }
+
+    @Override
+    public Map<String, Long> snapshot() {
+        return new HashMap<>(values); // עותק מבודד החוצה
+    }
 }

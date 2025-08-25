@@ -1,14 +1,14 @@
 package types;
 
 public class VarRefDTO {
-    private final VarSpace space;
+    private final VarOptionsDTO variable;
     private final int index;
 
-    public VarRefDTO(VarSpace space, int index) {
-        this.space = space;
+    public VarRefDTO(VarOptionsDTO var, int index) {
+        this.variable = var;
         this.index = index;
     }
 
-    public VarSpace getSpace() { return space; }
+    public VarOptionsDTO getVariable() { return variable; }
     public int getIndex() { return index; }
 }

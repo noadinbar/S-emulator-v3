@@ -8,5 +8,11 @@ import structure.program.Program;
 public class DisplayAPIImpl implements DisplayAPI {
     private final Program program;
     public DisplayAPIImpl(Program program) { this.program = program; }
-    @Override public Command2DTO getCommand2() { return DisplayMapper.toCommand2(program); }
+    @Override
+    public Command2DTO getCommand2() { return DisplayMapper.toCommand2(program); }
+
+    @Override
+    public api.ExecutionAPI execution() {
+        return new ExecutionAPIImpl(program);
+    }
 }

@@ -7,6 +7,8 @@ import exportToDTO.LoadAPIImpl;
 import menu.Menu;
 import screens.LoadXMLAction;
 import screens.DisplayProgramAction;
+import screens.ExecuteAction;   // ← חדש
+import screens.ExitAction;     // ← לא חובה, אבל נוח
 
 import java.util.Scanner;
 
@@ -43,6 +45,7 @@ public class Main {
                     System.out.println();
                     break;
                 }
+
                 case DISPLAY_PROGRAM: {
                     if (displayAPI == null) {
                         System.out.println("No program loaded. Choose 'Load XML' first.\n");
@@ -52,20 +55,29 @@ public class Main {
                     System.out.println();
                     break;
                 }
+
                 case EXPAND: {
                     System.out.println("Not implemented yet.\n");
                     break;
                 }
-                case RUN: {
-                    System.out.println("Not implemented yet.\n");
+
+                case RUN: { // Execute
+                    if (displayAPI == null) {
+                        System.out.println("No program loaded. Choose 'Load XML' first.\n");
+                        break;
+                    }
+                    new ExecuteAction(displayAPI).run();
+                    System.out.println();
                     break;
                 }
+
                 case HISTORY: {
                     System.out.println("Not implemented yet.\n");
                     break;
                 }
+
                 case EXIT: {
-                    new screens.ExitAction().run();
+                    new ExitAction().run();
                     break; // לא יגיע לכאן בפועל בגלל System.exit(0)
                 }
             }

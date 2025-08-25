@@ -19,4 +19,20 @@ public class VariableImpl implements Variable {
     public String getRepresentation() {
         return type.getVariableRepresentation(number);
     }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof VariableImpl)) return false;
+        VariableImpl other = (VariableImpl) o;
+        return this.number == other.number && this.type == other.type;
+    }
+
+    @Override
+    public int hashCode() {
+        int result = type.hashCode();
+        result = 31 * result + Integer.hashCode(number);
+        return result;
+    }
+
 }

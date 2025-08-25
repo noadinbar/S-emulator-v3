@@ -7,7 +7,7 @@ import display.InstructionBodyDTO;
 import display.InstructionDTO;
 import types.LabelDTO;
 import types.VarRefDTO;
-import types.VarSpace;
+import types.VarOptionsDTO;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -83,7 +83,6 @@ class DisplayMapper {
                         toVarRef(n.getVariable()), // ← חשוב! שולחים את המשתנה
                         null, null, null, null, 0L, null);
             }
-
             // השמות
             case "ASSIGNMENT": {
                 AssignmentInstruction a = (AssignmentInstruction) ins;
@@ -163,7 +162,7 @@ class DisplayMapper {
             Variable v = ins.getVariable();
             if (v != null && v.getType() == VariableType.INPUT) {
                 int idx = parseVarIndex(v.getRepresentation());
-                if (seen.add(idx)) out.add(new VarRefDTO(VarSpace.x, idx));
+                if (seen.add(idx)) out.add(new VarRefDTO(VarOptionsDTO.x, idx));
             }
 
             // תוספות לפי סוג ההוראה
@@ -173,7 +172,7 @@ class DisplayMapper {
                     Variable s = a.getToAssign();
                     if (s != null && s.getType() == VariableType.INPUT) {
                         int idx = parseVarIndex(s.getRepresentation());
-                        if (seen.add(idx)) out.add(new VarRefDTO(VarSpace.x, idx));
+                        if (seen.add(idx)) out.add(new VarRefDTO(VarOptionsDTO.x, idx));
                     }
                     break;
                 }
@@ -182,7 +181,7 @@ class DisplayMapper {
                     Variable r = j.getToCompare();
                     if (r != null && r.getType() == VariableType.INPUT) {
                         int idx = parseVarIndex(r.getRepresentation());
-                        if (seen.add(idx)) out.add(new VarRefDTO(VarSpace.x, idx));
+                        if (seen.add(idx)) out.add(new VarRefDTO(VarOptionsDTO.x, idx));
                     }
                     break;
                 }
@@ -270,10 +269,10 @@ class DisplayMapper {
     // ---------- Var/Label DTO ----------
     private static VarRefDTO toVarRef(Variable v) {
         if (v == null) return null;
-        VarSpace space = switch (v.getType()) {
-            case INPUT -> VarSpace.x;
-            case RESULT -> VarSpace.y;
-            case WORK  -> VarSpace.z;
+        VarOptionsDTO space = switch (v.getType()) {
+            case INPUT -> VarOptionsDTO.x;
+            case RESULT -> VarOptionsDTO.y;
+            case WORK  -> VarOptionsDTO.z;
         };
         int idx = parseVarIndex(v.getRepresentation());
         return new VarRefDTO(space, idx);

@@ -12,11 +12,11 @@ import structure.variable.Variable;
 public class IncreaseInstruction extends AbstractInstruction {
 
     public IncreaseInstruction(Variable variable) {
-        super(InstructionKind.BASIC, InstructionType.INCREASE, variable);
+        super(InstructionKind.BASIC, InstructionType.INCREASE, variable, 0);
     }
 
     public IncreaseInstruction(Variable variable, Label label) {
-        super(InstructionKind.BASIC, InstructionType.INCREASE, variable, label);
+        super(InstructionKind.BASIC, InstructionType.INCREASE, variable, label, 0);
     }
 
     @Override

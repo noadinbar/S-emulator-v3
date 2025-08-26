@@ -1,12 +1,19 @@
 package structure.instruction.synthetic;
 
 import structure.execution.ExecutionContext;
+import structure.expand.ExpansionManager;
 import structure.instruction.AbstractInstruction;
+import structure.instruction.Instruction;
 import structure.instruction.InstructionKind;
 import structure.instruction.InstructionType;
+import structure.instruction.basic.IncreaseInstruction;
+import structure.instruction.basic.JumpNotZeroInstruction;
 import structure.label.FixedLabel;
 import structure.label.Label;
 import structure.variable.Variable;
+
+import java.util.ArrayList;
+import java.util.List;
 
 public class GoToInstruction extends AbstractInstruction {
 
@@ -17,7 +24,7 @@ public class GoToInstruction extends AbstractInstruction {
     }
 
     public GoToInstruction(Variable variable, Label targetLabel, Label label) {
-        super(InstructionKind.SYNTHETIC, InstructionType.GOTO_LABEL, variable, label);
+        super(InstructionKind.SYNTHETIC, InstructionType.GOTO_LABEL, variable, label,1);
         this.target = targetLabel;
     }
     public Label getTarget() {
@@ -28,5 +35,25 @@ public class GoToInstruction extends AbstractInstruction {
     public Label execute(ExecutionContext context) {
         return target;
     }
+
+    @Override
+    public List<Instruction> expand(ExpansionManager prog) {
+        List<Instruction> instructions = new ArrayList<>();
+
+        Label myLabel = getMyLabel();
+        Variable work  = prog.newWorkVar();          // z#
+
+        // 1) [לייבל-אם-יש]  INC z
+        if (myLabel == FixedLabel.EMPTY)
+            instructions.add(new IncreaseInstruction(work));
+        else
+            instructions.add(new IncreaseInstruction(work, myLabel));
+
+        // 2) JNZ z, target   → מממש GOTO בלתי-מותנה
+        instructions.add(new JumpNotZeroInstruction(work, getTarget())); // אם אצלך זה getTarget(), החליפי
+
+        return instructions;
+    }
+
 
 }

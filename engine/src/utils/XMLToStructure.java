@@ -3,7 +3,7 @@ package utils;
 import structure.instruction.basic.DecreaseInstruction;
 import structure.instruction.basic.IncreaseInstruction;
 import structure.instruction.basic.JumpNotZeroInstruction;
-import structure.instruction.basic.NoOpInstruction;
+import structure.instruction.basic.NeutralInstruction;
 import structure.instruction.synthetic.*;
 import structure.label.FixedLabel;
 import structure.label.LabelImpl;
@@ -49,8 +49,8 @@ public class XMLToStructure {
 
             case NEUTRAL:
                 return label != null
-                        ? new NoOpInstruction(variable, label)
-                        : new NoOpInstruction(variable);
+                        ? new NeutralInstruction(variable, label)
+                        : new NeutralInstruction(variable);
 
             case JUMP_NOT_ZERO:
                 String targetLabelValue = getArgumentValue(sInstruction, "JNZLabel");

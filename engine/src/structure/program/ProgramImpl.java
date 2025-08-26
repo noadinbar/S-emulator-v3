@@ -2,16 +2,17 @@ package structure.program;
 
 import structure.instruction.Instruction;
 import structure.instruction.basic.JumpNotZeroInstruction;
-import structure.instruction.synthetic.GoToInstruction;
-import structure.instruction.synthetic.JumpEqualConstantInstruction;
-import structure.instruction.synthetic.JumpEqualVariableInstruction;
-import structure.instruction.synthetic.JumpZeroInstruction;
+import structure.instruction.synthetic.*;
 import structure.label.FixedLabel;
 import structure.label.Label;
+import structure.variable.Variable;
+import structure.variable.VariableType;
 import utils.ParseResult;
 import utils.RunHistory;
 
 import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class ProgramImpl implements Program {
 
@@ -19,6 +20,7 @@ public class ProgramImpl implements Program {
     private final List<Instruction> instructions;
     private final List<RunHistory> runHistory = new ArrayList<>();
     private int currentRunDegree = 0; // אם לא משתמשים בדרגות, פשוט יישאר 0
+    private static final Pattern LBL_PATTERN = Pattern.compile("^L(\\d+)$");
 
 
     public ProgramImpl(String name) {
@@ -106,6 +108,61 @@ public class ProgramImpl implements Program {
     }
 
     public void clearRunHistory() { runHistory.clear(); }
+
+    public int findMaxLabelIndex() {
+        int max = 0;
+        for (Instruction ins : this.getInstructions()) {
+            Label lab = ins.getMyLabel();
+            if (lab == null) continue;
+            String name = lab.getLabelRepresentation(); // התאי לשיטה שלך אם שונה
+            if (name == null) continue;
+            Matcher m = LBL_PATTERN.matcher(name);
+            if (m.matches()) {
+                int idx = Integer.parseInt(m.group(1));
+                if (idx > max) max = idx;
+            }
+        }
+        return max;
+    }
+
+    public int findMaxWorkIndex() {
+        int max = 0;
+
+        for (Instruction ins : this.getInstructions()) {
+            // 1) המשתנה הראשי של כל הוראה
+            max = Math.max(max, workIndex(ins.getVariable()));
+
+            // 2) משתנים נוספים לפי סוג הוראה
+            switch (ins.getName()) {
+                case "ASSIGNMENT": {
+                    AssignmentInstruction a = (AssignmentInstruction) ins;
+                    max = Math.max(max, workIndex(a.getToAssign()));
+                    break;
+                }
+                case "JUMP_EQUAL_VARIABLE": {
+                    JumpEqualVariableInstruction j = (JumpEqualVariableInstruction) ins;
+                    max = Math.max(max, workIndex(j.getToCompare()));
+                    break;
+                }
+                default:
+                    break;
+            }
+        }
+
+        return max;
+    }
+
+    private static int workIndex(Variable v) {
+        if (v == null || v.getType() != VariableType.WORK) return 0;
+        String rep = v.getRepresentation();    // צפוי "z5"
+        if (rep == null || rep.length() < 2) return 0;
+        try {
+            return Integer.parseInt(rep.substring(1)); // המספר אחרי 'z'
+        } catch (NumberFormatException e) {
+            return 0;
+        }
+    }
+
 
     //need to implement
     @Override

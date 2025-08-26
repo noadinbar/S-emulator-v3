@@ -18,7 +18,7 @@ public class JumpNotZeroInstruction extends AbstractInstruction {
     }
 
     public JumpNotZeroInstruction(Variable variable, Label jnzLabel, Label label) {
-        super(InstructionKind.BASIC, InstructionType.JUMP_NOT_ZERO, variable, label);
+        super(InstructionKind.BASIC, InstructionType.JUMP_NOT_ZERO, variable, label, 0);
         this.targetLabel = jnzLabel;
     }
 

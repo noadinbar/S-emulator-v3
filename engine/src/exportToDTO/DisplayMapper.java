@@ -19,7 +19,7 @@ import structure.instruction.Instruction;
 import structure.instruction.basic.DecreaseInstruction;
 import structure.instruction.basic.IncreaseInstruction;
 import structure.instruction.basic.JumpNotZeroInstruction;
-import structure.instruction.basic.NoOpInstruction;
+import structure.instruction.basic.NeutralInstruction;
 import structure.instruction.synthetic.AssignmentInstruction;
 import structure.instruction.synthetic.ConstantAssignmentInstruction;
 import structure.instruction.synthetic.GoToInstruction;
@@ -78,7 +78,7 @@ class DisplayMapper {
                         toVarRef(d.getVariable()), null, null, null, null, 0L, null);
             }
             case "NEUTRAL": {
-                NoOpInstruction n = (NoOpInstruction) ins;
+                NeutralInstruction n = (NeutralInstruction) ins;
                 return new InstructionBodyDTO(InstrOpDTO.NEUTRAL,
                         toVarRef(n.getVariable()), // ← חשוב! שולחים את המשתנה
                         null, null, null, null, 0L, null);

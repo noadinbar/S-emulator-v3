@@ -29,7 +29,7 @@ public class ExecutionAPIImpl implements ExecutionAPI {
 
     @Override
     public int getMaxDegree() {
-        return ((ProgramImpl) program).calculateMaxDegree(); // אצלך זה מחזיר 0 לעת עתה
+        return ((ProgramImpl) program).calculateMaxDegree();
     }
 
     @Override

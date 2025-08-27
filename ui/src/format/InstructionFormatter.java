@@ -1,9 +1,6 @@
 package format;
 
-import display.InstrKindDTO;
-import display.InstrOpDTO;
-import display.InstructionBodyDTO;
-import display.InstructionDTO;
+import display.*;
 import types.LabelDTO;
 import types.VarRefDTO;
 import types.VarOptionsDTO;
@@ -108,6 +105,18 @@ public final class InstructionFormatter {
             default:
                 return "?";
         }
+    }
+
+    public static String formatExpanded(ExpandedInstructionDTO row) {
+        String s = formatDisplay(row.getInstruction());
+        var chain = row.getCreatedByChain();
+        if (chain == null || chain.isEmpty()) return s;
+
+        StringBuilder sb = new StringBuilder(s);
+        for (InstructionDTO anc : chain) {
+            sb.append("  >>>  ").append(formatDisplay(anc));
+        }
+        return sb.toString();
     }
 
     private static String formatLabel(LabelDTO l){

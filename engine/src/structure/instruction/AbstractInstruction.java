@@ -52,6 +52,11 @@ public abstract class AbstractInstruction implements Instruction {
     }
 
     @Override
+    public int getDegree() {
+        return degree;
+    }
+
+    @Override
     public List<Instruction> expand(ExpansionManager prog) {
         return Collections.singletonList(this);
     }

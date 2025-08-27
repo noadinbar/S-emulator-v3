@@ -5,10 +5,7 @@ import api.LoadAPI;
 import exportToDTO.LoadAPIImpl;
 
 import menu.Menu;
-import screens.LoadXMLAction;
-import screens.DisplayProgramAction;
-import screens.ExecuteAction;   // ← חדש
-import screens.ExitAction;     // ← לא חובה, אבל נוח
+import screens.*;
 
 import java.util.Scanner;
 
@@ -57,7 +54,11 @@ public class Main {
                 }
 
                 case EXPAND: {
-                    System.out.println("Not implemented yet.\n");
+                    if (displayAPI == null) {
+                        System.out.println("No program loaded. Choose 'Load XML' first.\n");
+                        break;
+                    }
+                    new ExpandAction(displayAPI).run();
                     break;
                 }
 

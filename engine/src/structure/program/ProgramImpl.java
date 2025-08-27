@@ -167,8 +167,10 @@ public class ProgramImpl implements Program {
     //need to implement
     @Override
     public int calculateMaxDegree() {
-        // traverse all commands and find maximum degree
-        return 0;
+        return instructions.stream()
+                .mapToInt(Instruction::getDegree)
+                .max()
+                .orElse(0); // או לזרוק חריגה אם הרשימה ריקה
     }
 
     //need to implement

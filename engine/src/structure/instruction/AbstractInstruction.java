@@ -15,6 +15,7 @@ public abstract class AbstractInstruction implements Instruction {
     private final Label myLabel;
     private final Variable variable;
     private final int degree;
+    private List<Instruction> familyTree = Collections.emptyList();
 
     public AbstractInstruction(InstructionKind instKind ,InstructionType type, Variable variable, int degree) {
         this(instKind, type, variable, FixedLabel.EMPTY, degree);
@@ -61,4 +62,11 @@ public abstract class AbstractInstruction implements Instruction {
         return Collections.singletonList(this);
     }
 
+    public List<Instruction> getFamilyTree() {
+        return familyTree;
+    }
+
+    public void setFamilyTree(List<Instruction> familyTree) {
+        this.familyTree = familyTree;
+    }
 }

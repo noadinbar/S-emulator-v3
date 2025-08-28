@@ -173,11 +173,13 @@ public class ProgramImpl implements Program {
                 .orElse(0); // או לזרוק חריגה אם הרשימה ריקה
     }
 
-    //need to implement
     @Override
     public int calculateCycles() {
-        // traverse all commands and calculate cycles
-        return 0;
+        int cycles = 0;
+        for (Instruction ins : getInstructions()) {
+            cycles += ins.cycles();
+        }
+        return cycles;
     }
 
     private static boolean isExit(Label l) {

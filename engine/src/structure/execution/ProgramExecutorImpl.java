@@ -54,13 +54,12 @@ public class ProgramExecutorImpl implements ProgramExecutor{
 
         // 3) לולאת pc עד EXIT או סוף רשימת ההוראות
         int pc = 0;
-        int cycles = 0; // לעתיד (פקודה 5)
+
 
         while (pc >= 0 && pc < instructions.size()) {
             Instruction current = instructions.get(pc);
 
             Label next = current.execute(context);
-            cycles += current.cycles();
 
             if (next == FixedLabel.EXIT) {
                 break; // סיום על EXIT
@@ -105,6 +104,7 @@ public class ProgramExecutorImpl implements ProgramExecutor{
             }
             this.lastState = state;
         }
+        int cycles = program.calculateCycles(); // לעתיד (פקודה 5)
 
 // 5) שמירת ההרצה להיסטוריה (פקודה 5)
         ((ProgramImpl) program).addRunHistory(inputsList, y, cycles);

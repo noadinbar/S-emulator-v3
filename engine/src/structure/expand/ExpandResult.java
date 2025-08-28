@@ -1,29 +1,37 @@
+// File: engine/src/structure/expand/ExpandResult.java
 package structure.expand;
 
 import structure.instruction.Instruction;
 import structure.program.Program;
-import java.util.List;
-import java.util.Map;
 
-/** תוצאת expand: התוכנית המורחבת + רמות + מיפויי יוצר/דרגת יוצר. */
+import java.util.ArrayList;
+import java.util.List;
+
+/** תוצאת ההרחבה: התוכנית בדרגה האחרונה + כל הדרגות (0..degree). */
 public final class ExpandResult {
     private final Program expandedProgram;
-    private final List<List<Instruction>> levels;                // 0..degree
-    private final Map<Instruction, Instruction> parentOf;        // child -> creator
-    private final Map<Instruction, Integer> creatorLevelByChild; // child -> level(creator)
+    private final List<List<Instruction>> levels; // דרגות 0..degree (בלתי־ניתן לשינוי)
 
-    public ExpandResult(Program expandedProgram,
-                        List<List<Instruction>> levels,
-                        Map<Instruction, Instruction> parentOf,
-                        Map<Instruction, Integer> creatorLevelByChild) {
+    public ExpandResult(Program expandedProgram, List<List<Instruction>> levels) {
         this.expandedProgram = expandedProgram;
-        this.levels = levels;
-        this.parentOf = parentOf;
-        this.creatorLevelByChild = creatorLevelByChild;
+        this.levels = deepUnmodifiable(levels);
     }
 
-    public Program getExpandedProgram() { return expandedProgram; }
-    public List<List<Instruction>> getLevels() { return levels; }
-    public Map<Instruction, Instruction> getParentOf() { return parentOf; }
-    public Map<Instruction, Integer> getCreatorLevelByChild() { return creatorLevelByChild; }
+    public Program getExpandedProgram() {
+        return expandedProgram;
+    }
+
+    public List<List<Instruction>> getLevels() {
+        return levels;
+    }
+
+    /** העתק בלתי־ניתן לשינוי של הרשימה הדו־ממדית. */
+    private static List<List<Instruction>> deepUnmodifiable(List<List<Instruction>> src) {
+        if (src == null || src.isEmpty()) return List.of();
+        List<List<Instruction>> out = new ArrayList<>(src.size());
+        for (List<Instruction> level : src) {
+            out.add(level == null ? List.of() : List.copyOf(level));
+        }
+        return List.copyOf(out);
+    }
 }

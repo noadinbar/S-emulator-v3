@@ -2,10 +2,15 @@ package screens;
 
 import api.DisplayAPI;
 import api.ExecutionAPI;
+
 import display.Command2DTO;
+import display.Command3DTO;
+import display.ExpandedInstructionDTO;
 import display.InstructionDTO;
+
 import execution.ExecutionDTO;
 import execution.ExecutionRequestDTO;
+
 import format.ExecutionFormatter;
 import format.InstructionFormatter;
 
@@ -46,26 +51,49 @@ public class ExecuteAction {
         System.out.print("Enter inputs (comma-separated), can be fewer/more: ");
         List<Long> inputs = parseCsvLongs(sc.nextLine());
 
-        // 3) הרצה
-        ExecutionRequestDTO req = new ExecutionRequestDTO(degree, inputs);
-        ExecutionDTO out = execAPI.execute(req);
+        if (degree > 0) {
+            Command3DTO dto = displayAPI.expand(degree);
 
-        // 4) הצגת התוכנית שבוצעה בפועל (לפי פקודה 2/3). כרגע: AS IS
-        if (out.getExecutedProgram() != null) {
-            printExecutedProgram(out.getExecutedProgram());
-        } else {
-            printExecutedProgram(c2);
+            System.out.println();
+            System.out.println(String.format("Program: %s", dto.getProgramName()));
+            System.out.println(String.format("Inputs in use: %s",
+                    InstructionFormatter.joinInputs(dto.getInputsInUse())));
+            System.out.println(String.format("Labels in use: %s",
+                    InstructionFormatter.joinLabels(dto.getLabelsInUse())));
+            System.out.println();
+
+            for (ExpandedInstructionDTO row : dto.getInstructions()) {
+                System.out.println(String.format("%s", InstructionFormatter.formatExpanded(row)));
+            }
+            System.out.println();
         }
 
-        // 5) y
-        System.out.println(ExecutionFormatter.formatY(out));
+        // 4) בוחרים ExecAPI לפי דרגה: 0 → בסיסי; >0 → על תוכנית מורחבת
+        ExecutionAPI runner = (degree == 0)
+                ? execAPI
+                : displayAPI.executionForDegree(degree);
 
-        // 6) כלל המשתנים בסדר הנדרש
+        // מריצים: אם כבר בחרנו ExecAPI של מורחבת, מעבירים degree=0
+        int degreeForExec = 0;
+        ExecutionRequestDTO req = new ExecutionRequestDTO(degreeForExec, inputs);
+        ExecutionDTO out = runner.execute(req);
+
+        // 5) הדפסות סיום
+        if (degree == 0) {
+            // במצב רגיל מציגים את התוכנית שבוצעה (פקודה 2)
+            if (out.getExecutedProgram() != null) {
+                printExecutedProgram(out.getExecutedProgram());
+            } else {
+                printExecutedProgram(c2);
+            }
+        }
+        // y
+        System.out.println(ExecutionFormatter.formatY(out));
+        // כלל המשתנים (כולל z#)
         if (out.getFinals() != null && !out.getFinals().isEmpty()) {
             System.out.println(ExecutionFormatter.formatAllVars(out.getFinals()));
         }
-
-        // 7) cycles
+        // cycles
         System.out.println(ExecutionFormatter.formatCycles(out));
     }
 

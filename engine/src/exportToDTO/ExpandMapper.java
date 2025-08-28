@@ -6,6 +6,7 @@ import display.ExpandedInstructionDTO;
 import display.InstructionDTO;
 import structure.expand.ExpandResult;
 import structure.expand.ProgramExpander;
+import structure.instruction.AbstractInstruction;
 import structure.instruction.Instruction;
 import structure.program.Program;
 import structure.program.ProgramImpl;
@@ -15,7 +16,6 @@ import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
 
-/** ממיר את תוצאת ההרחבה ל־DTO של פקודה 3 (כולל שרשרת, נעצרת ב־BASIC). */
 public final class ExpandMapper {
     private ExpandMapper(){}
 
@@ -23,20 +23,18 @@ public final class ExpandMapper {
         ExpandResult res = ProgramExpander.expandTo(program, degree);
 
         Program finalProg = res.getExpandedProgram();
-        List<List<Instruction>> levels = res.getLevels();               // 0..degree
-        Map<Instruction, Instruction> parentOf = res.getParentOf();     // child -> creator
-        Map<Instruction, Integer> creatorLevelByChild = res.getCreatorLevelByChild();
+        List<List<Instruction>> levels = res.getLevels();   // 0..degree
+        int lastLevel = levels.size() - 1;
 
         // Instruction -> InstructionDTO לכל דרגה (בפורמט פקודה 2)
-        int lastLevel = levels.size() - 1;
         List<Map<Instruction, InstructionDTO>> dtoAtLevel = new ArrayList<>(levels.size());
         for (int lvl = 0; lvl <= lastLevel; lvl++) {
             ProgramImpl progL = new ProgramImpl(finalProg.getName());
             for (Instruction ins : levels.get(lvl)) progL.addInstruction(ins);
             Command2DTO c2 = DisplayMapper.toCommand2(progL);
 
-            List<Instruction>     insL  = levels.get(lvl);
-            List<InstructionDTO>  dtoL  = c2.getInstructions();
+            List<Instruction> insL = levels.get(lvl);
+            List<InstructionDTO> dtoL = c2.getInstructions();
             Map<Instruction, InstructionDTO> map = new IdentityHashMap<>();
             int n = Math.min(insL.size(), dtoL.size());
             for (int i = 0; i < n; i++) map.put(insL.get(i), dtoL.get(i));
@@ -48,31 +46,24 @@ public final class ExpandMapper {
         List<InstructionDTO> finalDtos = finalC2.getInstructions();
         List<Instruction>     finalIns  = levels.get(lastLevel);
 
-        // בניית השרשרת – עוצרים מיד אחרי שהילד היה BASIC
+        // הוראה -> הדרגה שלה (כדי לדעת מאיזה lvl להביא את DTO של האבות)
+        Map<Instruction, Integer> levelOf = new IdentityHashMap<>();
+        for (int lvl = 0; lvl <= lastLevel; lvl++) {
+            for (Instruction ins : levels.get(lvl)) levelOf.put(ins, lvl);
+        }
+
+        // בניית השורות: LEFT <<< PARENT <<< GRANDPARENT ...
         List<ExpandedInstructionDTO> out = new ArrayList<>();
         for (int i = 0; i < finalIns.size() && i < finalDtos.size(); i++) {
             Instruction    leaf = finalIns.get(i);
             InstructionDTO left = finalDtos.get(i);
 
             List<InstructionDTO> chain = new ArrayList<>();
-            Instruction cur = leaf;
-            while (true) {
-                Instruction parent = parentOf.get(cur);
-                if (parent == null) break;
-
-                Integer pLevel = creatorLevelByChild.get(cur);
-                if (pLevel == null || pLevel < 0 || pLevel >= dtoAtLevel.size()) break;
-
-                InstructionDTO parentDto = dtoAtLevel.get(pLevel).get(parent);
-                if (parentDto == null) break;
-
-                chain.add(parentDto);
-
-                // כלל הכרחי: מרגע שהילד BASIC – השרשרת נעצרת
-                char childKind = cur.kind(); // 'B' / 'S'
-                if (childKind == 'B' || childKind == 'b') break;
-
-                cur = parent; // ממשיכים רק אם הילד היה S (שרשרת S→S→...→B)
+            for (Instruction anc : ((AbstractInstruction) leaf).getFamilyTree()) {
+                Integer lvl = levelOf.get(anc);
+                if (lvl == null) continue;
+                InstructionDTO ancDto = dtoAtLevel.get(lvl).get(anc);
+                if (ancDto != null) chain.add(ancDto);
             }
 
             out.add(new ExpandedInstructionDTO(left, chain));

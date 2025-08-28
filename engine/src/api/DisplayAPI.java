@@ -9,5 +9,6 @@ public interface DisplayAPI {
     Command2DTO getCommand2();
     Command3DTO expand(int degree);
     ExecutionAPI execution();
+    ExecutionAPI executionForDegree(int degree);
     HistoryDTO getHistory();
 }

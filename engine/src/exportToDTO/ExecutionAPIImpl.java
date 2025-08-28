@@ -4,6 +4,7 @@ import api.ExecutionAPI;
 import display.Command2DTO;
 import display.InstructionDTO;
 import display.InstructionBodyDTO;
+import exceptions.InvalidInputException;
 import execution.ExecutionDTO;
 import execution.ExecutionRequestDTO;
 import execution.VarValueDTO;
@@ -44,6 +45,17 @@ public class ExecutionAPIImpl implements ExecutionAPI {
                 ? Collections.emptyList()
                 : request.getInputs();
         Long[] inputs = inputsList.toArray(new Long[0]);
+
+        // checking if the inputs are not negative
+        for (int i = 0; i < inputsList.size(); i++) {
+            long inputAtIndex = inputsList.get(i) == null ? 0L : inputsList.get(i);
+            if (inputAtIndex < 0) {
+                int pos = i + 1;
+                throw new InvalidInputException(
+                        String.format("Inputs must be non-negative. You put x%d=%d.", pos, inputAtIndex)
+                );
+            }
+        }
 
         ProgramExecutorImpl runner = new ProgramExecutorImpl(program, originalProgram);
         long y = runner.run(inputs);

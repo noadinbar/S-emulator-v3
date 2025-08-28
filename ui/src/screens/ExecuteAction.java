@@ -8,6 +8,7 @@ import display.Command3DTO;
 import display.ExpandedInstructionDTO;
 import display.InstructionDTO;
 
+import exceptions.InvalidInputException;
 import execution.ExecutionDTO;
 import execution.ExecutionRequestDTO;
 
@@ -46,8 +47,19 @@ public class ExecuteAction {
 
         Command2DTO c2 = displayAPI.getCommand2();
         System.out.println(ExecutionFormatter.formatInputsInUse(c2.getInputsInUse()));
-        System.out.print("Enter inputs (comma-separated), can be fewer/more: ");
-        List<Long> inputs = parseCsvLongs(sc.nextLine());
+
+        List<Long> inputs;
+        while (true) {
+            System.out.print("Enter inputs (comma-separated), can be fewer/more: ");
+            String line = sc.nextLine();
+            inputs = parseCsvLongs(line);
+            try {
+                validateNonNegative(inputs);
+                break;
+            } catch (InvalidInputException ex) {
+                System.out.println(ex.getMessage());
+            }
+        }
 
         if (degree > 0) {
             Command3DTO dto = displayAPI.expand(degree);
@@ -120,4 +132,18 @@ public class ExecuteAction {
         }
         System.out.println();
     }
+
+    private static void validateNonNegative(List<Long> inputs) {
+        if (inputs == null) return;
+        for (int i = 0; i < inputs.size(); i++) {
+            Long inputAtIndex = inputs.get(i);
+            if (inputAtIndex != null && inputAtIndex < 0) {
+                int pos = i + 1;
+                throw new InvalidInputException(
+                        String.format("Inputs must be non-negative naturals. Found x%d=%d.", pos, inputAtIndex)
+                );
+            }
+        }
+    }
+
 }

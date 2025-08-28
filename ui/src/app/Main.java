@@ -37,8 +37,8 @@ public class Main {
             switch (m) {
                 case LOAD_XML: {
                     LoadXMLAction action = new LoadXMLAction(loadAPI);
-                    action.run();
-                    displayAPI = action.getDisplayAPI();
+                    action.run();                          // יבקש path, יטען דרך ה-engine
+                    displayAPI = action.getDisplayAPI();   // null אם נכשל
                     System.out.println();
                     break;
                 }
@@ -83,7 +83,7 @@ public class Main {
 
                 case EXIT: {
                     new ExitAction().run();
-                    break;
+                    break; // לא יגיע לכאן בפועל בגלל System.exit(0)
                 }
             }
         }

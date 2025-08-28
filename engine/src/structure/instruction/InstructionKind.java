@@ -7,13 +7,11 @@ public enum InstructionKind {
     private final char kind;
     InstructionKind(String kind) { this.kind=Character.toUpperCase(kind.trim().charAt(0)); }
 
-    /** לקיצור ההדפסה ב־UI: (B|S) */
     public char getKind() { return kind; }
 
     public boolean isBasic() { return this == BASIC; }
     public boolean isSynthetic() { return this == SYNTHETIC; }
 
-    /** אם תרצי פרסור מקיצור */
     public static InstructionKind fromTag(char c) {
         return (c == 'B' || c == 'b') ? BASIC : SYNTHETIC;
     }

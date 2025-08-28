@@ -42,16 +42,14 @@ public class ConstantAssignmentInstruction extends AbstractInstruction {
         List<Instruction> instructions = new ArrayList<>();
 
         Variable v     = getVariable();
-        int k          = getConstant();           // מניחים k ≥ 0 לפי המטלה
+        int k          = getConstant();
         Label myLabel  = getMyLabel();
 
-        // 1) [אם יש לייבל – נשא אותו כאן]  V <- 0
         if (myLabel == FixedLabel.EMPTY)
             instructions.add(new ZeroVariableInstruction(v));
         else
             instructions.add(new ZeroVariableInstruction(v, myLabel));
 
-        // 2) K פעמים: V <- V + 1
         for (int i = 0; i < k; i++) {
             instructions.add(new IncreaseInstruction(v));
         }

@@ -29,8 +29,6 @@ public class XMLToStructure {
 
     private Instruction toInstruction(SInstruction sInstruction) {
         InstructionType type = InstructionType.valueOf(sInstruction.getName().toUpperCase());
-
-        // יצירת LabelImpl אם קיים ב-SInstruction
         Label label = sInstruction.getSLabel() != null ? new LabelImpl(sInstruction.getSLabel()) : null;
 
 
@@ -121,24 +119,18 @@ private String getArgumentValue(SInstruction sInstruction, String argName) {
             .orElse(null);
 }
 
-    // בתוך XMLToStructure (הוסף/י import-ים לפי הפרויקט שלך)
     private Variable extractVariable(SInstruction sInstruction, String sourceName) {
-        // 1) קבלת הטקסט של המשתנה ממקור מתאים
         String variableText;
         if (sourceName == null || sourceName.isBlank()) {
-            // מתוך <S-Variable>...</S-Variable>
             variableText = sInstruction.getSVariable();
         } else {
-            // מתוך ארגומנט בשם נתון (כמו getArgumentValue שכבר יש לך)
             variableText = getArgumentValue(sInstruction, sourceName);
         }
 
-        // 2) נירמול ובדיקה בסיסית
         if (variableText == null) return null;
         variableText = variableText.trim();
         if (variableText.isEmpty()) return null;
 
-        // 3) מיפוי האות ל-VariableType
         char prefixChar = Character.toLowerCase(variableText.charAt(0)); // x / y / z
         VariableType type;
         switch (prefixChar) {
@@ -151,8 +143,7 @@ private String getArgumentValue(SInstruction sInstruction, String argName) {
                 );
         }
 
-        // 4) חיתוך האינדקס (אם קיים)
-        int index = 0; // למקרה של "y" בלי מספר
+        int index = 0;
         if (variableText.length() > 1) {
             String digits = variableText.substring(1);
             try {
@@ -165,7 +156,6 @@ private String getArgumentValue(SInstruction sInstruction, String argName) {
             }
         }
 
-        // 5) בנייה והחזרה
         return new VariableImpl(type, index);
     }
 

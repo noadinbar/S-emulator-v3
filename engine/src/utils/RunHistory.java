@@ -3,11 +3,11 @@ package utils;
 import java.util.List;
 
 public final class RunHistory {
-    private final int runNumber;      // מספר ריצה (מתחיל מ-1)
-    private final int degree;         // דרגת הריצה (כפי שהוגדרה לפני ההרצה)
-    private final List<Long> inputs;  // הקלטים לפי הסדר: x1, x2, ...
-    private final long yValue;        // ערך y בסיום
-    private final int cycles;         // סה"כ cycles שנצרכו
+    private final int runNumber;
+    private final int degree;
+    private final List<Long> inputs;
+    private final long yValue;
+    private final int cycles;
 
     public RunHistory(int runNumber, int degree, List<Long> inputs, long yValue, int cycles) {
         this.runNumber = runNumber;

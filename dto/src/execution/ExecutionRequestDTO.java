@@ -2,7 +2,6 @@ package execution;
 
 import java.util.List;
 
-/** בקשת הרצה: דרגת ההרחבה + קלטים (רשימת מספרים, לפי הסדר) */
 public class ExecutionRequestDTO {
     private final int degree;
     private final List<Long> inputs;

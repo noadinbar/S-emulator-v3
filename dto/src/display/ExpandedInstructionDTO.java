@@ -4,8 +4,8 @@ package display;
 import java.util.List;
 
 public final class ExpandedInstructionDTO {
-    private final InstructionDTO instruction;          // השורה הסופית
-    private final List<InstructionDTO> createdByChain; // שרשרת (נשתמש בהורה המיידי; אפשר להרחיב)
+    private final InstructionDTO instruction;
+    private final List<InstructionDTO> createdByChain;
 
     public ExpandedInstructionDTO(InstructionDTO instruction, List<InstructionDTO> createdByChain) {
         this.instruction = instruction;

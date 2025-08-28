@@ -18,7 +18,6 @@ public class ExecutionContextImpl implements ExecutionContext {
         values.put(v.getRepresentation(), value);
     }
 
-    // עוזר קטן לאתחול לפי מחרוזת (לא חובה, רק נוח)
     void put(String repr, long value) {
         values.put(repr, value);
     }

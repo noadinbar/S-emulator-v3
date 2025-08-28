@@ -56,16 +56,14 @@ public class JumpEqualConstantInstruction extends AbstractInstruction {
         Label target   = getTargetLabel();
         Label myLabel  = getMyLabel();
 
-        Variable z     = prog.newWorkVar();     // עותק של v להשוואה
-        Label notEqual = prog.newLabel();       // יעד "לא שווה"
+        Variable z     = prog.newWorkVar();
+        Label notEqual = prog.newLabel();
 
-        // 1) [נשיאת לייבל אם יש]  z <- v
         if (myLabel == FixedLabel.EMPTY)
             instructions.add(new AssignmentInstruction(z, v));
         else
             instructions.add(new AssignmentInstruction(z, v, myLabel));
 
-        // 2) K פעמים: JNZ z, L_i ; GOTO notEqual ; L_i: DEC z
         for (int i = 0; i < k; i++) {
             Label Li = prog.newLabel();
             instructions.add(new JumpNotZeroInstruction(z, Li));
@@ -73,11 +71,9 @@ public class JumpEqualConstantInstruction extends AbstractInstruction {
             instructions.add(new DecreaseInstruction(z, Li));
         }
 
-        // 3) אחרי K הורדות: אם z != 0 → notEqual, אחרת → target
         instructions.add(new JumpNotZeroInstruction(z, notEqual));
         instructions.add(new GoToInstruction(z, target));
 
-        // 4) LnotEqual: NEUTRAL
         instructions.add(new NeutralInstruction(v, notEqual));
 
         return instructions;

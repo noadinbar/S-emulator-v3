@@ -1,8 +1,8 @@
 package types;
 
 public class LabelDTO {
-    private final String name;     // למשל: "L34"
-    private final boolean isExit;  // true רק עבור EXIT ברשימת התוויות בשימוש
+    private final String name;
+    private final boolean isExit;
 
     public LabelDTO(String name, boolean isExit) {
         this.name = name;

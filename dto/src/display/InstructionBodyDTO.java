@@ -6,14 +6,14 @@ import types.VarRefDTO;
 public class InstructionBodyDTO {
     private final InstrOpDTO op;
 
-    private final VarRefDTO variable;     // למקרי INCREASE/DECREASE ול-JUMP על משתנה יחיד
-    private final VarRefDTO dest;         // יעד השמה (ASSIGNMENT / CONSTANT_ASSIGNMENT / ZERO_VARIABLE)
-    private final VarRefDTO source;       // מקור השמה (ASSIGNMENT)
-    private final VarRefDTO compare;      // אופרנד שמאלי להשוואה (JUMP_EQUAL_VARIABLE)
-    private final VarRefDTO compareWith;  // אופרנד ימני להשוואה (JUMP_EQUAL_VARIABLE)
+    private final VarRefDTO variable;
+    private final VarRefDTO dest;
+    private final VarRefDTO source;
+    private final VarRefDTO compare;
+    private final VarRefDTO compareWith;
 
-    private final long constant;          // לשימוש ב-CONSTANT_ASSIGNMENT / JUMP_EQUAL_CONSTANT (0 אם לא בשימוש)
-    private final LabelDTO jumpTo;        // יעד קפיצה / GoTo
+    private final long constant;
+    private final LabelDTO jumpTo;
 
     public InstructionBodyDTO(InstrOpDTO op,
                               VarRefDTO variable,

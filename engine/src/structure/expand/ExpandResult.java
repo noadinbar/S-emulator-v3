@@ -7,10 +7,9 @@ import structure.program.Program;
 import java.util.ArrayList;
 import java.util.List;
 
-/** תוצאת ההרחבה: התוכנית בדרגה האחרונה + כל הדרגות (0..degree). */
 public final class ExpandResult {
     private final Program expandedProgram;
-    private final List<List<Instruction>> levels; // דרגות 0..degree (בלתי־ניתן לשינוי)
+    private final List<List<Instruction>> levels;
 
     public ExpandResult(Program expandedProgram, List<List<Instruction>> levels) {
         this.expandedProgram = expandedProgram;
@@ -25,7 +24,6 @@ public final class ExpandResult {
         return levels;
     }
 
-    /** העתק בלתי־ניתן לשינוי של הרשימה הדו־ממדית. */
     private static List<List<Instruction>> deepUnmodifiable(List<List<Instruction>> src) {
         if (src == null || src.isEmpty()) return List.of();
         List<List<Instruction>> out = new ArrayList<>(src.size());

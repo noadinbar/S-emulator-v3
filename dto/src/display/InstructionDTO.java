@@ -3,11 +3,11 @@ package display;
 import types.LabelDTO;
 
 public class InstructionDTO {
-    private final int number;                 // 1-based לפי סדר ה-XML
-    private final InstrKindDTO kind;          // BASIC/SYNTHETIC (ב-UI יודפס 'B'/'S')
-    private final LabelDTO label;             // null אם אין תווית מוצמדת לשורה
-    private final InstructionBodyDTO body;    // payload עמוק (לא מחזיר Instruction של ה-engine)
-    private final int cycles;                 // מחזורי ריצה
+    private final int number;
+    private final InstrKindDTO kind;
+    private final LabelDTO label;
+    private final InstructionBodyDTO body;
+    private final int cycles;
 
     public InstructionDTO(int number,
                           InstrKindDTO kind,

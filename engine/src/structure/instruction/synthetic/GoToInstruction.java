@@ -43,14 +43,12 @@ public class GoToInstruction extends AbstractInstruction {
         Label myLabel = getMyLabel();
         Variable work  = prog.newWorkVar();          // z#
 
-        // 1) [לייבל-אם-יש]  INC z
         if (myLabel == FixedLabel.EMPTY)
             instructions.add(new IncreaseInstruction(work));
         else
             instructions.add(new IncreaseInstruction(work, myLabel));
 
-        // 2) JNZ z, target   → מממש GOTO בלתי-מותנה
-        instructions.add(new JumpNotZeroInstruction(work, getTarget())); // אם אצלך זה getTarget(), החליפי
+        instructions.add(new JumpNotZeroInstruction(work, getTarget()));
 
         return instructions;
     }

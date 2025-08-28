@@ -8,8 +8,8 @@ import java.util.Objects;
 
 public class ProgramDisplayDTO {
     private final String programName;
-    private final List<VarRefDTO> inputsInUse;   // x לפי סדר הופעה
-    private final List<LabelDTO> labelsInUse;    // L...; EXIT כ-label עם isExit=true
+    private final List<VarRefDTO> inputsInUse;
+    private final List<LabelDTO> labelsInUse;
     private final List<InstructionDTO> instructions;
 
     public ProgramDisplayDTO(String programName,

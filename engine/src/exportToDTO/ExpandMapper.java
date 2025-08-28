@@ -26,7 +26,6 @@ public final class ExpandMapper {
         List<List<Instruction>> levels = res.getLevels();   // 0..degree
         int lastLevel = levels.size() - 1;
 
-        // Instruction -> InstructionDTO לכל דרגה (בפורמט פקודה 2)
         List<Map<Instruction, InstructionDTO>> dtoAtLevel = new ArrayList<>(levels.size());
         for (int lvl = 0; lvl <= lastLevel; lvl++) {
             ProgramImpl progL = new ProgramImpl(finalProg.getName());
@@ -41,18 +40,15 @@ public final class ExpandMapper {
             dtoAtLevel.add(map);
         }
 
-        // שמאל + מטא-דאטה מהדרגה הסופית
         Command2DTO finalC2 = DisplayMapper.toCommand2(finalProg);
         List<InstructionDTO> finalDtos = finalC2.getInstructions();
         List<Instruction>     finalIns  = levels.get(lastLevel);
 
-        // הוראה -> הדרגה שלה (כדי לדעת מאיזה lvl להביא את DTO של האבות)
         Map<Instruction, Integer> levelOf = new IdentityHashMap<>();
         for (int lvl = 0; lvl <= lastLevel; lvl++) {
             for (Instruction ins : levels.get(lvl)) levelOf.put(ins, lvl);
         }
 
-        // בניית השורות: LEFT <<< PARENT <<< GRANDPARENT ...
         List<ExpandedInstructionDTO> out = new ArrayList<>();
         for (int i = 0; i < finalIns.size() && i < finalDtos.size(); i++) {
             Instruction    leaf = finalIns.get(i);

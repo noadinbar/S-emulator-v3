@@ -15,20 +15,18 @@ import java.util.*;
 public class ProgramExecutorImpl implements ProgramExecutor{
 
     private final Program program;
+    private final Program originalProgram;
     private Map<Variable, Long> lastState = new HashMap<>();
 
-    public ProgramExecutorImpl(Program program) {
+    //public ProgramExecutorImpl(Program program) { this(program, program); }
+
+    public ProgramExecutorImpl(Program program, Program originalProgram) {
         this.program = program;
+        this.originalProgram = originalProgram;
     }
 
     public long run(Long... input) {
-        // 0) שליפת ההוראות
         List<Instruction> instructions = program.getInstructions();
-        //if (instructions == null || instructions.isEmpty()) {
-          //  return 0L; // אין הוראות – y0 נשאר 0
-        //}
-
-        // 1) מיפוי תווית שמוגדרת על הוראה → אינדקס הוראה
         Map<String, Integer> labelToIndex = new HashMap<>();
         for (int i = 0; i < instructions.size(); i++) {
             Label lab = instructions.get(i).getMyLabel();
@@ -40,7 +38,6 @@ public class ProgramExecutorImpl implements ProgramExecutor{
             }
         }
 
-        // 2) קונטקסט ריצה: קלטים x1,x2,... ואתחול y0=0
         ExecutionContext context = new ExecutionContextImpl();
         List<Long> inputsList = new ArrayList<>(input.length);
 
@@ -51,28 +48,23 @@ public class ProgramExecutorImpl implements ProgramExecutor{
         }
         context.updateVariable(Variable.RESULT, 0L);
 
-
-        // 3) לולאת pc עד EXIT או סוף רשימת ההוראות
         int pc = 0;
-
-
         while (pc >= 0 && pc < instructions.size()) {
             Instruction current = instructions.get(pc);
 
             Label next = current.execute(context);
 
             if (next == FixedLabel.EXIT) {
-                break; // סיום על EXIT
+                break;
             } else if (next == FixedLabel.EMPTY) {
-                pc++; // מעבר רגיל לשורה הבאה
+                pc++;
             } else {
                 String rep = next.getLabelRepresentation();
                 if (rep.isBlank()) {
-                    pc++; // אם אין ייצוג ברור—נמשיך רגיל
+                    pc++;
                 } else {
                     Integer jumpTo = labelToIndex.get(rep.trim());
                     if (jumpTo == null) {
-                        // תווית יעד לא נמצאה – נסיים (אפשר גם לזרוק חריגה אם זה עדיף)
                         break;
                     }
                     pc = jumpTo;
@@ -81,35 +73,31 @@ public class ProgramExecutorImpl implements ProgramExecutor{
         }
         long y = context.getVariableValue(Variable.RESULT);
 
-        if (context instanceof ExecutionContextImpl) {
-            java.util.Map<String, Long> snap = ((ExecutionContextImpl) context).snapshot();
-            java.util.Map<Variable, Long> state = new java.util.HashMap<>();
-            for (java.util.Map.Entry<String, Long> e : snap.entrySet()) {
-                String name = e.getKey();
-                long val = e.getValue();
+        Map<String, Long> snap = ((ExecutionContextImpl) context).snapshot();
+        Map<Variable, Long> state = new HashMap<>();
+        for (Map.Entry<String, Long> e : snap.entrySet()) {
+            String name = e.getKey();
+            long val = e.getValue();
 
-                if ("y".equals(name)) {
-                    state.put(Variable.RESULT, val);
-                } else if (name.startsWith("x")) {
-                    try {
-                        int idx = Integer.parseInt(name.substring(1));
-                        state.put(new VariableImpl(VariableType.INPUT, idx), val);
-                    } catch (NumberFormatException ignore) {}
-                } else if (name.startsWith("z")) {
-                    try {
-                        int idx = Integer.parseInt(name.substring(1));
-                        state.put(new VariableImpl(VariableType.WORK, idx), val);
-                    } catch (NumberFormatException ignore) {}
-                }
+            if ("y".equals(name)) {
+                state.put(Variable.RESULT, val);
+            } else if (name.startsWith("x")) {
+                try {
+                    int idx = Integer.parseInt(name.substring(1));
+                    state.put(new VariableImpl(VariableType.INPUT, idx), val);
+                } catch (NumberFormatException ignore) {}
+            } else if (name.startsWith("z")) {
+                try {
+                    int idx = Integer.parseInt(name.substring(1));
+                    state.put(new VariableImpl(VariableType.WORK, idx), val);
+                } catch (NumberFormatException ignore) {}
             }
-            this.lastState = state;
         }
-        int cycles = program.calculateCycles(); // לעתיד (פקודה 5)
+        this.lastState = state;
+        int cycles = program.calculateCycles();
 
-// 5) שמירת ההרצה להיסטוריה (פקודה 5)
-        ((ProgramImpl) program).addRunHistory(inputsList, y, cycles);
+        ((ProgramImpl) originalProgram).addRunHistory(inputsList, y, cycles);
 
-// 6) החזרת התוצאה
         return y;
     }
 

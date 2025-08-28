@@ -12,7 +12,7 @@ import java.util.*;
 
 public final class ProgramData {
     private final List<String> inputs; // x1, x2, ...
-    private final List<String> labels; // L1, L2, ..., EXIT (בסוף אם קיימת)
+    private final List<String> labels; // L1, L2, ..., EXIT
 
     private ProgramData(List<String> inputs, List<String> labels) {
         this.inputs = List.copyOf(inputs);
@@ -29,15 +29,11 @@ public final class ProgramData {
         boolean hasExit = false;
 
         for (Instruction inst : program.getInstructions()) {
-            // 1) מהמשתנה הראשי + התווית שעל ההוראה (ישירות)
             addInputIfX(inputSet, inst.getVariable());
             hasExit |= addLabelIfNotEmpty(labelSet, inst.getMyLabel());
-
-            // 2) כל שאר המשתנים/תוויות שמופיעים כארגומנטים/יעדים – דרך getters באופן כללי
             hasExit |= collectViaReflection(inst, inputSet, labelSet);
         }
 
-        // מיון
         List<String> inputs = new ArrayList<>(inputSet);
         inputs.sort(Comparator.comparingInt(ProgramData::xIndex));
         List<String> labels = new ArrayList<>(labelSet);
@@ -50,49 +46,41 @@ public final class ProgramData {
     public List<String> getInputs() { return inputs; }
     public List<String> getLabels() { return labels; }
 
-    // ----------------- עוזרים -----------------
 
     private static boolean collectViaReflection(Instruction inst, Set<String> inputSet, Set<String> labelSet) {
         boolean sawExit = false;
-        Method[] methods = inst.getClass().getMethods(); // רק public getters
+        Method[] methods = inst.getClass().getMethods();
         for (Method m : methods) {
-            if (m.getParameterCount() != 0) continue; // רוצים getters בלבד
+            if (m.getParameterCount() != 0) continue;
             Class<?> rt = m.getReturnType();
 
-            // נתמקד רק בטיפוסים שמעניינים אותנו
             if (!isVariableLikeReturn(rt) && !isLabelLikeReturn(rt)) continue;
 
             try {
                 Object value = m.invoke(inst);
                 sawExit |= addByType(value, inputSet, labelSet);
             } catch (Exception ignore) {
-                // לא מפיל ריצה – ממשיכים
             }
         }
         return sawExit;
     }
 
-    // מחליט מה לעשות לפי ערך מוחזר (יחיד/אוסף/מערך/Optional)
     private static boolean addByType(Object val, Set<String> inputSet, Set<String> labelSet) {
         if (val == null) return false;
 
-        // Variable יחיד
         if (val instanceof Variable v) {
             addInputIfX(inputSet, v);
             return false;
         }
 
-        // Label יחיד
         if (val instanceof Label lab) {
             return addLabelIfNotEmpty(labelSet, lab);
         }
 
-        // Optional<...>
         if (val instanceof Optional<?> opt) {
             return opt.map(o -> addByType(o, inputSet, labelSet)).orElse(false);
         }
 
-        // Iterable (List/Set/Collection)
         if (val instanceof Iterable<?> it) {
             boolean sawExit = false;
             for (Object o : it) {
@@ -101,7 +89,6 @@ public final class ProgramData {
             return sawExit;
         }
 
-        // מערך
         if (val.getClass().isArray()) {
             int len = Array.getLength(val);
             boolean sawExit = false;
@@ -118,7 +105,7 @@ public final class ProgramData {
         if (Variable.class.isAssignableFrom(rt)) return true;
         if (Optional.class.isAssignableFrom(rt)) return true;
         if (Iterable.class.isAssignableFrom(rt)) return true;
-        return rt.isArray(); // ייתכן Variable[]/Object[]
+        return rt.isArray();
     }
 
     private static boolean isLabelLikeReturn(Class<?> rt) {
@@ -141,8 +128,8 @@ public final class ProgramData {
         String s = lab.getLabelRepresentation();
         if (s == null || s.isBlank()) return false;
         String norm = s.trim().toUpperCase();
-        if (norm.equals("EXIT")) return true; // נסמן שקיימת EXIT
-        if (isL(norm)) set.add(norm);         // רק L<number>
+        if (norm.equals("EXIT")) return true;
+        if (isL(norm)) set.add(norm);
         return false;
     }
 

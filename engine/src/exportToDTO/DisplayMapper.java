@@ -32,10 +32,9 @@ import structure.program.Program;
 import structure.variable.Variable;
 import structure.variable.VariableType;
 
-/** Mapper ל-DTO של פקודה 2 – עם EMPTY כתווית אובייקטיבית (לא null), ו-switch-case במקום if/else. */
+
 class DisplayMapper {
 
-    // ---------- ROOT ----------
     static Command2DTO toCommand2(Program model) {
         String programName = model.getName();
         List<Instruction> instructions = model.getInstructions();
@@ -50,23 +49,20 @@ class DisplayMapper {
         return new Command2DTO(programName, inputsInUse, labelsInUse, dtoList);
     }
 
-    // ---------- Instruction ----------
     private static InstructionDTO toInstructionDTO(int number, Instruction ins) {
         InstrKindDTO kind;
         switch (ins.kind()) {
             case 'B': kind = InstrKindDTO.BASIC; break;
             default:  kind = InstrKindDTO.SYNTHETIC;
         }
-        LabelDTO lineLabel = labelDTO(ins.getMyLabel()); // תמיד LabelDTO: "EMPTY"/"EXIT"/"L#"
+        LabelDTO lineLabel = labelDTO(ins.getMyLabel());
         InstructionBodyDTO body = toBody(ins);
         int cycles = ins.cycles();
         return new InstructionDTO(number, kind, lineLabel, body, cycles);
     }
 
-    /** switch על שם ה־InstructionType כפי שמוחזר מ־ins.getName() */
     private static InstructionBodyDTO toBody(Instruction ins) {
         switch (ins.getName()) {
-            // בסיסיות
             case "INCREASE": {
                 IncreaseInstruction i = (IncreaseInstruction) ins;
                 return new InstructionBodyDTO(InstrOpDTO.INCREASE,
@@ -80,7 +76,7 @@ class DisplayMapper {
             case "NEUTRAL": {
                 NeutralInstruction n = (NeutralInstruction) ins;
                 return new InstructionBodyDTO(InstrOpDTO.NEUTRAL,
-                        toVarRef(n.getVariable()), // ← חשוב! שולחים את המשתנה
+                        toVarRef(n.getVariable()),
                         null, null, null, null, 0L, null);
             }
             // השמות
@@ -152,20 +148,16 @@ class DisplayMapper {
         }
     }
 
-    // ---------- inputsInUse (switch במקום instanceof) ----------
     private static List<VarRefDTO> computeInputsInUse(List<Instruction> all) {
         Set<Integer> seen = new HashSet<>();
         List<VarRefDTO> out = new ArrayList<>();
 
         for (Instruction ins : all) {
-            // תמיד נבדוק את המשתנה הראשי, אם הוא INPUT
             Variable v = ins.getVariable();
             if (v != null && v.getType() == VariableType.INPUT) {
                 int idx = parseVarIndex(v.getRepresentation());
                 if (seen.add(idx)) out.add(new VarRefDTO(VarOptionsDTO.x, idx));
             }
-
-            // תוספות לפי סוג ההוראה
             switch (ins.getName()) {
                 case "ASSIGNMENT": {
                     AssignmentInstruction a = (AssignmentInstruction) ins;
@@ -185,7 +177,6 @@ class DisplayMapper {
                     }
                     break;
                 }
-                // יתר הסוגים לא מוסיפים עוד קלטים
                 default: break;
             }
         }
@@ -200,19 +191,16 @@ class DisplayMapper {
         if ((c == 'x' || c == 'z') && rep.length() > 1) {
             try { return Integer.parseInt(rep.substring(1)); } catch (Exception ignore) {}
         }
-        return 0; // y או כל מקרה אחר
+        return 0;
     }
 
-    // ---------- labelsInUse (switch במקום instanceof) ----------
     private static List<LabelDTO> computeLabelsInUse(List<Instruction> all) {
         Set<Integer> regular = new HashSet<>();
         boolean hasExit = false;
 
         for (Instruction ins : all) {
-            // תווית על שורת ההוראה
             hasExit |= addLabel(regular, ins.getMyLabel());
 
-            // יעדים לפי סוג ההוראה
             switch (ins.getName()) {
                 case "JUMP_NOT_ZERO":
                     hasExit |= addLabel(regular, ((JumpNotZeroInstruction) ins).getTargetLabel());
@@ -229,7 +217,7 @@ class DisplayMapper {
                 case "GOTO_LABEL":
                     hasExit |= addLabel(regular, ((GoToInstruction) ins).getTarget());
                     break;
-                default: break; // לשאר אין יעד
+                default: break;
             }
         }
 
@@ -242,17 +230,13 @@ class DisplayMapper {
         return out;
     }
 
-    /**
-     * מוסיף תווית לרשימת ה-L# (אם רגילה), או מסמן EXIT.
-     * מחזיר true אם זו EXIT; מתעלם מ-EMPTY.
-     */
     private static boolean addLabel(Set<Integer> regular, Label lbl) {
         if (lbl == null) return false;
         String rep = lbl.getLabelRepresentation();
-        if (rep == null || rep.isEmpty()) return false; // זה מקרה נדיר, בכל זאת נחשב EMPTY
+        if (rep == null || rep.isEmpty()) return false;
         switch (rep) {
             case "EMPTY":
-                return false; // לא נכנס לרשימת השימושים
+                return false;
             case "EXIT":
                 return true;
             default:
@@ -266,7 +250,6 @@ class DisplayMapper {
         }
     }
 
-    // ---------- Var/Label DTO ----------
     private static VarRefDTO toVarRef(Variable v) {
         if (v == null) return null;
         VarOptionsDTO space = switch (v.getType()) {
@@ -278,12 +261,6 @@ class DisplayMapper {
         return new VarRefDTO(space, idx);
     }
 
-    /**
-     * תמיד מחזיר LabelDTO:
-     * - EMPTY → name="EMPTY", isExit=false
-     * - EXIT  → name="EXIT",  isExit=true
-     * - L#    → name="L#",    isExit=false
-     */
     private static LabelDTO labelDTO(Label l) {
         if (l == null) return new LabelDTO("EMPTY", false);
         String rep = l.getLabelRepresentation();

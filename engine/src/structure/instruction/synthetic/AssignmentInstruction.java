@@ -46,17 +46,15 @@ public class AssignmentInstruction extends AbstractInstruction {
     public List<Instruction> expand(ExpansionManager prog) {
         List<Instruction> instructions = new ArrayList<>();
 
-        Variable v      = getVariable();      // היעד V
-        Variable src    = getToAssign();      // המקור V'
+        Variable v      = getVariable();
+        Variable src    = getToAssign();
         Label   myLabel = getMyLabel();
 
-        // משתנה עבודה חופשי z1 ולייבלים L1,L2,L3
         Variable z1 = prog.newWorkVar();
         Label L1 = prog.newLabel();
         Label L2 = prog.newLabel();
         Label L3 = prog.newLabel();
 
-        // V <- 0   (השורה הראשונה נושאת את הלייבל המקורי אם יש)
         if (myLabel == FixedLabel.EMPTY)
             instructions.add(new ZeroVariableInstruction(v));
         else

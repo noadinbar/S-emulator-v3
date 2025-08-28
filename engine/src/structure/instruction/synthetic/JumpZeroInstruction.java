@@ -45,19 +45,16 @@ public class JumpZeroInstruction extends AbstractInstruction {
         List<Instruction> instructions = new ArrayList<>();
 
         Label myLabel = getMyLabel();
-        Label skip    = prog.newLabel();                 // Lskip
-        Label target  = getTargetLabel();                // יעד הקפיצה כשהערך == 0
+        Label skip    = prog.newLabel();
+        Label target  = getTargetLabel();
 
-        // 1) [עם לייבל אם יש] IF v != 0 GOTO Lskip
         if (myLabel == FixedLabel.EMPTY)
             instructions.add(new JumpNotZeroInstruction(getVariable(), skip));
         else
             instructions.add(new JumpNotZeroInstruction(getVariable(), skip, myLabel));
 
-        // 2) אחרת: GOTO target (יהפוך ל-JNZ עם z בדרגה הבאה)
         instructions.add(new GoToInstruction(getVariable(), target));
 
-        // 3) Lskip: NoOp (צריך שורה לשאת את לייבל היעד של ה-JNZ הראשון)
         instructions.add(new NeutralInstruction(getVariable(), skip));
 
         return instructions;

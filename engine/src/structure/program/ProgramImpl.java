@@ -19,9 +19,8 @@ public class ProgramImpl implements Program {
     private final String name;
     private final List<Instruction> instructions;
     private final List<RunHistory> runHistory = new ArrayList<>();
-    private int currentRunDegree = 0; // אם לא משתמשים בדרגות, פשוט יישאר 0
+    private int currentRunDegree = 0;
     private static final Pattern LBL_PATTERN = Pattern.compile("^L(\\d+)$");
-
 
     public ProgramImpl(String name) {
         this.name = name;
@@ -73,13 +72,12 @@ public class ProgramImpl implements Program {
                     targetLabel = ((GoToInstruction) instr).getTarget();
                     break;
                 default:
-                    // שאר ההוראות אינן מפנות לתווית
+
                     break;
             }
-            //System.out.println(targetLabel.getLabelRepresentation());
 
 
-            if (isExit(targetLabel)) continue; // ← זה המפתח
+            if (isExit(targetLabel)) continue;
 
             if (targetLabel != null &&
                     targetLabel != FixedLabel.EMPTY &&
@@ -114,7 +112,7 @@ public class ProgramImpl implements Program {
         for (Instruction ins : this.getInstructions()) {
             Label lab = ins.getMyLabel();
             if (lab == null) continue;
-            String name = lab.getLabelRepresentation(); // התאי לשיטה שלך אם שונה
+            String name = lab.getLabelRepresentation();
             if (name == null) continue;
             Matcher m = LBL_PATTERN.matcher(name);
             if (m.matches()) {
@@ -129,10 +127,8 @@ public class ProgramImpl implements Program {
         int max = 0;
 
         for (Instruction ins : this.getInstructions()) {
-            // 1) המשתנה הראשי של כל הוראה
             max = Math.max(max, workIndex(ins.getVariable()));
 
-            // 2) משתנים נוספים לפי סוג הוראה
             switch (ins.getName()) {
                 case "ASSIGNMENT": {
                     AssignmentInstruction a = (AssignmentInstruction) ins;
@@ -154,23 +150,21 @@ public class ProgramImpl implements Program {
 
     private static int workIndex(Variable v) {
         if (v == null || v.getType() != VariableType.WORK) return 0;
-        String rep = v.getRepresentation();    // צפוי "z5"
+        String rep = v.getRepresentation();
         if (rep == null || rep.length() < 2) return 0;
         try {
-            return Integer.parseInt(rep.substring(1)); // המספר אחרי 'z'
+            return Integer.parseInt(rep.substring(1));
         } catch (NumberFormatException e) {
             return 0;
         }
     }
 
-
-    //need to implement
     @Override
     public int calculateMaxDegree() {
         return instructions.stream()
                 .mapToInt(Instruction::getDegree)
                 .max()
-                .orElse(0); // או לזרוק חריגה אם הרשימה ריקה
+                .orElse(0);
     }
 
     @Override
@@ -184,9 +178,9 @@ public class ProgramImpl implements Program {
 
     private static boolean isExit(Label l) {
         if (l == null) return false;
-        if (l == FixedLabel.EXIT) return true;              // המקרה האידאלי
+        if (l == FixedLabel.EXIT) return true;
         String rep = l.getLabelRepresentation();
-        return "EXIT".equals(rep);                          // גיבוי לפי שם
+        return "EXIT".equals(rep);
     }
 
 

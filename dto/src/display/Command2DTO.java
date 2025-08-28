@@ -8,8 +8,8 @@ import java.util.Objects;
 
 public class Command2DTO {
     private final String programName;
-    private final List<VarRefDTO> inputsInUse;   // x.. לפי סדר הופעה
-    private final List<LabelDTO> labelsInUse;    // L..; ואם קיימת – EXIT בסוף
+    private final List<VarRefDTO> inputsInUse;
+    private final List<LabelDTO> labelsInUse;
     private final List<InstructionDTO> instructions;
 
     public Command2DTO(String programName,

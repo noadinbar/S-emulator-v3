@@ -51,19 +51,17 @@ public class JumpEqualVariableInstruction extends AbstractInstruction {
     public List<Instruction> expand(ExpansionManager prog) {
         List<Instruction> instructions = new ArrayList<>();
 
-        Variable v       = getVariable();          // V
-        Variable v2      = getToCompare();         // V'
-        Label   target   = getTargetLabel();       // L (יעד אם שווים)
+        Variable v       = getVariable();
+        Variable v2      = getToCompare();
+        Label   target   = getTargetLabel();
         Label   myLabel  = getMyLabel();
 
-        // משתני עבודה חופשיים z1,z2 ולייבלים L1,L2,L3
         Variable z1 = prog.newWorkVar();
         Variable z2 = prog.newWorkVar();
-        Label L1 = prog.newLabel();  // not equal sink
-        Label L2 = prog.newLabel();  // loop
-        Label L3 = prog.newLabel();  // final check before target
+        Label L1 = prog.newLabel();
+        Label L2 = prog.newLabel();
+        Label L3 = prog.newLabel();
 
-        // z1 <- V   (נושא לייבל מקור אם יש)
         if (myLabel == FixedLabel.EMPTY)
             instructions.add(new AssignmentInstruction(z1, v));
         else

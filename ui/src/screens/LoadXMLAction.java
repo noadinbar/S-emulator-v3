@@ -8,7 +8,7 @@ import java.util.Scanner;
 
 public class LoadXMLAction {
     private final LoadAPI loadAPI;
-    private DisplayAPI displayAPI; // נשמר לשימוש בפקודה 2
+    private DisplayAPI displayAPI;
 
     public LoadXMLAction(LoadAPI loadAPI) {
         this.loadAPI = loadAPI;

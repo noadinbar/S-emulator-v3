@@ -1,9 +1,9 @@
 package screens;
 
-import api.DisplayAPI;                // מה-engine
+import api.DisplayAPI;
 import display.Command2DTO;
 import display.InstructionDTO;
-import format.InstructionFormatter;  // מה-ui/format
+import format.InstructionFormatter;
 
 public class DisplayProgramAction {
     private final DisplayAPI api;
@@ -12,7 +12,6 @@ public class DisplayProgramAction {
         this.api = api;
     }
 
-    /** מריץ את פקודה 2: מציג תוכנית בפורמט הנדרש */
     public void run() {
         if (api == null) {
             System.out.println("No program loaded.");
@@ -21,7 +20,6 @@ public class DisplayProgramAction {
 
         Command2DTO dto = api.getCommand2();
 
-        // כותרות (String.format ב-UI בלבד)
         System.out.println(String.format("Program: %s", dto.getProgramName()));
         System.out.println(String.format("Inputs in use: %s",
                 InstructionFormatter.joinInputs(dto.getInputsInUse())));
@@ -29,7 +27,6 @@ public class DisplayProgramAction {
                 InstructionFormatter.joinLabels(dto.getLabelsInUse())));
         System.out.println();
 
-        // כל הוראה – שורה אחת בפורמט:
         // # <number> (B|S) [LABEL] <command> (cycles)
         for (InstructionDTO ins : dto.getInstructions()) {
             System.out.println(InstructionFormatter.formatDisplay(ins));

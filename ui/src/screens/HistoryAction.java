@@ -9,7 +9,6 @@ public class HistoryAction {
 
     public HistoryAction(DisplayAPI api) { this.api = api; }
 
-    /** מריץ את פקודה 5 – מציג היסטוריית ריצות */
     public void run() {
         HistoryDTO dto = api.getHistory();
         System.out.print(HistoryFormatter.format(dto));

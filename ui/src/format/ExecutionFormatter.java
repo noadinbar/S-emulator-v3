@@ -12,7 +12,6 @@ import java.util.stream.Collectors;
 public final class ExecutionFormatter {
     private ExecutionFormatter(){}
 
-    // --- שלב 1: הצגת דרגה מקסימלית + אישור הדרגה שנבחרה ---
     public static String formatMaxDegree(int maxDeg) {
         return String.format("Max expansion degree: %d", maxDeg);
     }
@@ -21,17 +20,14 @@ public final class ExecutionFormatter {
         return String.format("Degree chosen: %d%s", degree, suffix);
     }
 
-    // --- שלב 2: Inputs in use (ממחזר את ה-join שכבר כתבת) ---
     public static String formatInputsInUse(List<VarRefDTO> xs) {
         return String.format("Inputs in use: %s", InstructionFormatter.joinInputs(xs));
     }
 
-    // --- שלבים 5–7: פלטים סופיים ---
     public static String formatY(ExecutionDTO dto) {
         return String.format("y = %d", dto.getyValue());
     }
 
-    /** מדפיס את כל המשתנים בסיום: קודם כל ה-x לפי אינדקס, אחריהם ה-z לפי אינדקס */
     public static String formatAllVars(List<VarValueDTO> finals) {
         String xs = finals.stream()
                 .filter(v -> v.getVar().getVariable() == VarOptionsDTO.x)

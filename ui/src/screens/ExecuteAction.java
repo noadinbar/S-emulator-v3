@@ -20,8 +20,8 @@ import java.util.Locale;
 import java.util.Scanner;
 
 public class ExecuteAction {
-    private final DisplayAPI displayAPI;   // בשביל Inputs in use + הצגת התוכנית
-    private final ExecutionAPI execAPI;    // בשביל getMaxDegree + execute
+    private final DisplayAPI displayAPI;
+    private final ExecutionAPI execAPI;
 
     public ExecuteAction(DisplayAPI displayAPI) {
         this.displayAPI = displayAPI;
@@ -36,16 +36,14 @@ public class ExecuteAction {
 
         Scanner sc = new Scanner(System.in);
 
-        // 1) דרגה מקסימלית + קבלת דרגה
         int maxDeg = execAPI.getMaxDegree();
         System.out.println(ExecutionFormatter.formatMaxDegree(maxDeg));
         System.out.print("Enter desired degree (0 for no expansion): ");
         int degree = parseIntOr(sc.nextLine(), 0);
         if (degree < 0) degree = 0;
-        if (degree > maxDeg) degree = maxDeg; // לא לעבור את המקסימום הקיים כרגע
+        if (degree > maxDeg) degree = maxDeg;
         System.out.println(ExecutionFormatter.confirmDegree(degree));
 
-        // 2) Inputs in use + קבלת קלט CSV
         Command2DTO c2 = displayAPI.getCommand2();
         System.out.println(ExecutionFormatter.formatInputsInUse(c2.getInputsInUse()));
         System.out.print("Enter inputs (comma-separated), can be fewer/more: ");
@@ -68,19 +66,15 @@ public class ExecuteAction {
             System.out.println();
         }
 
-        // 4) בוחרים ExecAPI לפי דרגה: 0 → בסיסי; >0 → על תוכנית מורחבת
         ExecutionAPI runner = (degree == 0)
                 ? execAPI
                 : displayAPI.executionForDegree(degree);
 
-        // מריצים: אם כבר בחרנו ExecAPI של מורחבת, מעבירים degree=0
         int degreeForExec = 0;
         ExecutionRequestDTO req = new ExecutionRequestDTO(degreeForExec, inputs);
         ExecutionDTO out = runner.execute(req);
 
-        // 5) הדפסות סיום
         if (degree == 0) {
-            // במצב רגיל מציגים את התוכנית שבוצעה (פקודה 2)
             if (out.getExecutedProgram() != null) {
                 printExecutedProgram(out.getExecutedProgram());
             } else {
@@ -89,11 +83,9 @@ public class ExecuteAction {
         }
         // y
         System.out.println(ExecutionFormatter.formatY(out));
-        // כלל המשתנים (כולל z#)
         if (out.getFinals() != null && !out.getFinals().isEmpty()) {
             System.out.println(ExecutionFormatter.formatAllVars(out.getFinals()));
         }
-        // cycles
         System.out.println(ExecutionFormatter.formatCycles(out));
     }
 

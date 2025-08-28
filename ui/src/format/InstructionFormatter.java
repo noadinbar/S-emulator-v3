@@ -12,13 +12,12 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public final class InstructionFormatter {
-    private static final int LABEL_WIDTH = 3; // כמו במסמך: [ L3 ]
+    private static final int LABEL_WIDTH = 3;
 
     private InstructionFormatter(){}
 
-    /** שורת תצוגה אחת ל״פקודה 2״ בדיוק לפי המסמך וה-formatDisplay ב-engine */
     public static String formatDisplay(InstructionDTO ins) {
-        String num   = String.format("#%d", ins.getNumber()); // בלי רווח אחרי '#'
+        String num   = String.format("#%d", ins.getNumber());
         String kind  = String.format("(%s)", ins.getKind()==InstrKindDTO.BASIC ? "B":"S");
         String label = String.format("[ %-" + LABEL_WIDTH + "s ]", formatLabel(ins.getLabel()));
         String body  = formatBody(ins.getBody());
@@ -26,8 +25,6 @@ public final class InstructionFormatter {
         return String.format("%s %s %s %s %s", num, kind, label, body, cyc);
     }
 
-    // ---- helpers לשורות "כותרת" של פקודה 2 ----
-    /** Inputs in use: רק xi, ממוינים, ללא כפילויות; אם אין – "-" */
     public static String joinInputs(java.util.List<VarRefDTO> xs){
         if (xs == null || xs.isEmpty()) return "-";
         SortedSet<Integer> set = new TreeSet<>();
@@ -42,7 +39,6 @@ public final class InstructionFormatter {
         return sj.toString();
     }
 
-    /** Labels in use: L# ממוינים; EXIT (אם קיימת) בסוף; אם אין – "-" */
     public static String joinLabels(java.util.List<LabelDTO> ls){
         if (ls == null || ls.isEmpty()) return "-";
         boolean hasExit = false;
@@ -58,11 +54,10 @@ public final class InstructionFormatter {
         if (nums.isEmpty() && !hasExit) return "-";
         StringJoiner sj = new StringJoiner(", ");
         for (int n : nums) sj.add("L" + n);
-        if (hasExit) sj.add("EXIT"); // תמיד בסוף
+        if (hasExit) sj.add("EXIT");
         return sj.toString();
     }
 
-    // ----- הדפסות נקיות כמו ב-formatDisplay של ה-engine -----
     private static String formatBody(InstructionBodyDTO b){
         InstrOpDTO op = b.getOp();
         switch (op){
@@ -75,7 +70,6 @@ public final class InstructionFormatter {
             case NEUTRAL:
                 // "%s <- %s"
                 return String.format("%s <- %s", formatVar(b.getVariable()), formatVar(b.getVariable()));
-
             case ASSIGNMENT:
                 // "%s <- %s"
                 return String.format("%s <- %s", formatVar(b.getDest()), formatVar(b.getSource()));
@@ -92,11 +86,11 @@ public final class InstructionFormatter {
                 // "IF %s = 0 GOTO %s"
                 return String.format("IF %s = 0 GOTO %s", formatVar(b.getVariable()), formatLabel(b.getJumpTo()));
             case JUMP_EQUAL_CONSTANT:
-                // "IF %s = %s GOTO %s" (קבוע בצד ימין)
+                // "IF %s = %s GOTO %s"
                 return String.format("IF %s = %d GOTO %s",
                         formatVar(b.getVariable()), b.getConstant(), formatLabel(b.getJumpTo()));
             case JUMP_EQUAL_VARIABLE:
-                // "IF %s = %s GOTO %s" (משתנה מול משתנה)
+                // "IF %s = %s GOTO %s"
                 return String.format("IF %s = %s GOTO %s",
                         formatVar(b.getCompare()), formatVar(b.getCompareWith()), formatLabel(b.getJumpTo()));
             case GOTO_LABEL:
@@ -124,13 +118,13 @@ public final class InstructionFormatter {
         if (l.isExit()) return "EXIT";
         String n = l.getName();
         if (n == null || "EMPTY".equals(n) || n.isBlank()) return "";
-        return n; // למשל "L3"
+        return n;
     }
 
     private static String formatVar(VarRefDTO v){
         if (v == null) return "";
         VarOptionsDTO s = v.getVariable();
-        if (s == VarOptionsDTO.y) return "y";             // אצלך y בלי אינדקס
+        if (s == VarOptionsDTO.y) return "y";
         if (s == VarOptionsDTO.x) return "x" + v.getIndex();
         if (s == VarOptionsDTO.z) return "z" + v.getIndex();
         return "";

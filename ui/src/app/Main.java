@@ -11,8 +11,8 @@ import java.util.Scanner;
 
 public class Main {
     public static void main(String[] args) {
-        LoadAPI loadAPI = new LoadAPIImpl(); // מה-engine
-        DisplayAPI displayAPI = null;        // נשמר אחרי טעינה (פקודה 1)
+        LoadAPI loadAPI = new LoadAPIImpl();
+        DisplayAPI displayAPI = null;
         Scanner in = new Scanner(System.in);
 
         while (true) {
@@ -37,8 +37,8 @@ public class Main {
             switch (m) {
                 case LOAD_XML: {
                     LoadXMLAction action = new LoadXMLAction(loadAPI);
-                    action.run();                          // יבקש path, יטען דרך ה-engine
-                    displayAPI = action.getDisplayAPI();   // null אם נכשל
+                    action.run();
+                    displayAPI = action.getDisplayAPI();
                     System.out.println();
                     break;
                 }
@@ -83,7 +83,7 @@ public class Main {
 
                 case EXIT: {
                     new ExitAction().run();
-                    break; // לא יגיע לכאן בפועל בגלל System.exit(0)
+                    break;
                 }
             }
         }

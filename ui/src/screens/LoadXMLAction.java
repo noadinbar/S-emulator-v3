@@ -20,11 +20,16 @@ public class LoadXMLAction {
         String path = sc.nextLine().trim();
 
         try {
-            displayAPI = loadAPI.loadFromXml(Paths.get(path));
+            displayAPI = loadAPI.loadFromXml(Paths.get(path)); // Path
             System.out.println("Program loaded successfully.");
+        } catch (exceptions.InvalidFileExtensionException e) {
+            System.out.println("Error: " + e.getMessage());
+        } catch (exceptions.InvalidXmlFormatException e) {
+            System.out.println("Error: " + e.getMessage());
+        } catch (exceptions.UndefinedLabelException e) {
+            System.out.println("Error: " + e.getMessage());
         } catch (Exception e) {
-            displayAPI = null;
-            System.out.println("Load failed: " + e.getMessage());
+            throw new RuntimeException(e);
         }
     }
 

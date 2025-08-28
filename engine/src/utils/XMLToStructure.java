@@ -30,8 +30,6 @@ public class XMLToStructure {
     private Instruction toInstruction(SInstruction sInstruction) {
         InstructionType type = InstructionType.valueOf(sInstruction.getName().toUpperCase());
         Label label = sInstruction.getSLabel() != null ? new LabelImpl(sInstruction.getSLabel()) : null;
-
-
         Variable variable = extractVariable(sInstruction, null);
 
         switch (type) {
@@ -39,17 +37,14 @@ public class XMLToStructure {
                 return label != null
                         ? new IncreaseInstruction(variable, label)
                         : new IncreaseInstruction(variable);
-
             case DECREASE:
                 return label != null
                         ? new DecreaseInstruction(variable, label)
                         : new DecreaseInstruction(variable);
-
             case NEUTRAL:
                 return label != null
                         ? new NeutralInstruction(variable, label)
                         : new NeutralInstruction(variable);
-
             case JUMP_NOT_ZERO:
                 String targetLabelValue = getArgumentValue(sInstruction, "JNZLabel");
                 Label targetLabel = targetLabelValue != null ? new LabelImpl(targetLabelValue) : null;
@@ -101,8 +96,7 @@ public class XMLToStructure {
                 return (label != null)
                         ? new JumpEqualVariableInstruction(variable, jevLabel, toCompare, label)
                         : new JumpEqualVariableInstruction(variable, jevLabel, toCompare);
-            default:
-                throw new IllegalArgumentException("Unknown instruction type: " + type);
+                default: throw new IllegalArgumentException("Unknown instruction type: " + type); //never going to happen
     }
 }
 
@@ -146,16 +140,8 @@ private String getArgumentValue(SInstruction sInstruction, String argName) {
         int index = 0;
         if (variableText.length() > 1) {
             String digits = variableText.substring(1);
-            try {
                 index = Integer.parseInt(digits);
-            } catch (NumberFormatException e) {
-                throw new IllegalArgumentException(
-                        "Invalid variable index in '" + variableText + "' (expected digits after '" + prefixChar + "')",
-                        e
-                );
-            }
         }
-
         return new VariableImpl(type, index);
     }
 

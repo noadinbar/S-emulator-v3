@@ -9,6 +9,7 @@ import structure.variable.Variable;
 import structure.variable.VariableType;
 import utils.ParseResult;
 import utils.RunHistory;
+import exceptions.UndefinedLabelException;
 
 import java.util.*;
 import java.util.regex.Matcher;
@@ -83,7 +84,7 @@ public class ProgramImpl implements Program {
                     targetLabel != FixedLabel.EMPTY &&
                     !definedLabels.contains(targetLabel.getLabelRepresentation())) {
 
-                return ParseResult.error(
+                throw new UndefinedLabelException(
                         "Label '" + targetLabel.getLabelRepresentation() + "' is referenced but not defined."
                 );
             }

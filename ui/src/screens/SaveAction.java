@@ -1,6 +1,8 @@
 package screens;
 
 import api.DisplayAPI;
+import exceptions.ProgramNotLoadedException;
+
 import java.nio.file.Path;
 import java.util.Scanner;
 
@@ -10,6 +12,12 @@ public class SaveAction {
     public SaveAction(DisplayAPI api) { this.api = api; }
 
     public void run() {
+        try {
+            api.getHistory(); // או api.getCommand2(); שתיהן זורקות אם לא נטען XML
+        } catch (ProgramNotLoadedException e) {
+            System.out.println(e.getMessage());
+            return;
+        }
         Scanner sc = new Scanner(System.in);
         System.out.print("Enter FULL path including file name (without extension): ");
         String raw = sc.nextLine().trim();
@@ -24,5 +32,6 @@ public class SaveAction {
         } catch (RuntimeException e) {
             System.out.println("Save failed: " + e.getMessage());
         }
+
     }
 }

@@ -55,7 +55,6 @@ public class JumpEqualConstantInstruction extends AbstractInstruction {
         int k          = getConstant();
         Label target   = getTargetLabel();
         Label myLabel  = getMyLabel();
-
         Variable z     = prog.newWorkVar();
         Label notEqual = prog.newLabel();
 
@@ -65,15 +64,12 @@ public class JumpEqualConstantInstruction extends AbstractInstruction {
             instructions.add(new AssignmentInstruction(z, v, myLabel));
 
         for (int i = 0; i < k; i++) {
-            Label Li = prog.newLabel();
-            instructions.add(new JumpNotZeroInstruction(z, Li));
-            instructions.add(new GoToInstruction(z, notEqual));
-            instructions.add(new DecreaseInstruction(z, Li));
+            instructions.add(new JumpZeroInstruction(z, notEqual));
+            instructions.add(new DecreaseInstruction(z));
         }
 
         instructions.add(new JumpNotZeroInstruction(z, notEqual));
         instructions.add(new GoToInstruction(z, target));
-
         instructions.add(new NeutralInstruction(v, notEqual));
 
         return instructions;

@@ -10,6 +10,7 @@ import display.InstructionDTO;
 
 import exceptions.InvalidInputException;
 import exceptions.ProgramNotLoadedException;
+import exceptions.InvalidDegreeException; // ← חדש
 import execution.ExecutionDTO;
 import execution.ExecutionRequestDTO;
 
@@ -36,12 +37,33 @@ public class ExecuteAction {
 
             int maxDeg = baseExec.getMaxDegree();
             System.out.println(ExecutionFormatter.formatMaxDegree(maxDeg));
-            System.out.print("Enter desired degree (0 for no expansion): ");
-            int degree = parseIntOr(sc.nextLine(), 0);
-            if (degree < 0) degree = 0;
-            if (degree > maxDeg) degree = maxDeg;
-            System.out.println(ExecutionFormatter.confirmDegree(degree));
 
+            Integer degree = null;
+            Command3DTO expandedDto = null;
+
+            // ←← לולאת בחירת דרגה: מאמתים מיד דרך ה-engine; על שגיאה — חוזרים לשאול
+            while (true) {
+                System.out.print("Enter desired degree (0 for no expansion): ");
+                int d = parseIntOr(sc.nextLine(), 0);
+                System.out.println(ExecutionFormatter.confirmDegree(d));
+                try {
+                    // אימות במנוע: יזרוק InvalidDegreeException אם d שלילי / גדול מה-max
+                    // נקרא תמיד; אם d==0 לא נדפיס הרחבה בהמשך, אבל זה מאמת מוקדם.
+                    Command3DTO probe = displayAPI.expand(d);
+                    if (d > 0) {
+                        expandedDto = probe; // נשמור להדפסה בהמשך
+                    } else {
+                        expandedDto = null;  // אין הרחבה להדפיס
+                    }
+                    degree = d;
+                    break; // דרגה תקינה → יציאה מהלולאה
+                } catch (InvalidDegreeException e) {
+                    System.out.println("Error: " + e.getMessage());
+                    // חוזרים לראש הלולאה ושואלים שוב דרגה
+                }
+            }
+
+            // מכאן ואילך — רק אחרי שדרגה עברה אימות
             Command2DTO c2 = displayAPI.getCommand2();
             System.out.println(ExecutionFormatter.formatInputsInUse(c2.getInputsInUse()));
 
@@ -58,23 +80,22 @@ public class ExecuteAction {
                 }
             }
 
-            if (degree > 0) {
-                Command3DTO dto = displayAPI.expand(degree);
-
+            // הדפסת תוכנית מורחבת אם בחרו דרגה > 0 (השתמשנו ב-expandedDto שכבר אושר)
+            if (degree > 0 && expandedDto != null) {
                 System.out.println();
-                System.out.println(String.format("Program: %s", dto.getProgramName()));
+                System.out.println(String.format("Program: %s", expandedDto.getProgramName()));
                 System.out.println(String.format("Inputs in use: %s",
-                        InstructionFormatter.joinInputs(dto.getInputsInUse())));
+                        InstructionFormatter.joinInputs(expandedDto.getInputsInUse())));
                 System.out.println(String.format("Labels in use: %s",
-                        InstructionFormatter.joinLabels(dto.getLabelsInUse())));
+                        InstructionFormatter.joinLabels(expandedDto.getLabelsInUse())));
                 System.out.println();
-
-                for (ExpandedInstructionDTO row : dto.getInstructions()) {
+                for (ExpandedInstructionDTO row : expandedDto.getInstructions()) {
                     System.out.println(String.format("%s", InstructionFormatter.formatExpanded(row)));
                 }
                 System.out.println();
             }
 
+            // ריצה בפועל (אפשר להישאר עם אותו דפוס)
             ExecutionAPI runner = (degree == 0)
                     ? baseExec
                     : displayAPI.executionForDegree(degree);
@@ -99,8 +120,11 @@ public class ExecuteAction {
 
         } catch (ProgramNotLoadedException e) {
             System.out.println("Error: " + e.getMessage());
-        }
+        } catch (InvalidInputException e) {
+            System.out.println("Error: " + e.getMessage());
+        } // לא חייבים לתפוס כאן InvalidDegreeException כי היא נתפסת בלולאה
     }
+
 
     private static int parseIntOr(String s, int def) {
         try { return Integer.parseInt(s.trim()); } catch (Exception e) { return def; }

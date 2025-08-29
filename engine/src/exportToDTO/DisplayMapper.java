@@ -35,9 +35,9 @@ import structure.variable.VariableType;
 
 class DisplayMapper {
 
-    static Command2DTO toCommand2(Program model) {
-        String programName = model.getName();
-        List<Instruction> instructions = model.getInstructions();
+    static Command2DTO toCommand2(Program program) {
+        String programName = program.getName();
+        List<Instruction> instructions = program.getInstructions();
 
         List<VarRefDTO> inputsInUse = computeInputsInUse(instructions);
         List<LabelDTO> labelsInUse  = computeLabelsInUse(instructions);
@@ -79,7 +79,6 @@ class DisplayMapper {
                         toVarRef(n.getVariable()),
                         null, null, null, null, 0L, null);
             }
-            // השמות
             case "ASSIGNMENT": {
                 AssignmentInstruction a = (AssignmentInstruction) ins;
                 return new InstructionBodyDTO(InstrOpDTO.ASSIGNMENT,
@@ -104,8 +103,6 @@ class DisplayMapper {
                         toVarRef(z.getVariable()),     // dest <- 0
                         null, null, null, 0L, null);
             }
-
-            // קפיצות
             case "JUMP_NOT_ZERO": {
                 JumpNotZeroInstruction j = (JumpNotZeroInstruction) ins;
                 return new InstructionBodyDTO(InstrOpDTO.JUMP_NOT_ZERO,
@@ -153,9 +150,9 @@ class DisplayMapper {
         List<VarRefDTO> out = new ArrayList<>();
 
         for (Instruction ins : all) {
-            Variable v = ins.getVariable();
-            if (v != null && v.getType() == VariableType.INPUT) {
-                int idx = parseVarIndex(v.getRepresentation());
+            Variable var = ins.getVariable();
+            if (var != null && var.getType() == VariableType.INPUT) {
+                int idx = getValueFromPrefix(var.getRepresentation());
                 if (seen.add(idx)) out.add(new VarRefDTO(VarOptionsDTO.x, idx));
             }
             switch (ins.getName()) {
@@ -163,7 +160,7 @@ class DisplayMapper {
                     AssignmentInstruction a = (AssignmentInstruction) ins;
                     Variable s = a.getToAssign();
                     if (s != null && s.getType() == VariableType.INPUT) {
-                        int idx = parseVarIndex(s.getRepresentation());
+                        int idx = getValueFromPrefix(s.getRepresentation());
                         if (seen.add(idx)) out.add(new VarRefDTO(VarOptionsDTO.x, idx));
                     }
                     break;
@@ -172,7 +169,7 @@ class DisplayMapper {
                     JumpEqualVariableInstruction j = (JumpEqualVariableInstruction) ins;
                     Variable r = j.getToCompare();
                     if (r != null && r.getType() == VariableType.INPUT) {
-                        int idx = parseVarIndex(r.getRepresentation());
+                        int idx = getValueFromPrefix(r.getRepresentation());
                         if (seen.add(idx)) out.add(new VarRefDTO(VarOptionsDTO.x, idx));
                     }
                     break;
@@ -180,12 +177,11 @@ class DisplayMapper {
                 default: break;
             }
         }
-
         out.sort(Comparator.comparingInt(VarRefDTO::getIndex));
         return out;
     }
 
-    private static int parseVarIndex(String rep) {
+    private static int getValueFromPrefix(String rep) {
         if (rep == null || rep.isEmpty()) return 0;
         char c = rep.charAt(0);
         if ((c == 'x' || c == 'z') && rep.length() > 1) {
@@ -230,9 +226,9 @@ class DisplayMapper {
         return out;
     }
 
-    private static boolean addLabel(Set<Integer> regular, Label lbl) {
-        if (lbl == null) return false;
-        String rep = lbl.getLabelRepresentation();
+    private static boolean addLabel(Set<Integer> regular, Label label) {
+        if (label == null) return false;
+        String rep = label.getLabelRepresentation();
         if (rep == null || rep.isEmpty()) return false;
         switch (rep) {
             case "EMPTY":
@@ -250,20 +246,20 @@ class DisplayMapper {
         }
     }
 
-    private static VarRefDTO toVarRef(Variable v) {
-        if (v == null) return null;
-        VarOptionsDTO space = switch (v.getType()) {
+    private static VarRefDTO toVarRef(Variable var) {
+        if (var == null) return null;
+        VarOptionsDTO type = switch (var.getType()) {
             case INPUT -> VarOptionsDTO.x;
             case RESULT -> VarOptionsDTO.y;
             case WORK  -> VarOptionsDTO.z;
         };
-        int idx = parseVarIndex(v.getRepresentation());
-        return new VarRefDTO(space, idx);
+        int idx = getValueFromPrefix(var.getRepresentation());
+        return new VarRefDTO(type, idx);
     }
 
-    private static LabelDTO labelDTO(Label l) {
-        if (l == null) return new LabelDTO("EMPTY", false);
-        String rep = l.getLabelRepresentation();
+    private static LabelDTO labelDTO(Label label) {
+        if (label == null) return new LabelDTO("EMPTY", false);
+        String rep = label.getLabelRepresentation();
         if (rep == null || rep.isEmpty()) return new LabelDTO("EMPTY", false);
         switch (rep) {
             case "EMPTY": return new LabelDTO("EMPTY", false);

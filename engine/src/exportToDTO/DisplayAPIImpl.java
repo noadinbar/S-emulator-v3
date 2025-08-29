@@ -5,6 +5,7 @@ import api.ExecutionAPI;
 import display.Command2DTO;
 
 import display.Command3DTO;
+import exceptions.InvalidDegreeException;
 import execution.HistoryDTO;
 import structure.expand.ExpandResult;
 import structure.expand.ProgramExpander;
@@ -22,7 +23,13 @@ public class DisplayAPIImpl implements DisplayAPI {
 
     @Override
     public Command3DTO expand(int degree) {
-        return ExpandMapper.toCommand3(program, Math.max(0, degree));
+        int max = ((ProgramImpl) program).calculateMaxDegree();
+        if (degree < 0 || degree > max) {
+            throw new InvalidDegreeException(
+                    "Degree must be between 0 and " + max
+            );
+        }
+        return ExpandMapper.toCommand3(program,degree);
     }
 
     @Override
@@ -37,9 +44,14 @@ public class DisplayAPIImpl implements DisplayAPI {
     @Override
     public ExecutionAPI executionForDegree(int degree) {
         if (degree == 0) {
-            return execution(); // בסיסי
+            return execution();
         }
-        // שורה חדשה: שמירת הדרגה על התוכנית המקורית לצורך היסטוריה
+        int max = ((ProgramImpl) program).calculateMaxDegree();
+        if (degree < 0 || degree > max) {
+            throw new InvalidDegreeException(
+                    "Degree must be between 0 and " + max
+            );
+        }
         ((ProgramImpl) program).setCurrentRunDegree(degree);
 
         ExpandResult res = ProgramExpander.expandTo(program, degree);

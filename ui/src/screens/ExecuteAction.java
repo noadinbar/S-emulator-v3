@@ -47,17 +47,19 @@ public class ExecuteAction {
 
         Command2DTO c2 = displayAPI.getCommand2();
         System.out.println(ExecutionFormatter.formatInputsInUse(c2.getInputsInUse()));
+        List<Long> inputs=new ArrayList<>();
 
-        List<Long> inputs;
-        while (true) {
-            System.out.print("Enter inputs (comma-separated), can be fewer/more: ");
-            String line = sc.nextLine();
-            inputs = parseCsvLongs(line);
-            try {
-                validateNonNegative(inputs);
-                break;
-            } catch (InvalidInputException ex) {
-                System.out.println(ex.getMessage());
+        if(!c2.getInputsInUse().isEmpty()) {
+            while (true) {
+                System.out.print("Enter inputs (comma-separated), can be fewer/more: ");
+                String line = sc.nextLine();
+                inputs = parseCsvLongs(line);
+                try {
+                    validateNonNegative(inputs);
+                    break;
+                } catch (InvalidInputException ex) {
+                    System.out.println(ex.getMessage());
+                }
             }
         }
 

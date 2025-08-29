@@ -44,13 +44,13 @@ public class ExpandAction {
             }
 
             System.out.println();
-            System.out.println(String.format("Program: %s", dto.getProgramName()));
-            System.out.println(String.format("Inputs in use: %s", InstructionFormatter.joinInputs(dto.getInputsInUse())));
-            System.out.println(String.format("Labels in use: %s", InstructionFormatter.joinLabels(dto.getLabelsInUse())));
+            System.out.printf("Program: %s%n", dto.getProgramName());
+            System.out.printf("Inputs in use: %s%n", InstructionFormatter.joinInputs(dto.getInputsInUse()));
+            System.out.printf("Labels in use: %s%n", InstructionFormatter.joinLabels(dto.getLabelsInUse()));
             System.out.println();
 
             for (ExpandedInstructionDTO row : dto.getInstructions()) {
-                System.out.println(String.format("%s", InstructionFormatter.formatExpanded(row)));
+                System.out.printf("%s%n", InstructionFormatter.formatExpanded(row));
             }
             System.out.println();
 

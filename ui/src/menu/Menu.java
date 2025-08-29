@@ -6,7 +6,9 @@ public enum Menu {
     EXPAND(3, "Expand"),
     RUN(4, "Execute"),
     HISTORY(5, "History"),
-    EXIT(6, "Exit");
+    SAVE(6, "Save"),
+    LOAD(7, "Load"),
+    EXIT(8, "Exit");
 
     public final int num;
     public final String title;

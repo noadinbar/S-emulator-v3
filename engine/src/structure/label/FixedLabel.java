@@ -1,6 +1,8 @@
 package structure.label;
 
-public enum FixedLabel implements Label{
+import java.io.Serializable;
+
+public enum FixedLabel implements Label, Serializable {
 
     EXIT {
         @Override

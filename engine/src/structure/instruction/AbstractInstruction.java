@@ -5,10 +5,11 @@ import structure.label.FixedLabel;
 import structure.label.Label;
 import structure.variable.Variable;
 
+import java.io.Serializable;
 import java.util.Collections;
 import java.util.List;
 
-public abstract class AbstractInstruction implements Instruction {
+public abstract class AbstractInstruction implements Instruction, Serializable {
 
     private final InstructionKind kind;
     private final InstructionType instType;
@@ -16,6 +17,7 @@ public abstract class AbstractInstruction implements Instruction {
     private final Variable variable;
     private final int degree;
     private List<Instruction> familyTree = Collections.emptyList();
+    private static final long serialVersionUID = 1L;
 
     public AbstractInstruction(InstructionKind instKind ,InstructionType type, Variable variable, int degree) {
         this(instKind, type, variable, FixedLabel.EMPTY, degree);

@@ -1,6 +1,6 @@
 package structure.variable;
 
-public interface Variable {
+public interface Variable  {
     VariableType getType();
     int getNumber();
     String getRepresentation();

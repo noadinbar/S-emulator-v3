@@ -7,6 +7,8 @@ import display.Command3DTO;
 import execution.HistoryDTO;
 import exceptions.ProgramNotLoadedException;
 
+import java.nio.file.Path;
+
 public class UninitializedDisplayAPI implements DisplayAPI {
 
     private static ProgramNotLoadedException notLoaded() {
@@ -37,6 +39,16 @@ public class UninitializedDisplayAPI implements DisplayAPI {
 
     @Override
     public HistoryDTO getHistory() {
+        throw notLoaded();
+    }
+
+    @Override
+    public void saveState(Path path) {
+        throw notLoaded();
+    }
+
+    @Override
+    public DisplayAPI loadState(Path path) {
         throw notLoaded();
     }
 }

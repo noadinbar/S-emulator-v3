@@ -11,17 +11,19 @@ import utils.ParseResult;
 import utils.RunHistory;
 import exceptions.UndefinedLabelException;
 
+import java.io.Serializable;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-public class ProgramImpl implements Program {
+public class ProgramImpl implements Program, Serializable {
 
     private final String name;
     private final List<Instruction> instructions;
     private final List<RunHistory> runHistory = new ArrayList<>();
     private int currentRunDegree = 0;
     private static final Pattern LBL_PATTERN = Pattern.compile("^L(\\d+)$");
+    private static final long serialVersionUID = 1L;
 
     public ProgramImpl(String name) {
         this.name = name;

@@ -1,9 +1,12 @@
 package structure.variable;
 
-public class VariableImpl implements Variable {
+import java.io.Serializable;
+
+public class VariableImpl implements Variable, Serializable {
 
     private final VariableType type;
     private final int number;
+    private static final long serialVersionUID = 1L;
 
     public VariableImpl(VariableType type, int number) {
         this.type = type;

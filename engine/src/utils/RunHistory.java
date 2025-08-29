@@ -1,13 +1,15 @@
 package utils;
 
+import java.io.Serializable;
 import java.util.List;
 
-public final class RunHistory {
+public final class RunHistory implements Serializable {
     private final int runNumber;
     private final int degree;
     private final List<Long> inputs;
     private final long yValue;
     private final int cycles;
+    private static final long serialVersionUID = 1L;
 
     public RunHistory(int runNumber, int degree, List<Long> inputs, long yValue, int cycles) {
         this.runNumber = runNumber;

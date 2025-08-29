@@ -68,6 +68,20 @@ public class Main {
                     break;
                 }
 
+                case SAVE: {
+                    new SaveAction(displayAPI).run();
+                    System.out.println();
+                    break;
+                }
+
+                case LOAD: {
+                    LoadAction action = new LoadAction(displayAPI);
+                    action.run();
+                    displayAPI = action.getDisplayAPI();
+                    System.out.println();
+                    break;
+                }
+
                 case EXIT: {
                     new ExitAction().run();
                     break;

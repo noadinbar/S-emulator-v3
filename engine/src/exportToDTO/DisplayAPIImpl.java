@@ -6,15 +6,22 @@ import display.Command2DTO;
 
 import display.Command3DTO;
 import exceptions.InvalidDegreeException;
+import exceptions.StatePersistenceException;
 import execution.HistoryDTO;
 import structure.expand.ExpandResult;
 import structure.expand.ProgramExpander;
 import structure.program.Program;
 import structure.program.ProgramImpl;
 
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+
 
 public class DisplayAPIImpl implements DisplayAPI {
-    private final Program program;
+    private Program program;
+
 
     public DisplayAPIImpl(Program program) { this.program = program; }
 
@@ -57,5 +64,31 @@ public class DisplayAPIImpl implements DisplayAPI {
         ExpandResult res = ProgramExpander.expandTo(program, degree);
         Program expanded = res.getExpandedProgram();
         return new ExecutionAPIImpl(((ProgramImpl) expanded), ((ProgramImpl) program));
+    }
+
+    @Override
+    public void saveState(Path path) {
+        try {
+            if (!path.toString().toLowerCase().endsWith(".ser")) {
+                path = Path.of(path.toString() + ".ser");
+            }
+            ProgramImpl impl = (ProgramImpl) program;
+            try (ObjectOutputStream out = new ObjectOutputStream(Files.newOutputStream(path))) {
+                out.writeObject(impl);
+            }
+        } catch (Exception e) {
+            throw new StatePersistenceException("Failed to save state to: " + path, e);
+        }
+    }
+
+    @Override
+    public DisplayAPI loadState(Path path) {
+        try (ObjectInputStream in = new ObjectInputStream(Files.newInputStream(path))) {
+            ProgramImpl loaded = (ProgramImpl) in.readObject();
+            this.program = loaded;
+            return this;
+        } catch (Exception e) {
+            throw new StatePersistenceException("Failed to load state from: " + path, e);
+        }
     }
 }

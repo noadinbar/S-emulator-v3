@@ -32,7 +32,7 @@ public class ExpandAction {
             Command3DTO dto;
 
             while (true) {
-                System.out.print("Enter degree to expand (0 allowed): ");
+                System.out.print("Enter degree to expand (0 for no expansion): ");
                 int degree = parseIntOr(sc.nextLine());
                 System.out.println(ExecutionFormatter.confirmDegree(degree));
                 try {

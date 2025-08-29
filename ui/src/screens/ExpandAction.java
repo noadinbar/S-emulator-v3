@@ -33,7 +33,7 @@ public class ExpandAction {
 
             while (true) {
                 System.out.print("Enter degree to expand (0 allowed): ");
-                int degree = parseIntOr(sc.nextLine(), 0);
+                int degree = parseIntOr(sc.nextLine());
                 System.out.println(ExecutionFormatter.confirmDegree(degree));
                 try {
                     dto = api.expand(degree);
@@ -59,7 +59,7 @@ public class ExpandAction {
         }
     }
 
-    private static int parseIntOr(String s, int def) {
-        try { return Integer.parseInt(s.trim()); } catch (Exception e) { return def; }
+    private static int parseIntOr(String s) {
+        try { return Integer.parseInt(s.trim()); } catch (Exception e) { return 0; }
     }
 }

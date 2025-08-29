@@ -9,6 +9,7 @@ import display.ExpandedInstructionDTO;
 import display.InstructionDTO;
 
 import exceptions.InvalidInputException;
+import exceptions.ProgramNotLoadedException;
 import execution.ExecutionDTO;
 import execution.ExecutionRequestDTO;
 
@@ -21,35 +22,30 @@ import java.util.Locale;
 import java.util.Scanner;
 
 public class ExecuteAction {
+
     private final DisplayAPI displayAPI;
-    private final ExecutionAPI execAPI;
 
     public ExecuteAction(DisplayAPI displayAPI) {
         this.displayAPI = displayAPI;
-        this.execAPI = displayAPI != null ? displayAPI.execution() : null;
     }
 
     public void run() {
-        if (displayAPI == null || execAPI == null) {
-            System.out.println("No program loaded. Choose 'Load XML' first.");
-            return;
-        }
+        try {
+            Scanner sc = new Scanner(System.in);
+            ExecutionAPI baseExec = displayAPI.execution();
 
-        Scanner sc = new Scanner(System.in);
+            int maxDeg = baseExec.getMaxDegree();
+            System.out.println(ExecutionFormatter.formatMaxDegree(maxDeg));
+            System.out.print("Enter desired degree (0 for no expansion): ");
+            int degree = parseIntOr(sc.nextLine(), 0);
+            if (degree < 0) degree = 0;
+            if (degree > maxDeg) degree = maxDeg;
+            System.out.println(ExecutionFormatter.confirmDegree(degree));
 
-        int maxDeg = execAPI.getMaxDegree();
-        System.out.println(ExecutionFormatter.formatMaxDegree(maxDeg));
-        System.out.print("Enter desired degree (0 for no expansion): ");
-        int degree = parseIntOr(sc.nextLine(), 0);
-        if (degree < 0) degree = 0;
-        if (degree > maxDeg) degree = maxDeg;
-        System.out.println(ExecutionFormatter.confirmDegree(degree));
+            Command2DTO c2 = displayAPI.getCommand2();
+            System.out.println(ExecutionFormatter.formatInputsInUse(c2.getInputsInUse()));
 
-        Command2DTO c2 = displayAPI.getCommand2();
-        System.out.println(ExecutionFormatter.formatInputsInUse(c2.getInputsInUse()));
-        List<Long> inputs=new ArrayList<>();
-
-        if(!c2.getInputsInUse().isEmpty()) {
+            List<Long> inputs;
             while (true) {
                 System.out.print("Enter inputs (comma-separated), can be fewer/more: ");
                 String line = sc.nextLine();
@@ -61,46 +57,49 @@ public class ExecuteAction {
                     System.out.println(ex.getMessage());
                 }
             }
-        }
 
-        if (degree > 0) {
-            Command3DTO dto = displayAPI.expand(degree);
+            if (degree > 0) {
+                Command3DTO dto = displayAPI.expand(degree);
 
-            System.out.println();
-            System.out.println(String.format("Program: %s", dto.getProgramName()));
-            System.out.println(String.format("Inputs in use: %s",
-                    InstructionFormatter.joinInputs(dto.getInputsInUse())));
-            System.out.println(String.format("Labels in use: %s",
-                    InstructionFormatter.joinLabels(dto.getLabelsInUse())));
-            System.out.println();
+                System.out.println();
+                System.out.println(String.format("Program: %s", dto.getProgramName()));
+                System.out.println(String.format("Inputs in use: %s",
+                        InstructionFormatter.joinInputs(dto.getInputsInUse())));
+                System.out.println(String.format("Labels in use: %s",
+                        InstructionFormatter.joinLabels(dto.getLabelsInUse())));
+                System.out.println();
 
-            for (ExpandedInstructionDTO row : dto.getInstructions()) {
-                System.out.println(String.format("%s", InstructionFormatter.formatExpanded(row)));
+                for (ExpandedInstructionDTO row : dto.getInstructions()) {
+                    System.out.println(String.format("%s", InstructionFormatter.formatExpanded(row)));
+                }
+                System.out.println();
             }
-            System.out.println();
-        }
 
-        ExecutionAPI runner = (degree == 0)
-                ? execAPI
-                : displayAPI.executionForDegree(degree);
+            ExecutionAPI runner = (degree == 0)
+                    ? baseExec
+                    : displayAPI.executionForDegree(degree);
 
-        int degreeForExec = 0;
-        ExecutionRequestDTO req = new ExecutionRequestDTO(degreeForExec, inputs);
-        ExecutionDTO out = runner.execute(req);
+            int degreeForExec = 0;
+            ExecutionRequestDTO req = new ExecutionRequestDTO(degreeForExec, inputs);
+            ExecutionDTO out = runner.execute(req);
 
-        if (degree == 0) {
-            if (out.getExecutedProgram() != null) {
-                printExecutedProgram(out.getExecutedProgram());
-            } else {
-                printExecutedProgram(c2);
+            if (degree == 0) {
+                if (out.getExecutedProgram() != null) {
+                    printExecutedProgram(out.getExecutedProgram());
+                } else {
+                    printExecutedProgram(c2);
+                }
             }
+
+            System.out.println(ExecutionFormatter.formatY(out));
+            if (out.getFinals() != null && !out.getFinals().isEmpty()) {
+                System.out.println(ExecutionFormatter.formatAllVars(out.getFinals()));
+            }
+            System.out.println(ExecutionFormatter.formatCycles(out));
+
+        } catch (ProgramNotLoadedException e) {
+            System.out.println("Error: " + e.getMessage());
         }
-        // y
-        System.out.println(ExecutionFormatter.formatY(out));
-        if (out.getFinals() != null && !out.getFinals().isEmpty()) {
-            System.out.println(ExecutionFormatter.formatAllVars(out.getFinals()));
-        }
-        System.out.println(ExecutionFormatter.formatCycles(out));
     }
 
     private static int parseIntOr(String s, int def) {
@@ -147,5 +146,4 @@ public class ExecuteAction {
             }
         }
     }
-
 }

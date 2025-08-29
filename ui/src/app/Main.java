@@ -4,6 +4,7 @@ import api.DisplayAPI;
 import api.LoadAPI;
 import exportToDTO.LoadAPIImpl;
 
+import exportToDTO.UninitializedDisplayAPI;
 import menu.Menu;
 import screens.*;
 
@@ -12,7 +13,7 @@ import java.util.Scanner;
 public class Main {
     public static void main(String[] args) {
         LoadAPI loadAPI = new LoadAPIImpl();
-        DisplayAPI displayAPI = null;
+        DisplayAPI displayAPI = new UninitializedDisplayAPI();
         Scanner in = new Scanner(System.in);
 
         while (true) {
@@ -28,62 +29,48 @@ public class Main {
                 continue;
             }
 
-            Menu m = Menu.byChoice(choice);
-            if (m == null) {
+            Menu selectedOption = Menu.byChoice(choice);
+            if (selectedOption == null) {
                 System.out.println("Invalid choice. Enter a number 1-6.\n");
                 continue;
             }
 
-            switch (m) {
+            switch (selectedOption) {
                 case LOAD_XML: {
                     LoadXMLAction action = new LoadXMLAction(loadAPI);
-                    action.run();                          // יבקש path, יטען דרך ה-engine
-                    displayAPI = action.getDisplayAPI();   // null אם נכשל
+                    action.run();
+                    displayAPI = action.getDisplayAPI();
                     System.out.println();
                     break;
                 }
 
                 case DISPLAY_PROGRAM: {
-                    if (displayAPI == null) {
-                        System.out.println("No program loaded. Choose 'Load XML' first.\n");
-                        break;
-                    }
                     new DisplayProgramAction(displayAPI).run();
                     System.out.println();
                     break;
                 }
 
                 case EXPAND: {
-                    if (displayAPI == null) {
-                        System.out.println("No program loaded. Choose 'Load XML' first.\n");
-                        break;
-                    }
                     new ExpandAction(displayAPI).run();
+                    System.out.println();
                     break;
                 }
 
-                case RUN: { // Execute
-                    if (displayAPI == null) {
-                        System.out.println("No program loaded. Choose 'Load XML' first.\n");
-                        break;
-                    }
+                case RUN: {
                     new ExecuteAction(displayAPI).run();
                     System.out.println();
                     break;
                 }
 
                 case HISTORY: {
-                    if (displayAPI == null) {
-                        System.out.println("No program loaded. Choose 'Load XML' first.");
-                        break;
-                    }
                     new screens.HistoryAction(displayAPI).run();
+                    System.out.println();
                     break;
                 }
 
                 case EXIT: {
                     new ExitAction().run();
-                    break; // לא יגיע לכאן בפועל בגלל System.exit(0)
+                    break;
                 }
             }
         }

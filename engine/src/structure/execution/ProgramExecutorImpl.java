@@ -17,8 +17,8 @@ public class ProgramExecutorImpl implements ProgramExecutor{
     private final Program program;
     private final Program originalProgram;
     private Map<Variable, Long> lastState = new HashMap<>();
+    private int cycles = 0;
 
-    //public ProgramExecutorImpl(Program program) { this(program, program); }
 
     public ProgramExecutorImpl(Program program, Program originalProgram) {
         this.program = program;
@@ -53,6 +53,8 @@ public class ProgramExecutorImpl implements ProgramExecutor{
             Instruction current = instructions.get(pc);
 
             Label next = current.execute(context);
+
+            cycles += current.cycles();
 
             if (next == FixedLabel.EXIT) {
                 break;
@@ -94,13 +96,15 @@ public class ProgramExecutorImpl implements ProgramExecutor{
             }
         }
         this.lastState = state;
-        int cycles = program.calculateCycles();
 
         ((ProgramImpl) originalProgram).addRunHistory(inputsList, y, cycles);
 
         return y;
     }
 
+    public int getCycles() {
+        return cycles;
+    }
 
     @Override
     public Map<Variable, Long> variableState() {

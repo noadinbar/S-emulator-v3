@@ -81,7 +81,7 @@ public class ExecutionAPIImpl implements ExecutionAPI {
             finals.add(new VarValueDTO(new VarRefDTO(VarOptionsDTO.z, i), val));
         }
 
-        long cycles = ((ProgramImpl) program).calculateCycles();
+        long cycles = runner.getCycles();
 
         return new ExecutionDTO(y, cycles, finals, executed);
     }

@@ -4,6 +4,7 @@ import api.DisplayAPI;
 import api.LoadAPI;
 import exceptions.InvalidFileExtensionException;
 import exceptions.InvalidXmlFormatException;
+import exceptions.UndefinedLabelException;
 import jakarta.xml.bind.JAXBException;
 import structure.program.ProgramImpl;
 import structure.program.SProgram;
@@ -15,7 +16,7 @@ import java.nio.file.Path;
 
 public class LoadAPIImpl implements LoadAPI {
     @Override
-    public DisplayAPI loadFromXml(Path xmlPath) throws Exception { // השארנו את החתימה כפי שהיא אצלך
+    public DisplayAPI loadFromXml(Path xmlPath) throws Exception {
         String name = (xmlPath != null && xmlPath.getFileName() != null)
                 ? xmlPath.getFileName().toString()
                 : "";
@@ -37,7 +38,15 @@ public class LoadAPIImpl implements LoadAPI {
         }
 
         ProgramImpl program = new XMLToStructure().toProgram(s);
-        program.validate();
-        return new DisplayAPIImpl(program);
+        try {
+            program.validate();
+            return new DisplayAPIImpl(program);
+        }
+        catch (UndefinedLabelException e){
+            throw e;
+        }
+
+
+
     }
 }

@@ -39,7 +39,10 @@ public class Main {
                 case LOAD_XML: {
                     LoadXMLAction action = new LoadXMLAction(loadAPI);
                     action.run();
-                    displayAPI = action.getDisplayAPI();
+                    DisplayAPI newApi = action.getDisplayAPI();
+                    if (newApi != null) {
+                        displayAPI = newApi;
+                    }
                     System.out.println();
                     break;
                 }

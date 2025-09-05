@@ -1,34 +1,57 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.SplitPane?>
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.VBox?>
 
+<VBox prefHeight="300.0" prefWidth="100.0" xmlns="http://javafx.com/javafx/24.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="application.ProgramSceneController">
 
-<VBox maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="400.0" prefWidth="600.0" xmlns="http://javafx.com/javafx/24.0.1" xmlns:fx="http://javafx.com/fxml/1">
    <children>
-      <fx:include source="header/header.fxml" />
-      <HBox prefHeight="312.0" prefWidth="600.0">
-         <children>
-            <VBox prefHeight="308.0" prefWidth="337.0">
+      <!-- כותרת עליונה -->
+      <fx:include fx:id="header" source="header/header.fxml" />
+
+      <!-- גוף המסך: שמאל (תוכנית/סיכום/שרשרת) | ימין (הרצה/פלט/קלט/היסטוריה) -->
+      <SplitPane dividerPositions="0.67">
+         <items>
+
+            <!-- עמודה שמאלית -->
+            <VBox spacing="8.0">
                <children>
-                  <fx:include source="table/instruction/instructions.fxml" />
-                  <fx:include source="summary/summary.fxml" />
-                  <fx:include source="table/instruction/instructions.fxml" />
+                  <!-- טבלת התוכנית -->
+                  <fx:include fx:id="programTable" source="table/instruction/instructions.fxml" />
+
+                  <!-- סיכום B/S -->
+                  <fx:include fx:id="summary" source="summary/summary.fxml" />
+
+                  <!-- שרשרת/History של פקודה נבחרת (טבלת הוראות שנייה) -->
+                  <fx:include fx:id="chainTable" source="table/instruction/instructions.fxml" />
                </children>
+               <padding><Insets bottom="8" left="8" right="8" top="8" /></padding>
             </VBox>
-            <VBox prefHeight="305.0" prefWidth="207.0">
+
+            <!-- עמודה ימנית -->
+            <VBox spacing="8.0">
                <children>
-                  <fx:include source="run/options/run_options.fxml" />
-                  <HBox prefHeight="152.0" prefWidth="240.0">
+                  <!-- כפתורי ריצה/דיבאגר -->
+                  <fx:include fx:id="runOptions" source="run/options/run_options.fxml" />
+
+                  <!-- פלטים ומשתנים (שמאל) + קלטים (ימין) זה לצד זה -->
+                  <HBox spacing="8.0">
                      <children>
-                        <fx:include source="outputs/outputs.fxml" />
-                        <fx:include source="inputs/inputs.fxml" />
+                        <fx:include fx:id="outputs" source="outputs/outputs.fxml" />
+                        <fx:include fx:id="inputs" source="inputs/inputs.fxml" />
                      </children>
                   </HBox>
-                  <fx:include source="table/history/history.fxml" />
+
+                  <!-- היסטוריית ריצות -->
+                  <fx:include fx:id="history" source="table/history/history.fxml" />
                </children>
+               <padding><Insets bottom="8" left="8" right="8" top="8" /></padding>
             </VBox>
-         </children>
-      </HBox>
+
+         </items>
+      </SplitPane>
    </children>
+   <padding><Insets bottom="8" left="8" right="8" top="8" /></padding>
 </VBox>

@@ -1,27 +1,33 @@
 package application.inputs;
 
+import execution.ExecutionRequestDTO;
+import javafx.fxml.FXML;
+import javafx.fxml.Initializable;
 import javafx.geometry.Insets;
-import javafx.geometry.Pos;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
 import javafx.scene.layout.HBox;
+import javafx.scene.layout.Pane;
 import javafx.scene.layout.VBox;
-import javafx.scene.Parent;
 
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.ResourceBundle;
 
-public class InputsController {
+public class InputsController implements Initializable {
+    @FXML
+    private Pane rootPane;
+
     private final List<TextField> inputFields = new ArrayList<>();
-    private final VBox inputsContainer;
+    private VBox inputsContainer;
 
-    public InputsController() {
-        inputsContainer = new VBox(8); // 8 pixels spacing
+    @Override
+    public void initialize(URL location, ResourceBundle resources) {
+        inputsContainer = new VBox(8); // 8 pixels spacing between rows
         inputsContainer.setPadding(new Insets(10));
-    }
-
-    public Parent getRoot() {
-        return inputsContainer;
+        rootPane.getChildren().clear();
+        rootPane.getChildren().add(inputsContainer);
     }
 
     public void setInputsCount(int count) {
@@ -30,7 +36,7 @@ public class InputsController {
 
         for (int i = 0; i < count; i++) {
             HBox row = new HBox(8);
-            row.setAlignment(Pos.CENTER);
+            row.setAlignment(javafx.geometry.Pos.CENTER);
 
             Label label = new Label("Input " + (i + 1));
             TextField input = new TextField();

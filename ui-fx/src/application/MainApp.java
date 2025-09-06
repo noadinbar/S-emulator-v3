@@ -1,27 +1,35 @@
 package application;
 
 import javafx.application.Application;
+import javafx.application.Platform;
 import javafx.fxml.FXMLLoader;
+import javafx.scene.Parent;       // 👈 חשוב
 import javafx.scene.Scene;
 import javafx.stage.Stage;
+import javafx.stage.StageStyle;
 
 public class MainApp extends Application {
     @Override
     public void start(Stage stage) throws Exception {
-        // program_scene.fxml צריך להיות תחת src/.../application/
-        FXMLLoader loader = new FXMLLoader(MainApp.class.getResource("program_scene.fxml"));
-        Scene scene = new Scene(loader.load(), 1280, 800);
+        FXMLLoader fxml = new FXMLLoader(getClass().getResource("program_scene.fxml"));
+        Parent root = fxml.load();                 // 👈 לא var—מוגדר כ-Parent
+
+        Scene scene = new Scene(root);             // ייקח את ה-prefSize מה-FXML
+        stage.initStyle(StageStyle.DECORATED);
+        stage.setFullScreen(false);
+        stage.setMaximized(false);
+        stage.setResizable(true);
+        stage.setScene(scene);
+        stage.sizeToScene();                       // מאמץ את הגדלים מה-FXML
+
+        // יציאה ב-ESC וב-X
+        scene.setOnKeyPressed(e -> { if (e.getCode().toString().equals("ESCAPE")) Platform.exit(); });
+        stage.setOnCloseRequest(e -> Platform.exit());
 
         stage.setTitle("S-Emulator");
-        stage.setScene(scene);
+        stage.centerOnScreen();
         stage.show();
-
-        // בדיקת עשן קצרה לקונסולה (לא חובה)
-        ProgramSceneController c = loader.getController();
-        System.out.println("ProgramScene loaded? " + (c != null));
     }
 
-    public static void main(String[] args) {
-        launch(args);
-    }
+    public static void main(String[] args) { launch(args); }
 }

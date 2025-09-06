@@ -8,49 +8,33 @@
 <?import javafx.scene.layout.AnchorPane?>
 <?import javafx.scene.layout.HBox?>
 
-<SplitPane
-        xmlns="http://javafx.com/javafx/24.0.1"
-        xmlns:fx="http://javafx.com/fxml/1"
-        fx:controller="application.outputs.OutputsController"
-        orientation="VERTICAL"
-        dividerPositions="0.65"
-        prefWidth="320.0" prefHeight="200.0">
+<SplitPane dividerPositions="0.65" orientation="VERTICAL" prefHeight="203.0" prefWidth="164.0" xmlns="http://javafx.com/javafx/24.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="application.outputs.OutputsController">
 
     <items>
         <!-- למעלה: תצוגת משתנים כטקסט חופשי -->
-        <AnchorPane>
+        <AnchorPane prefHeight="120.0" prefWidth="153.0">
             <children>
-                <HBox spacing="8.0"
-                      AnchorPane.topAnchor="10.0" AnchorPane.bottomAnchor="10.0"
-                      AnchorPane.leftAnchor="10.0" AnchorPane.rightAnchor="10.0">
+                <HBox prefHeight="102.0" prefWidth="143.0" spacing="8.0" AnchorPane.bottomAnchor="10.0" AnchorPane.leftAnchor="10.0" AnchorPane.rightAnchor="10.0" AnchorPane.topAnchor="10.0">
                     <children>
-                        <Label text="Variables:"/>
-                        <TextArea fx:id="txtVariables"
-                                  wrapText="true"
-                                  editable="false"
-                                  prefRowCount="5"/>
+                        <Label text="Variables:" />
+                        <TextArea fx:id="txtVariables" editable="false" prefHeight="102.0" prefRowCount="5" prefWidth="72.0" wrapText="true" />
                     </children>
                 </HBox>
             </children>
         </AnchorPane>
 
         <!-- למטה: תצוגת Cycles בשורת טקסט (TextField) -->
-        <AnchorPane>
+        <AnchorPane prefHeight="57.0" prefWidth="233.0">
             <children>
-                <HBox spacing="8.0"
-                      AnchorPane.topAnchor="10.0" AnchorPane.bottomAnchor="10.0"
-                      AnchorPane.leftAnchor="10.0" AnchorPane.rightAnchor="10.0">
+                <HBox spacing="8.0" AnchorPane.bottomAnchor="10.0" AnchorPane.leftAnchor="10.0" AnchorPane.rightAnchor="10.0" AnchorPane.topAnchor="10.0">
                     <children>
-                        <Label text="Cycles:"/>
-                        <TextField fx:id="txtCycles"
-                                   editable="false"
-                                   promptText="0"
-                                   prefWidth="120.0"/>
+                        <Label text="Cycles:" />
+                        <TextField fx:id="txtCycles" editable="false" prefHeight="25.0" prefWidth="57.0" promptText="0" />
                     </children>
                 </HBox>
             </children>
         </AnchorPane>
     </items>
 
-    <padding><Insets top="5.0" right="5.0" bottom="5.0" left="5.0"/></padding>
+    <padding><Insets bottom="5.0" left="5.0" right="5.0" top="5.0" /></padding>
 </SplitPane>

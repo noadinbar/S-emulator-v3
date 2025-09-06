@@ -1,74 +1,90 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <?import javafx.geometry.Insets?>
+<?import javafx.scene.control.ScrollPane?>
 <?import javafx.scene.control.SplitPane?>
 <?import javafx.scene.layout.HBox?>
-<?import javafx.scene.layout.Priority?>
 <?import javafx.scene.layout.StackPane?>
 <?import javafx.scene.layout.VBox?>
 
-<VBox xmlns="http://javafx.com/javafx/24.0.1"
-      xmlns:fx="http://javafx.com/fxml/1"
-      fx:controller="application.ProgramSceneController"
-      prefWidth="800.0" prefHeight="600.0"
-      minWidth="600.0"  minHeight="400.0">
+<ScrollPane
+        prefHeight="620.0"
+        prefWidth="801.0"
+        xmlns="http://javafx.com/javafx/24.0.1"
+        xmlns:fx="http://javafx.com/fxml/1"
+        fx:controller="application.ProgramSceneController">
 
-   <children>
-      <!-- כותרת -->
-      <fx:include fx:id="header" source="header/header.fxml"/>
+   <content>
+      <VBox
+              minHeight="410.0"
+              minWidth="600.0"
+              prefHeight="600.0"
+              prefWidth="800.0">
 
-      <!-- גוף: שמאל/ימין -->
-      <SplitPane dividerPositions="0.60" VBox.vgrow="ALWAYS">
-         <items>
+         <children>
+            <!-- כותרת -->
+            <fx:include fx:id="header" source="header/header.fxml"/>
 
-            <!-- עמודה שמאלית -->
-            <VBox spacing="8.0">
-               <children>
-                  <!-- טבלת התוכנית (גדלה) -->
-                  <StackPane VBox.vgrow="ALWAYS">
-                     <fx:include fx:id="programTable" source="table/instruction/instructions.fxml"/>
-                  </StackPane>
+            <!-- גוף: שמאל/ימין -->
+            <SplitPane dividerPositions="0.6" VBox.vgrow="ALWAYS">
+               <items>
 
-                  <!-- סיכום (קומפקטי) -->
-                  <fx:include fx:id="summary" source="summary/summary.fxml"/>
-
-                  <!-- שרשרת (גדלה) -->
-                  <StackPane VBox.vgrow="ALWAYS">
-                     <fx:include fx:id="chainTable" source="table/instruction/instructions.fxml"/>
-                  </StackPane>
-               </children>
-               <padding><Insets top="8" right="8" bottom="8" left="8"/></padding>
-            </VBox>
-
-            <!-- עמודה ימנית -->
-            <VBox spacing="8.0">
-               <children>
-                  <!-- אפשרויות ריצה (קומפקטי) -->
-                  <fx:include fx:id="runOptions" source="run/options/run_options.fxml"/>
-
-                  <!-- פלטים/קלטים זה לצד זה (שניהם גדלים) -->
-                  <HBox spacing="8.0" fillHeight="true">
+                  <!-- עמודה שמאלית -->
+                  <VBox spacing="8.0">
                      <children>
-                        <StackPane HBox.hgrow="ALWAYS">
-                           <fx:include fx:id="outputs" source="outputs/outputs.fxml"/>
+                        <!-- טבלת התוכנית (גדלה) -->
+                        <StackPane VBox.vgrow="ALWAYS">
+                           <fx:include fx:id="programTable" source="table/instruction/instructions.fxml"/>
                         </StackPane>
-                        <StackPane HBox.hgrow="ALWAYS">
-                           <fx:include fx:id="inputs" source="inputs/inputs.fxml"/>
+
+                        <!-- סיכום (קומפקטי) -->
+                        <fx:include fx:id="summary" source="summary/summary.fxml"/>
+
+                        <!-- שרשרת (גדלה) -->
+                        <StackPane VBox.vgrow="ALWAYS">
+                           <fx:include fx:id="chainTable" source="table/instruction/instructions.fxml"/>
                         </StackPane>
                      </children>
-                  </HBox>
+                     <padding>
+                        <Insets top="8" right="8" bottom="8" left="8"/>
+                     </padding>
+                  </VBox>
 
-                  <!-- היסטוריה (גדלה) -->
-                  <StackPane VBox.vgrow="ALWAYS">
-                     <fx:include fx:id="history" source="table/history/history.fxml"/>
-                  </StackPane>
-               </children>
-               <padding><Insets top="8" right="8" bottom="8" left="8"/></padding>
-            </VBox>
+                  <!-- עמודה ימנית -->
+                  <VBox spacing="8.0">
+                     <children>
+                        <!-- אפשרויות ריצה (קומפקטי) -->
+                        <fx:include fx:id="runOptions" source="run/options/run_options.fxml"/>
 
-         </items>
-      </SplitPane>
-   </children>
+                        <!-- פלטים/קלטים זה לצד זה (שניהם גדלים) -->
+                        <HBox spacing="8.0" fillHeight="true">
+                           <children>
+                              <StackPane HBox.hgrow="ALWAYS">
+                                 <fx:include fx:id="outputs" source="outputs/outputs.fxml"/>
+                              </StackPane>
+                              <StackPane HBox.hgrow="ALWAYS">
+                                 <fx:include fx:id="inputs" source="inputs/inputs.fxml"/>
+                              </StackPane>
+                           </children>
+                        </HBox>
 
-   <padding><Insets top="8" right="8" bottom="8" left="8"/></padding>
-</VBox>
+                        <!-- היסטוריה (גדלה) -->
+                        <StackPane VBox.vgrow="ALWAYS">
+                           <fx:include fx:id="history" source="table/history/history.fxml"/>
+                        </StackPane>
+                     </children>
+                     <padding>
+                        <Insets top="8" right="8" bottom="8" left="8"/>
+                     </padding>
+                  </VBox>
+
+               </items>
+            </SplitPane>
+         </children>
+
+         <padding>
+            <Insets top="8" right="8" bottom="8" left="8"/>
+         </padding>
+      </VBox>
+   </content>
+</ScrollPane>

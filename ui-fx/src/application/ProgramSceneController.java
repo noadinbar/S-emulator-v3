@@ -48,7 +48,7 @@ public class ProgramSceneController {
 
     @FXML
     private void initialize() {
-        System.out.println("Header injected? " + (headerController != null));
+
 
     }
 

@@ -6,81 +6,72 @@ import javafx.geometry.Pos;
 import javafx.scene.control.Label;
 import javafx.scene.control.ListView;
 import javafx.scene.control.TextField;
+import javafx.scene.control.TextFormatter;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 
+import display.Command2DTO;
+import types.VarRefDTO;
+import types.VarOptionsDTO;
+
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.ResourceBundle;
 
 public class InputsController implements Initializable {
 
-    // שימי לב: ListView של HBox (כל שורה = Label + TextField)
+    // כל פריט ברשימה: HBox עם Label "Xk =" + TextField עריכתי
     @FXML private ListView<HBox> lstInputs;
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
-        // שלד: אין לוגיקה מיוחדת
+        clear();
     }
 
-    /** יוצר שורת קלט: Label + TextField */
-    private HBox createRow(String name, String initialValue) {
-        Label lbl = new Label(name);
-        TextField tf = new TextField();
-        if (initialValue != null) tf.setText(initialValue);
+    /** מציג שורות לפי ה-DTO: קורא X-ים מתוך getInputsInUse (VarRefDTO) ומייצר Xk = */
+    public void show(Command2DTO dto) {
+        clear();
+        if (dto == null || dto.getInputsInUse() == null) return;
 
-        HBox row = new HBox(8);
-        row.setAlignment(Pos.CENTER_LEFT);
-        // שהטקסט-פילד יתפרס יפה לרוחב
-        HBox.setHgrow(tf, Priority.ALWAYS);
-
-        row.getChildren().addAll(lbl, tf);
-        return row;
-    }
-
-    /** קובע כמה שורות יהיו ("Input 1", "Input 2", ...) — שלד נקי */
-    public void setInputsCount(int count) {
-        lstInputs.getItems().clear();
-        for (int i = 1; i <= count; i++) {
-            lstInputs.getItems().add(createRow("Input " + i, ""));
-        }
-    }
-
-    /** ממלא ערכים לשורות הקיימות (אם חסרות שורות — משלים) */
-    public void setInputValues(List<Long> values) {
-        if (values == null) return;
-        if (lstInputs.getItems().size() < values.size()) {
-            setInputsCount(values.size());
-        }
-        for (int i = 0; i < values.size(); i++) {
-            HBox row = lstInputs.getItems().get(i);
-            TextField tf = (TextField) row.getChildren().get(1);
-            tf.setText(String.valueOf(values.get(i)));
-        }
-    }
-
-    /** מחזיר את הערכים כמספרים (לא מספר -> 0) */
-    public List<Long> getInputValues() {
-        List<Long> out = new ArrayList<>(lstInputs.getItems().size());
-        for (HBox row : lstInputs.getItems()) {
-            TextField tf = (TextField) row.getChildren().get(1);
-            try {
-                out.add(Long.parseLong(tf.getText().trim()));
-            } catch (NumberFormatException e) {
-                out.add(0L);
+        List<Integer> indices = new ArrayList<>();
+        for (Object o : dto.getInputsInUse()) {
+            VarRefDTO v = (VarRefDTO) o;               // הרשימה אצלך היא VarRefDTO
+            if (v.getVariable() == VarOptionsDTO.x) {
+                int idx = v.getIndex();
+                if (idx > 0) indices.add(idx);
             }
         }
-        return out;
+
+        indices.sort(Comparator.naturalOrder());
+        for (Integer idx : indices) {
+            lstInputs.getItems().add(createRow(idx));  // Xk = + TextField מאותחל ל-"0"
+        }
     }
 
-    /** ניקוי הרשימה */
+    /** ניקוי הרשימה. */
     public void clear() {
-        lstInputs.getItems().clear();
+        if (lstInputs != null) lstInputs.getItems().clear();
     }
 
-    /** השבתה/הפעלה של הקומפוננטה */
-    public void setDisabled(boolean disabled) {
-        lstInputs.setDisable(disabled);
+    // ---------- עוזר פנימי ----------
+
+    /** שורת קלט אחת: Label "Xk =" + TextField מאותחל ל-"0" (מספרים בלבד או ריק). */
+    private HBox createRow(int index) {
+        Label lbl = new Label("x" + index + " =");
+
+        TextField tf = new TextField("0"); // ערך התחלתי; המשתמש יכול לערוך
+        // מאפשר רק ספרות; ריק מותר (בהמשך יפורש כ-0 כשנאסוף ערכים)
+        tf.setTextFormatter(new TextFormatter<>(chg ->
+                chg.getControlNewText().matches("\\d*") ? chg : null
+        ));
+
+        tf.setPrefColumnCount(3);                 // רוחב לפי מספר תווים
+        HBox.setHgrow(tf, Priority.NEVER);
+
+        HBox row = new HBox(8, lbl, tf);
+        row.setAlignment(Pos.CENTER_LEFT);
+        return row;
     }
 }

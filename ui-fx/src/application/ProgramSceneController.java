@@ -11,6 +11,7 @@ import application.table.history.HistoryController;
 import application.run.options.RunOptionsController;
 import application.outputs.OutputsController;
 import application.inputs.InputsController;
+import display.Command2DTO;
 
 // אם אצלך קיימים ה־API/DTO, תשאירי את ה־imports שלהם; אם לא – אפשר למחוק בשלב זה
 import api.LoadAPI;
@@ -75,5 +76,16 @@ public class ProgramSceneController {
 
     // --- עזר אופציונלי לממשק ציבורי אם תרצי לקרוא מחוץ לקונטרולר ---
     public void loadXml(Path xmlPath) throws Exception { /* TODO: לעטוף handleLoadXmlRequested */ }
-    public void setInitialInputs(List<Long> inputs)     { /* TODO */ }
+    public void setInitialInputs(List<Long> inputs) { /* TODO */ }
+
+    public void showCommand2(Command2DTO dto) {
+        if (dto != null && programTableController != null) {
+            programTableController.show(dto);
+        }
+        // >>> התוספת הנדרשת להצגת ה-Inputs מיד אחרי הטעינה <<<
+        if (dto != null && inputsController != null) {
+            inputsController.show(dto);
+        }
+        // (שאר הדברים יישארו כפי שהם עד שנממש אותם)
+    }
 }

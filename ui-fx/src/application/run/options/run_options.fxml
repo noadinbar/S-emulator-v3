@@ -17,12 +17,12 @@
     <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
   </rowConstraints>
    <children>
-      <Button fx:id="btnStartRegular" mnemonicParsing="false" onAction="#onStartRegular" text="Button" GridPane.columnIndex="1" />
+      <Button fx:id="btnStartRegular" mnemonicParsing="false" onAction="#onStartRegular" prefHeight="25.0" prefWidth="56.0" text="Run" GridPane.columnIndex="1" />
       <Button fx:id="btnStartDebug" mnemonicParsing="false" onAction="#onStartDebug" text="Button" GridPane.columnIndex="2" />
       <Button fx:id="btnResume" mnemonicParsing="false" onAction="#onResume" text="Button" GridPane.columnIndex="1" GridPane.rowIndex="1" />
       <Button fx:id="btnStepOver" mnemonicParsing="false" onAction="#onStepOver" text="Button" GridPane.columnIndex="2" GridPane.rowIndex="1" />
       <Button fx:id="btnStop" mnemonicParsing="false" onAction="#onStop" text="Button" GridPane.rowIndex="1" />
-      <Button fx:id="btnStartExecute" contentDisplay="CENTER" mnemonicParsing="false" onAction="#onStartExecute" prefHeight="25.0" prefWidth="66.0" text="Run">
+      <Button fx:id="btnStartExecute" contentDisplay="CENTER" mnemonicParsing="false" onAction="#onStartExecute" prefHeight="25.0" prefWidth="66.0" text="Start">
          <opaqueInsets>
             <Insets />
          </opaqueInsets></Button>

@@ -53,6 +53,9 @@ public class MainApp extends Application {
             DisplayAPI display = loader.loadFromXml(xml);
             Command2DTO dto = display.getCommand2();
 
+            // >>> תוספת: מזרים את ה-display לקונטרולר הראשי (נדרש עבור Start)
+            controller.setDisplay(display);
+
             System.out.println("[OK] Loaded. DTO != null: " + (dto != null));
             if (dto != null) {
                 System.out.println("[OK] DTO type: " + dto.getClass().getSimpleName());

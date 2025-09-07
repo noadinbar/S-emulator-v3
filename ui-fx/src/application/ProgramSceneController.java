@@ -24,6 +24,7 @@ import api.ExecutionAPI;
 
 import java.nio.file.Path;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class ProgramSceneController {
 
@@ -49,8 +50,10 @@ public class ProgramSceneController {
 
     @FXML
     private void initialize() {
-
-
+        // חיבור תת־קונטרולר ה-Run לראשי (כדי שכפתור Start יקרא ל-showInputsForEditing)
+        if (runOptionsController != null) {
+            runOptionsController.setMainController(this);
+        }
     }
 
     // ====== קרסים שתממשי מאוחר יותר (ריקים בכוונה) ======
@@ -62,7 +65,27 @@ public class ProgramSceneController {
 
     /** הרצה רגילה/דיבאגר לפי הדגל. */
     private void handleRun(boolean debugMode) {
-        // TODO: קריאת degree מה־Header, קבלת inputs, exec.execute/דיבאגר, עדכון outputs/history/chain
+        if (inputsController == null) return;
+
+        // 1) איסוף ערכים מרופדים מה-UI (X1..Xmax, חוסרים = 0)
+        List<Long> inputs = inputsController.collectValuesPadded();
+        String csv = inputs.stream().map(String::valueOf).collect(Collectors.joining(","));
+        System.out.println("[RUN] inputs (padded CSV): " + csv);
+
+        // 2) TODO: קראי כאן למנוע שלך עם ה-DTO המדויק:
+        //    שתי תצורות נפוצות (השאירי רק את זו שמתאימה אצלך):
+
+        // 2.a) אם ה-ExecutionRequestDTO מקבל CSV של קלטים:
+        // execution.ExecutionRequestDTO req = new execution.ExecutionRequestDTO(csv, debugMode);
+        // execution.ProgramExecutorImpl executor = new execution.ProgramExecutorImpl(display);
+        // execution.ExecutionDTO result = executor.run(req);
+
+        // 2.b) אם ה-ExecutionRequestDTO מקבל List<Long>:
+        // execution.ExecutionRequestDTO req = new execution.ExecutionRequestDTO(inputs, debugMode);
+        // execution.ProgramExecutorImpl executor = new execution.ProgramExecutorImpl(display);
+        // execution.ExecutionDTO result = executor.run(req);
+
+        // 3) בהמשך: עדכני outputsController/historyController/chainTableController לפי result
     }
 
     private void handleStop()   { /* TODO */ }
@@ -78,14 +101,26 @@ public class ProgramSceneController {
     public void loadXml(Path xmlPath) throws Exception { /* TODO: לעטוף handleLoadXmlRequested */ }
     public void setInitialInputs(List<Long> inputs) { /* TODO */ }
 
+    /** מוזנקת לאחר טעינת Command2: מציג טבלה וסיכום; Inputs יופיעו רק בלחיצה על Start. */
     public void showCommand2(Command2DTO dto) {
-        if (dto != null && programTableController != null) {
-            programTableController.show(dto);
-        }
-        // >>> התוספת הנדרשת להצגת ה-Inputs מיד אחרי הטעינה <<<
-        if (dto != null && inputsController != null) {
+
+        programTableController.show(dto);
+        // לא מציגים inputs כאן – יופיעו ע״י Start
+    }
+
+    /** מוזנק מכפתור Start: מציג את ה-Inputs לעריכה מתוך ה-display הנוכחי. */
+    public void showInputsForEditing() {
+
+        Command2DTO dto = display.getCommand2();
+
             inputsController.show(dto);
-        }
-        // (שאר הדברים יישארו כפי שהם עד שנממש אותם)
+            // אופציונלי: למקד לשדה הראשון אם מימשת ב-InputsController
+            inputsController.focusFirstField();
+
+    }
+
+    // Setter כדי שה-MainApp יזריק את ה-display אחרי טעינת ה-XML
+    public void setDisplay(DisplayAPI display) {
+        this.display = display;
     }
 }

@@ -3,12 +3,12 @@
 <?import javafx.scene.control.TableColumn?>
 <?import javafx.scene.control.TableView?>
 
-<TableView fx:id="tblHistory" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="89.0" prefWidth="230.0" xmlns="http://javafx.com/javafx/24.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="application.table.history.HistoryController">
+<TableView fx:id="tblHistory" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="89.0" prefWidth="275.0" xmlns="http://javafx.com/javafx/24.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="application.table.history.HistoryController">
   <columns>
-    <TableColumn fx:id="colRunId" prefWidth="39.333253264427185" text="C1" />
-    <TableColumn fx:id="colDegree" prefWidth="43.333370208740234" text="C2" />
-      <TableColumn fx:id="colInputs" prefWidth="43.33331298828125" text="C1" />
-      <TableColumn fx:id="colY" minWidth="0.0" prefWidth="54.00006103515625" text="C1" />
-      <TableColumn fx:id="colCycles" prefWidth="50.0" text="C1" />
+    <TableColumn fx:id="colRunId" prefWidth="39.333253264427185" text="#Run" />
+    <TableColumn fx:id="colDegree" prefWidth="61.333316802978516" text="Degree" />
+      <TableColumn fx:id="colInputs" prefWidth="66.00005340576172" text="Inputs" />
+      <TableColumn fx:id="colY" minWidth="0.0" prefWidth="59.99993896484375" text="Result(y)" />
+      <TableColumn fx:id="colCycles" prefWidth="48.00001525878906" text="Cycles" />
   </columns>
 </TableView>

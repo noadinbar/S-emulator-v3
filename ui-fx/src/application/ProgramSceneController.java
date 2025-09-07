@@ -1,9 +1,9 @@
-package application; // שנה לפי החבילה שלך
+package application;
 
 import javafx.fxml.FXML;
+import javafx.application.Platform;
 import javafx.scene.layout.VBox;
 
-// החליפי לחבילות שלך אם השמות שונים
 import application.header.HeaderController;
 import application.table.instruction.InstructionsController;
 import application.summary.SummaryController;
@@ -11,116 +11,118 @@ import application.table.history.HistoryController;
 import application.run.options.RunOptionsController;
 import application.outputs.OutputsController;
 import application.inputs.InputsController;
+
 import display.Command2DTO;
 
-// אם אצלך קיימים ה־API/DTO, תשאירי את ה־imports שלהם; אם לא – אפשר למחוק בשלב זה
-import api.LoadAPI;
 import api.DisplayAPI;
 import api.ExecutionAPI;
-// import exportToDTO.LoadAPIImpl;
-// import display.Command2DTO;
-// import execution.ExecutionDTO;
-// import execution.ExecutionRequestDTO;
+
+import execution.ExecutionDTO;
+import execution.ExecutionRequestDTO;
+import execution.VarValueDTO;
+
+import types.VarOptionsDTO;
+import types.VarRefDTO;
 
 import java.nio.file.Path;
+import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.stream.Collectors;
+import java.util.Map;
 
 public class ProgramSceneController {
 
-    // ---- מכולות עיקריות (לא חובה, אבל נוח לגשת אליהן) ----
-    @FXML private VBox leftColumn;   // fx:id="leftColumn" (לא חובה אם אין צורך)
-    @FXML private VBox rightColumn;  // fx:id="rightColumn"
+    @FXML private VBox leftColumn;
+    @FXML private VBox rightColumn;
 
-    // ---- תתי־קונטרולרים שמוזרקים דרך <fx:include> ----
-    // שימי לב: השם הוא <fx:id> + "Controller"
-    @FXML private HeaderController headerController;                 // fx:id="header"
-    @FXML private InstructionsController programTableController;     // fx:id="programTable"
-    @FXML private SummaryController summaryController;               // fx:id="summary"
-    @FXML private InstructionsController chainTableController;       // fx:id="chainTable"
-    @FXML private RunOptionsController runOptionsController;         // fx:id="runOptions"
-    @FXML private OutputsController outputsController;               // fx:id="outputs"
-    @FXML private InputsController inputsController;                 // fx:id="inputs"
-    @FXML private HistoryController historyController;               // fx:id="history"
+    @FXML private HeaderController headerController;
+    @FXML private InstructionsController programTableController;
+    @FXML private SummaryController summaryController;
+    @FXML private InstructionsController chainTableController;
+    @FXML private RunOptionsController runOptionsController;
+    @FXML private OutputsController outputsController;
+    @FXML private InputsController inputsController;
+    @FXML private HistoryController historyController;
 
-    // ---- אובייקטי מנוע (שלד; תחברי אותם כשתרצי) ----
-    private LoadAPI loader;     // = new LoadAPIImpl();
-    private DisplayAPI display; // יוגדר אחרי load
-    private ExecutionAPI exec;  // יוגדר בזמן הרצה
+    private DisplayAPI display; // מוזרק אחרי LOAD
+    private ExecutionAPI exec;  // נוצר בזמן הרצה
 
     @FXML
     private void initialize() {
-        // חיבור תת־קונטרולר ה-Run לראשי (כדי שכפתור Start יקרא ל-showInputsForEditing)
         if (runOptionsController != null) {
             runOptionsController.setMainController(this);
         }
     }
 
-    // ====== קרסים שתממשי מאוחר יותר (ריקים בכוונה) ======
-
-    /** טעינת XML ועדכון כל המסכים. */
-    private void handleLoadXmlRequested(Path xmlPath) {
-        // TODO: loader.load → display; עדכון header/טבלאות/summary/inputs/history/outputs
+    /** נקראת מכפתור "Start Execute" — מבצעת בדיקות ואז קוראת פנימית ל-handleRun(). */
+    public void runExecute() {
+        if (!Platform.isFxApplicationThread()) {
+            Platform.runLater(this::runExecute);
+            return;
+        }
+        if (display == null || inputsController == null ) {
+            return; // אפשר להחליף בהודעת שגיאה ייעודית אם תרצי
+        }
+        handleRun(); // פנימי
     }
 
-    /** הרצה רגילה/דיבאגר לפי הדגל. */
-    private void handleRun(boolean debugMode) {
-        if (inputsController == null) return;
-
-        // 1) איסוף ערכים מרופדים מה-UI (X1..Xmax, חוסרים = 0)
+    /** לוגיקת הרצה בפועל (פרטי). */
+    private void handleRun() {
         List<Long> inputs = inputsController.collectValuesPadded();
-        String csv = inputs.stream().map(String::valueOf).collect(Collectors.joining(","));
-        System.out.println("[RUN] inputs (padded CSV): " + csv);
 
-        // 2) TODO: קראי כאן למנוע שלך עם ה-DTO המדויק:
-        //    שתי תצורות נפוצות (השאירי רק את זו שמתאימה אצלך):
+        if (exec == null) exec = display.execution();
+        ExecutionRequestDTO req = new ExecutionRequestDTO(0, inputs); // degree=0 (AS IS)
+        ExecutionDTO result = exec.execute(req);
 
-        // 2.a) אם ה-ExecutionRequestDTO מקבל CSV של קלטים:
-        // execution.ExecutionRequestDTO req = new execution.ExecutionRequestDTO(csv, debugMode);
-        // execution.ProgramExecutorImpl executor = new execution.ProgramExecutorImpl(display);
-        // execution.ExecutionDTO result = executor.run(req);
+        // --- הדפסות בדיקה לקונסול ---
+        System.out.println("[RUN/CHECK] inputs (x1..xN) = " + inputs);
+        System.out.println("[RUN/CHECK] y = " + result.getyValue());
+        System.out.println("[RUN/CHECK] cycles = " + result.getTotalCycles());
+        System.out.println("[RUN/CHECK] finals:");
+        // --- סוף הדפסות ---
 
-        // 2.b) אם ה-ExecutionRequestDTO מקבל List<Long>:
-        // execution.ExecutionRequestDTO req = new execution.ExecutionRequestDTO(inputs, debugMode);
-        // execution.ProgramExecutorImpl executor = new execution.ProgramExecutorImpl(display);
-        // execution.ExecutionDTO result = executor.run(req);
+        Map<String, Long> vars = new LinkedHashMap<>();
+        for (VarValueDTO vv : result.getFinals()) {
+            String name = formatVarName(vv.getVar());
+            Long value = vv.getValue();
 
-        // 3) בהמשך: עדכני outputsController/historyController/chainTableController לפי result
+            // הדפסת כל משתנה ותוצאתו
+            System.out.println("    " + name + " = " + value);
+
+            vars.put(name, value);
+        }
+
+        outputsController.setVariables(vars);
+        outputsController.setCycles(result.getTotalCycles());
     }
 
-    private void handleStop()   { /* TODO */ }
-    private void handleResume() { /* TODO */ }
-    private void handleStepOver(){ /* TODO */ }
 
-    private void clearUI() {
-        // TODO: לנקות טבלאות/סיכום/תוצאות/היסטוריה/כותרת
-        // programTableController.clear(); chainTableController.clear(); ...
-    }
-
-    // --- עזר אופציונלי לממשק ציבורי אם תרצי לקרוא מחוץ לקונטרולר ---
-    public void loadXml(Path xmlPath) throws Exception { /* TODO: לעטוף handleLoadXmlRequested */ }
-    public void setInitialInputs(List<Long> inputs) { /* TODO */ }
-
-    /** מוזנקת לאחר טעינת Command2: מציג טבלה וסיכום; Inputs יופיעו רק בלחיצה על Start. */
-    public void showCommand2(Command2DTO dto) {
-
-        programTableController.show(dto);
-        // לא מציגים inputs כאן – יופיעו ע״י Start
-    }
-
-    /** מוזנק מכפתור Start: מציג את ה-Inputs לעריכה מתוך ה-display הנוכחי. */
-    public void showInputsForEditing() {
-
-        Command2DTO dto = display.getCommand2();
-
-            inputsController.show(dto);
-            // אופציונלי: למקד לשדה הראשון אם מימשת ב-InputsController
-            inputsController.focusFirstField();
-
-    }
-
-    // Setter כדי שה-MainApp יזריק את ה-display אחרי טעינת ה-XML
+    /** מוזנקת לאחר LOAD; מאפסת גם מופע Execution. */
     public void setDisplay(DisplayAPI display) {
         this.display = display;
+        this.exec = null;
     }
+
+    public void showCommand2(Command2DTO dto) {
+        if (programTableController != null) {
+            programTableController.show(dto);
+        }
+    }
+
+    /** מוזנק מכפתור START כדי לפתוח/לערוך אינפוטים. */
+    public void showInputsForEditing() {
+        if (display == null || inputsController == null) return;
+        Command2DTO dto = display.getCommand2();
+        inputsController.show(dto);
+        // אם יש: inputsController.focusFirstField();
+    }
+
+    // --- עזרים ---
+    private static String formatVarName(VarRefDTO v) {
+        if (v == null) return "";
+        if (v.getVariable() == VarOptionsDTO.y) return "y";
+        String base = (v.getVariable() == VarOptionsDTO.x) ? "x" : "z";
+        return base + v.getIndex();
+    }
+
+    // (שאר הקרסים/ניקוי UI/handleLoadXmlRequested נשארים כמו אצלך או TODO)
 }

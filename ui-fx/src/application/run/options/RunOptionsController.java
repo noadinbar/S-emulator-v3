@@ -27,19 +27,15 @@ public class RunOptionsController {
         // TODO: set initial disable/enable if needed
     }
 
-    @FXML private void onStartRegular() { /* TODO: יופעל מאוחר יותר להרצה בפועל */ }
+    @FXML private void onStartRegularAction() { main.showInputsForEditing(); }
 
     // START: מציג את רשימת ה-Inputs ומאפשר עריכה (בלי להריץ)
-    @FXML private void onStartExecute() {
-        if (main != null) {
-            main.showInputsForEditing();
-        }
-    }
+    @FXML private void onStartExecuteAction() { main.showInputsForEditing(); } // <-- היה main.runExecute();
 
-    @FXML private void onStartDebug()   { /* TODO */ }
-    @FXML private void onStop()         { /* TODO */ }
-    @FXML private void onResume()       { /* TODO */ }
-    @FXML private void onStepOver()     { /* TODO */ }
+    @FXML private void onStartDebugAction()   { /* TODO */ }
+    @FXML private void onStopAction()         { /* TODO */ }
+    @FXML private void onResumeAction()       { /* TODO */ }
+    @FXML private void onStepOverAction()     { /* TODO */ }
     //@FXML private void onStepBack()   { /* TODO */ }
 
     // Optional helpers for later:

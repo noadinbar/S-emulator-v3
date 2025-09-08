@@ -24,13 +24,23 @@ public class RunOptionsController {
 
     @FXML
     private void initialize() {
-        // TODO: set initial disable/enable if needed
+        setButtonsEnabled(false);
+    }
+
+    public void setButtonsEnabled(boolean enabled) {
+        boolean disable = !enabled;
+        if (btnStartRegular != null) btnStartRegular.setDisable(disable);
+        if (btnStartExecute != null) btnStartExecute.setDisable(disable);
+        if (btnStartDebug != null)   btnStartDebug.setDisable(disable);
+        if (btnStop != null)         btnStop.setDisable(disable);
+        if (btnResume != null)       btnResume.setDisable(disable);
+        if (btnStepOver != null)     btnStepOver.setDisable(disable);
     }
 
     @FXML private void onStartRegularAction() { main.showInputsForEditing(); }
 
     // START: מציג את רשימת ה-Inputs ומאפשר עריכה (בלי להריץ)
-    @FXML private void onStartExecuteAction() { main.showInputsForEditing(); } // <-- היה main.runExecute();
+    @FXML private void onStartExecuteAction() { } // <-- היה main.runExecute();
 
     @FXML private void onStartDebugAction()   { /* TODO */ }
     @FXML private void onStopAction()         { /* TODO */ }

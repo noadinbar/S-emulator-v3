@@ -81,7 +81,8 @@ public class ProgramSceneController {
         // מציגים את Command2 במקומות הקיימים — מינימום שינוי
         Command2DTO dto = display.getCommand2();
         if (programTableController != null) programTableController.show(dto);
-        if (inputsController != null)       inputsController.show(dto);
+        if (runOptionsController != null)   runOptionsController.setButtonsEnabled(true);
+
     }
 
 

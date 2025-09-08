@@ -41,6 +41,11 @@ public class HeaderController {
 
     // callback שה-Controller הראשי ירשום כדי לקבל DisplayAPI טעון
     private final ObjectProperty<Consumer<DisplayAPI>> onLoaded = new SimpleObjectProperty<>();
+    // בראש המחלקה (שדות) — הוסיפי:
+    private Path lastValidXmlPath;
+    // בראש המחלקה:
+    private File lastDir; // התיקייה האחרונה שנבחר ממנה קובץ
+
 
     @FXML
     private void initialize() {
@@ -81,18 +86,33 @@ public class HeaderController {
         fc.getExtensionFilters().setAll(xmlFilter);
         fc.setSelectedExtensionFilter(xmlFilter);
 
+        try {
+            if (lastDir != null && lastDir.isDirectory()) {
+                fc.setInitialDirectory(lastDir);
+            } else if (lastValidXmlPath!= null && lastValidXmlPath.getParent() != null) {
+                File parent = lastValidXmlPath.getParent().toFile();
+                if (parent.isDirectory()) fc.setInitialDirectory(parent);
+            } else {
+                File home = new File(System.getProperty("user.home"));
+                if (home.isDirectory()) fc.setInitialDirectory(home);
+            }
+        } catch (SecurityException ignore) {
+            // במידה וה־OS/הרשאות חוסמות גישה — פשוט מתעלמים וניתן ל־FileChooser לבחור ברירת מחדל
+        }
+
         // ישירות מעל ה-Window של הכפתור (ללא משתנה owner)
         File f = fc.showOpenDialog(btnLoad.getScene().getWindow());
         if (f == null) return;
+
+        lastDir = f.getParentFile();
 
         // חגורת-וגומייה: אם איכשהו לא XML — עוצרים
         if (!f.getName().toLowerCase().endsWith(".xml")) {
             showError("Invalid file", "Please choose an .xml file.");
             return;
         }
+        final Path chosenXml = f.toPath();
 
-        Path xml = f.toPath();
-        txtPath.setText(xml.toString());
 
         // Task ברקע לטעינה
         Task<DisplayAPI> task = new Task<>() {
@@ -103,7 +123,7 @@ public class HeaderController {
                 updateProgress(0.3, 1);
 
                 LoadAPI loader = new LoadAPIImpl();
-                DisplayAPI display = loader.loadFromXml(xml);
+                DisplayAPI display = loader.loadFromXml(chosenXml);
 
                 updateProgress(0.9, 1);
                 Thread.sleep(300);
@@ -123,6 +143,9 @@ public class HeaderController {
             busy.set(false);
             loaded.set(true);
 
+            lastValidXmlPath = chosenXml;
+            txtPath.setText(chosenXml.toString());
+
             DisplayAPI display = task.getValue();
             Consumer<DisplayAPI> apiConsumer = onLoaded.get();
             if (apiConsumer != null) apiConsumer.accept(display);
@@ -132,6 +155,12 @@ public class HeaderController {
             progressBar.progressProperty().unbind();
             progressBar.setVisible(false);
             busy.set(false);
+
+            if (lastValidXmlPath != null) {
+                txtPath.setText(lastValidXmlPath.toString());
+            } else {
+                txtPath.clear();
+            }
 
             Throwable ex = task.getException();
             showError("XML load failed",

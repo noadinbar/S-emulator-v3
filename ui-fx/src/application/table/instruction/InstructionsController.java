@@ -7,7 +7,8 @@ import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
-
+import display.Command3DTO;
+import display.ExpandedInstructionDTO;
 import display.Command2DTO;
 import display.InstructionDTO;
 import display.InstructionBodyDTO;
@@ -54,6 +55,19 @@ public class InstructionsController {
             return;
         }
         show(dto.getInstructions());
+    }
+
+    /** מציג הוראות לאחר expand: Command3DTO → InstructionDTO → rows */
+    public void showExpanded(Command3DTO c3) {
+        if (c3 == null || c3.getInstructions() == null) {
+            clear();
+            return;
+        }
+        List<InstructionDTO> flat = new ArrayList<>(c3.getInstructions().size());
+        for (ExpandedInstructionDTO ei : c3.getInstructions()) {
+            flat.add(ei.getInstruction());
+        }
+        show(flat); // משתמש ב-show(List<InstructionDTO>) הקיים אצלך
     }
 
     /** מציג רשימת הוראות ישירה. */

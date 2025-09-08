@@ -19,10 +19,10 @@
     <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="71.0" prefWidth="777.0">
          <children>
             <ComboBox fx:id="cmbProgram" layoutX="14.0" layoutY="8.0" prefHeight="25.0" prefWidth="193.0" promptText="Program\Function selection" />
-            <Button fx:id="btnCollapse" layoutX="214.0" layoutY="8.0" mnemonicParsing="false" text="Collapse" />
+            <Button fx:id="btnCollapse" layoutX="214.0" layoutY="8.0" mnemonicParsing="false" onAction="#onCollapseClicked" text="Collapse" />
             <Label layoutX="310.0" layoutY="-2.0" prefHeight="45.0" prefWidth="119.0" text="Current/Max Degree:" />
             <TextField fx:id="txtDegree" layoutX="430.0" layoutY="8.0" prefHeight="25.0" prefWidth="43.0" />
-            <Button fx:id="btnExpand" layoutX="488.0" layoutY="8.0" mnemonicParsing="false" text="Expand" />
+            <Button fx:id="btnExpand" layoutX="488.0" layoutY="8.0" mnemonicParsing="false" onAction="#onExpandClicked" text="Expand" />
             <ComboBox fx:id="cmbHighlight" layoutX="553.0" layoutY="8.0" prefHeight="25.0" prefWidth="142.0" promptText="Highlight selection" />
          </children></AnchorPane>
   </items>

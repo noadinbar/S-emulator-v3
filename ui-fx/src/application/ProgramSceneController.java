@@ -15,6 +15,10 @@ import execution.HistoryDTO;
 import execution.RunHistoryEntryDTO;
 
 import display.Command2DTO;
+import display.Command3DTO;
+import display.ExpandedInstructionDTO;
+import display.InstructionDTO;
+import java.util.stream.Collectors;
 
 import api.DisplayAPI;
 import api.ExecutionAPI;
@@ -48,15 +52,22 @@ public class ProgramSceneController {
     private DisplayAPI display; // מוזרק אחרי LOAD
     private ExecutionAPI exec;  // נוצר בזמן הרצה
 
+    private int currentDegree = 0;
+    private int maxDegree = 0;
+
+
     @FXML
     private void initialize() {
         if (runOptionsController != null) {
             runOptionsController.setMainController(this);
         }
+
         if (headerController != null) {
             headerController.setOnLoaded(this::onProgramLoaded);
-
+            headerController.setOnExpand(()  -> changeDegreeAndShow(+1));
+            headerController.setOnCollapse(() -> changeDegreeAndShow(-1));
         }
+
     }
 
     /** נקראת מכפתור "Start Execute" — מבצעת בדיקות ואז קוראת פנימית ל-handleRun(). */
@@ -89,13 +100,16 @@ public class ProgramSceneController {
         if (outputsController != null) outputsController.clear();  // <<< חדש
         if (historyController != null) historyController.clear();
 
-        // עדכון הדרגה ("0 / max") בהדר
-        int max = exec.getMaxDegree();
-        headerController.setDegree(0, max);
+        maxDegree = exec.getMaxDegree();
+        currentDegree = 0;
+        headerController.setMaxDegree(maxDegree);
+        headerController.setCurrentDegree(currentDegree);
 
-        // מציגים את Command2 במקומות הקיימים — מינימום שינוי
-        Command2DTO dto = display.getCommand2();
-        if (programTableController != null) programTableController.show(dto);
+        // מציגים את התוכנית המורחבת לדרגה 0 בטבלת ה-Instructions
+        if (programTableController != null) {
+            Command3DTO c3 = this.display.expand(currentDegree);
+            programTableController.showExpanded(c3);
+        }
         if (runOptionsController != null)   runOptionsController.setButtonsEnabled(true);
 
     }
@@ -134,6 +148,19 @@ public class ProgramSceneController {
 
     }
 
+    private void changeDegreeAndShow(int delta) {
+        if (display == null || programTableController == null) return;
+
+        int target = currentDegree + delta;
+
+
+        // כאן מתרחשת הקריאה ל-expand של המנוע!
+        Command3DTO c3 = display.expand(target);
+        programTableController.showExpanded(c3); // מציג את שורות ה-Instruction אחרי ההרחבה
+
+        currentDegree = target;
+        headerController.setCurrentDegree(currentDegree); // מעדכן תצוגת "current / max"
+    }
 
     /** מוזנקת לאחר LOAD; מאפסת גם מופע Execution. */
     public void setDisplay(DisplayAPI display) {
@@ -165,4 +192,6 @@ public class ProgramSceneController {
     }
 
     // (שאר הקרסים/ניקוי UI/handleLoadXmlRequested נשארים כמו אצלך או TODO)
+
+
 }

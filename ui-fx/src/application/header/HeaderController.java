@@ -4,10 +4,8 @@ import api.DisplayAPI;
 import api.LoadAPI;
 import exportToDTO.LoadAPIImpl;
 import javafx.application.Platform;
-import javafx.beans.property.BooleanProperty;
-import javafx.beans.property.ObjectProperty;
-import javafx.beans.property.SimpleBooleanProperty;
-import javafx.beans.property.SimpleObjectProperty;
+import javafx.beans.binding.Bindings;
+import javafx.beans.property.*;
 import javafx.concurrent.Task;
 import javafx.fxml.FXML;
 import javafx.scene.control.Alert;
@@ -38,6 +36,10 @@ public class HeaderController {
     // סטטוסי UI
     private final BooleanProperty busy   = new SimpleBooleanProperty(false); // בזמן טעינה
     private final BooleanProperty loaded = new SimpleBooleanProperty(false); // האם נטען תוכנית
+    private final IntegerProperty currentDegree = new SimpleIntegerProperty(0);
+    private final IntegerProperty maxDegree     = new SimpleIntegerProperty(0);
+    private final ObjectProperty<Runnable> onExpand   = new SimpleObjectProperty<>();
+    private final ObjectProperty<Runnable> onCollapse = new SimpleObjectProperty<>();
 
     // callback שה-Controller הראשי ירשום כדי לקבל DisplayAPI טעון
     private final ObjectProperty<Consumer<DisplayAPI>> onLoaded = new SimpleObjectProperty<>();
@@ -56,12 +58,24 @@ public class HeaderController {
 
 
         cmbProgram.disableProperty().bind(busy.or(loaded.not()));
-        btnCollapse.disableProperty().bind(busy.or(loaded.not()));
-        btnExpand.disableProperty().bind(busy.or(loaded.not()));
         cmbHighlight.disableProperty().bind(busy.or(loaded.not()));
 
+        txtDegree.textProperty().bind(
+                Bindings.createStringBinding(
+                        () -> currentDegree.get() + " / " + maxDegree.get(),
+                        currentDegree, maxDegree
+                )
+        );
+        btnCollapse.disableProperty().bind(
+                busy.or(loaded.not()).or(currentDegree.lessThanOrEqualTo(0))
+        );
+        btnExpand.disableProperty().bind(
+                busy.or(loaded.not()).or(currentDegree.greaterThanOrEqualTo(maxDegree))
+        );
 
         progressBar.setVisible(false);
+
+
     }
 
 
@@ -70,9 +84,7 @@ public class HeaderController {
     }
 
 
-    public void setDegree(int current, int max) {
-        txtDegree.setText(current + " / " + max);
-    }
+
 
     // === Handlers ===
     @FXML
@@ -170,10 +182,21 @@ public class HeaderController {
         // הפעלה ברקע — כמו שסיכמנו ב-study
         new Thread(task, "xml-loader").start();
     }
+    @FXML private void onExpandClicked()   { var r = onExpand.get();   if (r != null) r.run(); }
+    @FXML private void onCollapseClicked() { var r = onCollapse.get(); if (r != null) r.run(); }
+
+    public void setOnExpand(Runnable r)   { onExpand.set(r); }
+    public void setOnCollapse(Runnable r) { onCollapse.set(r); }
+
+    public void setCurrentDegree(int current) { currentDegree.set(current); }
+    public void setMaxDegree(int max)         { maxDegree.set(max); }
+
+    // אופציונלי לשמירה על תאימות:
+   // public void setDegree(int current, int max) { currentDegree.set(current); maxDegree.set(max); }
 
     @FXML private void onProgramChanged()   { /* בהמשך */ }
-    @FXML private void onCollapseClicked()  { /* בהמשך */ }
-    @FXML private void onExpandClicked()    { /* בהמשך */ }
+
+
     @FXML private void onHighlightChanged() { /* בהמשך */ }
 
     // === Utils ===

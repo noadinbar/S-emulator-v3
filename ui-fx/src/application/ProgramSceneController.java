@@ -51,6 +51,9 @@ public class ProgramSceneController {
         if (runOptionsController != null) {
             runOptionsController.setMainController(this);
         }
+        if (headerController != null) {
+            headerController.setOnLoaded(this::onProgramLoaded);
+        }
     }
 
     /** נקראת מכפתור "Start Execute" — מבצעת בדיקות ואז קוראת פנימית ל-handleRun(). */
@@ -64,6 +67,23 @@ public class ProgramSceneController {
         }
         handleRun(); // פנימי
     }
+
+
+    // חדש: נקרא ע"י HeaderController אחרי טעינת XML מוצלחת
+    private void onProgramLoaded(DisplayAPI display) {
+        this.display = display;
+        this.exec = display.execution();
+
+        // עדכון הדרגה ("0 / max") בהדר
+        int max = exec.getMaxDegree();
+        headerController.setDegree(0, max);
+
+        // מציגים את Command2 במקומות הקיימים — מינימום שינוי
+        Command2DTO dto = display.getCommand2();
+        if (programTableController != null) programTableController.show(dto);
+        if (inputsController != null)       inputsController.show(dto);
+    }
+
 
     /** לוגיקת הרצה בפועל (פרטי). */
     private void handleRun() {

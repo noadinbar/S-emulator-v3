@@ -3,6 +3,7 @@
 <?import javafx.scene.control.Button?>
 <?import javafx.scene.control.ComboBox?>
 <?import javafx.scene.control.Label?>
+<?import javafx.scene.control.ProgressBar?>
 <?import javafx.scene.control.SplitPane?>
 <?import javafx.scene.control.TextField?>
 <?import javafx.scene.layout.AnchorPane?>
@@ -11,10 +12,11 @@
   <items>
     <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="100.0" prefWidth="160.0">
          <children>
-            <Button fx:id="btnLoad" layoutX="34.0" layoutY="8.0" mnemonicParsing="false" text="Load File" />
-            <TextField fx:id="txtPath" layoutX="123.0" layoutY="8.0" prefHeight="25.0" prefWidth="443.0" />
+            <Button fx:id="btnLoad" layoutX="14.0" layoutY="8.0" mnemonicParsing="false" onAction="#onLoadClicked" text="Load File" />
+            <TextField fx:id="txtPath" layoutX="87.0" layoutY="8.0" prefHeight="25.0" prefWidth="443.0" />
+            <ProgressBar fx:id="progressBar" layoutX="554.0" layoutY="12.0" prefWidth="200.0" progress="0.0" />
          </children></AnchorPane>
-    <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="60.0" prefWidth="777.0">
+    <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="71.0" prefWidth="777.0">
          <children>
             <ComboBox fx:id="cmbProgram" layoutX="14.0" layoutY="8.0" prefHeight="25.0" prefWidth="193.0" promptText="Program\Function selection" />
             <Button fx:id="btnCollapse" layoutX="214.0" layoutY="8.0" mnemonicParsing="false" text="Collapse" />

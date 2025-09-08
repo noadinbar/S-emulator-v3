@@ -52,11 +52,12 @@ public class MainApp extends Application {
         stage.centerOnScreen();
         stage.show();
 
-        // בדיקת טעינה מינימלית + הצגת פקודה 2 בטבלה
-        tinySmokeTestLoad(controller);
+        // לא טוענים XML קשיח — מחכים לטעינה דרך ההדר:
+        // tinySmokeTestLoad(controller);
     }
 
-    // טוען XML נתון, מביא Command2DTO, מדפיס לקונסול, ומציג בטבלה דרך הקונטרולר הראשי
+    // --- בדיקות ידניות (נשארו כפי שהיו; לא נקראות אוטומטית) ---
+
     private void tinySmokeTestLoad(application.ProgramSceneController controller) {
         Path xml = Paths.get("C:\\Users\\luzon\\Desktop\\projects\\java\\Project-java\\synthetic.xml");
         System.out.println("[SMOKE] Loading XML: " + xml);
@@ -76,7 +77,7 @@ public class MainApp extends Application {
             }
 
             // --- בדיקת ריצה לקונסול בלבד (לא נוגע ב-UI) ---
-           // tinySmokeTestRun(display);
+            // tinySmokeTestRun(display);
 
         } catch (Exception e) {
             System.out.println("[FAIL] " + e.getClass().getSimpleName() + ": " + e.getMessage());
@@ -91,8 +92,7 @@ public class MainApp extends Application {
             List<Long> inputs = Collections.emptyList(); // שווה-ערך לכל xi=0
             ExecutionRequestDTO req = new ExecutionRequestDTO(0, inputs); // degree=0 (AS IS)
             ExecutionDTO res = exec.execute(req);
-
-
+            // הדפסות/בדיקות נוספות כנדרש...
         } catch (Exception e) {
             System.out.println("[SMOKE/RUN][FAIL] " + e.getClass().getSimpleName() + ": " + e.getMessage());
             e.printStackTrace();

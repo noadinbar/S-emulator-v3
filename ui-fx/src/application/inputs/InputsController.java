@@ -77,7 +77,7 @@ public class InputsController implements Initializable {
         return row;
     }*/
     private HBox createRow(int index) {
-        Label lbl = new Label("X" + index + " =");
+        Label lbl = new Label("x" + index + " =");
         TextField tf = new TextField("0");
         tf.setTextFormatter(new TextFormatter<>(chg ->
                 chg.getControlNewText().matches("\\d*") ? chg : null
@@ -153,7 +153,8 @@ public class InputsController implements Initializable {
         if (lstInputs == null || lstInputs.getItems().isEmpty()) return;
         HBox row = lstInputs.getItems().get(0);
         TextField tf = (TextField) row.getChildren().get(1);
-        Platform.runLater(() -> { tf.requestFocus(); tf.selectAll(); });
+        //Platform.runLater(() -> { tf.requestFocus(); tf.selectAll(); });
+        tf.requestFocus();
     }
 
     private void focusTextFieldAt(int rowIndex) {

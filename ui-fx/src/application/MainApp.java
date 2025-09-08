@@ -13,7 +13,7 @@ import java.nio.file.Paths;
 import java.util.Collections;
 import java.util.List;
 
-// ממשקי המנוע וה-DTO אצלך
+// ממשקי המנוע וה-DTO לבדיקה ידנית
 import api.LoadAPI;
 import api.DisplayAPI;
 import api.ExecutionAPI;
@@ -21,19 +21,18 @@ import exportToDTO.LoadAPIImpl;
 import display.Command2DTO;
 import execution.ExecutionDTO;
 import execution.ExecutionRequestDTO;
-import execution.VarValueDTO;
 import types.VarRefDTO;
 import types.VarOptionsDTO;
 
 public class MainApp extends Application {
     @Override
     public void start(Stage stage) throws Exception {
-        // טוען את ה-FXML הראשי (נמצא תחת application/program_scene.fxml)
+        // טוען את ה-FXML הראשי
         FXMLLoader fxml = new FXMLLoader(getClass().getResource("program_scene.fxml"));
         Parent root = fxml.load();
-        application.ProgramSceneController controller = fxml.getController();
+        ProgramSceneController controller = fxml.getController();
 
-        Scene scene = new Scene(root); // גודל פתיחה יילקח מה-pref ב-FXML
+        Scene scene = new Scene(root); // גודל פתיחה מה-pref ב-FXML
 
         stage.initStyle(StageStyle.DECORATED);
         stage.setResizable(true);
@@ -42,8 +41,8 @@ public class MainApp extends Application {
 
         // יציאה ב-ESC וב-X
         scene.setOnKeyPressed(e -> {
-            if ("ESCAPE".equals(e.getCode().toString())) {
-                Platform.exit();
+            switch (e.getCode()) {
+                case ESCAPE -> Platform.exit();
             }
         });
         stage.setOnCloseRequest(e -> Platform.exit());
@@ -56,9 +55,9 @@ public class MainApp extends Application {
         // tinySmokeTestLoad(controller);
     }
 
-    // --- בדיקות ידניות (נשארו כפי שהיו; לא נקראות אוטומטית) ---
+    // --- בדיקות ידניות (נשארות, לא נקראות אוטומטית) ---
 
-    private void tinySmokeTestLoad(application.ProgramSceneController controller) {
+    private void tinySmokeTestLoad(ProgramSceneController controller) {
         Path xml = Paths.get("C:\\Users\\luzon\\Desktop\\projects\\java\\Project-java\\synthetic.xml");
         System.out.println("[SMOKE] Loading XML: " + xml);
         try {
@@ -66,33 +65,25 @@ public class MainApp extends Application {
             DisplayAPI display = loader.loadFromXml(xml);
             Command2DTO dto = display.getCommand2();
 
-            // מזרים את ה-display לקונטרולר הראשי (נדרש עבור Start)
+            // מזרים את ה-display לקונטרולר הראשי (כמו טעינה מה־Header)
             controller.setDisplay(display);
+            if (dto != null) controller.showCommand2(dto);
 
-            System.out.println("[OK] Loaded. DTO != null: " + (dto != null));
-            if (dto != null) {
-                System.out.println("[OK] DTO type: " + dto.getClass().getSimpleName());
-                // מציג את פקודה 2 בטבלת ההוראות (Instructions)
-                controller.showCommand2(dto);
-            }
-
-            // --- בדיקת ריצה לקונסול בלבד (לא נוגע ב-UI) ---
-            // tinySmokeTestRun(display);
-
+            // tinySmokeTestRun(display); // לבדיקת ריצה ידנית
         } catch (Exception e) {
             System.out.println("[FAIL] " + e.getClass().getSimpleName() + ": " + e.getMessage());
             e.printStackTrace();
         }
     }
 
-    // מריץ execute() עם degree=0 ואינפוטים ריקים (מתורגמים ל-0) ומדפיס y/cycles/variables
+    // מריץ execute() עם degree=0 ואינפוטים ריקים (מתורגמים ל-0)
     private void tinySmokeTestRun(DisplayAPI display) {
         try {
             ExecutionAPI exec = display.execution();
-            List<Long> inputs = Collections.emptyList(); // שווה-ערך לכל xi=0
-            ExecutionRequestDTO req = new ExecutionRequestDTO(0, inputs); // degree=0 (AS IS)
+            List<Long> inputs = Collections.emptyList(); // שקול לכל xi=0
+            ExecutionRequestDTO req = new ExecutionRequestDTO(0, inputs); // degree=0
             ExecutionDTO res = exec.execute(req);
-            // הדפסות/בדיקות נוספות כנדרש...
+            System.out.println("[SMOKE/RUN] cycles=" + res.getTotalCycles() + ", y=" + res.getyValue());
         } catch (Exception e) {
             System.out.println("[SMOKE/RUN][FAIL] " + e.getClass().getSimpleName() + ": " + e.getMessage());
             e.printStackTrace();

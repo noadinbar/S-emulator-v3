@@ -53,6 +53,7 @@ public class ProgramSceneController {
         }
         if (headerController != null) {
             headerController.setOnLoaded(this::onProgramLoaded);
+
         }
     }
 
@@ -62,9 +63,17 @@ public class ProgramSceneController {
             Platform.runLater(this::runExecute);
             return;
         }
+
         if (display == null || inputsController == null ) {
             return; // אפשר להחליף בהודעת שגיאה ייעודית אם תרצי
         }
+        String csv = inputsController.collectValuesCsvPadded();
+
+        // 2) מציגים את ה-CSV למעלה באיזור ה-variables (כקו ראשון), לפני ההרצה
+        if (outputsController != null) {
+            outputsController.setVariableLines(java.util.List.of("Inputs: " + csv));
+        }
+
         handleRun(); // פנימי
     }
 
@@ -73,6 +82,9 @@ public class ProgramSceneController {
     private void onProgramLoaded(DisplayAPI display) {
         this.display = display;
         this.exec = display.execution();
+
+        if (inputsController != null)  inputsController.clear();   // <<< חדש
+        if (outputsController != null) outputsController.clear();  // <<< חדש
 
         // עדכון הדרגה ("0 / max") בהדר
         int max = exec.getMaxDegree();
@@ -134,7 +146,8 @@ public class ProgramSceneController {
         if (display == null || inputsController == null) return;
         Command2DTO dto = display.getCommand2();
         inputsController.show(dto);
-        // אם יש: inputsController.focusFirstField();
+       Platform.runLater(inputsController::focusFirstField);
+
     }
 
     // --- עזרים ---

@@ -40,7 +40,7 @@ public class RunOptionsController {
     @FXML private void onStartRegularAction() { main.showInputsForEditing(); }
 
     // START: מציג את רשימת ה-Inputs ומאפשר עריכה (בלי להריץ)
-    @FXML private void onStartExecuteAction() { } // <-- היה main.runExecute();
+    @FXML private void onStartExecuteAction() { main.runExecute(); }
 
     @FXML private void onStartDebugAction()   { /* TODO */ }
     @FXML private void onStopAction()         { /* TODO */ }

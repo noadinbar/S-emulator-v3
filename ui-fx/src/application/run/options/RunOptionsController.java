@@ -7,9 +7,9 @@ import application.ProgramSceneController;
 
 public class RunOptionsController {
 
-    @FXML private Button btnStartRegular;
-    @FXML private Button btnStartExecute; // "Start" — יציג את ה-Inputs לעריכה
-    @FXML private Button btnStartDebug;
+    @FXML private Button btnStart;
+    @FXML private Button btnRun; // "Start" — יציג את ה-Inputs לעריכה
+    @FXML private Button btnDebug;
     @FXML private Button btnStop;
     @FXML private Button btnResume;
     @FXML private Button btnStepOver;
@@ -29,20 +29,20 @@ public class RunOptionsController {
 
     public void setButtonsEnabled(boolean enabled) {
         boolean disable = !enabled;
-        if (btnStartRegular != null) btnStartRegular.setDisable(disable);
-        if (btnStartExecute != null) btnStartExecute.setDisable(disable);
-        if (btnStartDebug != null)   btnStartDebug.setDisable(disable);
+        if (btnStart != null) btnStart.setDisable(disable);
+        if (btnRun != null) btnRun.setDisable(disable);
+        if (btnDebug != null)   btnDebug.setDisable(disable);
         if (btnStop != null)         btnStop.setDisable(disable);
         if (btnResume != null)       btnResume.setDisable(disable);
         if (btnStepOver != null)     btnStepOver.setDisable(disable);
     }
 
-    @FXML private void onStartRegularAction() { main.showInputsForEditing(); }
+    @FXML private void onStartAction() { main.showInputsForEditing(); }
 
     // START: מציג את רשימת ה-Inputs ומאפשר עריכה (בלי להריץ)
-    @FXML private void onStartExecuteAction() { main.runExecute(); }
+    @FXML private void onRunAction() { main.runExecute(); }
 
-    @FXML private void onStartDebugAction()   { /* TODO */ }
+    @FXML private void onDebugAction()   { /* TODO */ }
     @FXML private void onStopAction()         { /* TODO */ }
     @FXML private void onResumeAction()       { /* TODO */ }
     @FXML private void onStepOverAction()     { /* TODO */ }

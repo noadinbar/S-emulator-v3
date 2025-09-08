@@ -1,44 +1,65 @@
 package application.table.history;
 
+import javafx.beans.property.ReadOnlyIntegerWrapper;
+import javafx.beans.property.ReadOnlyLongWrapper;
+import javafx.beans.property.ReadOnlyStringWrapper;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
-import javafx.scene.control.cell.PropertyValueFactory;
+
+import execution.RunHistoryEntryDTO;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class HistoryController {
 
-    @FXML private TableView<HistoryRow> tblHistory;
+    @FXML private TableView<RunHistoryEntryDTO> tblHistory;
 
-    @FXML private TableColumn<HistoryRow, Number> colRunId;
-    @FXML private TableColumn<HistoryRow, Number> colDegree;
-    @FXML private TableColumn<HistoryRow, String>  colInputs;
-    @FXML private TableColumn<HistoryRow, Number> colY;
-    @FXML private TableColumn<HistoryRow, Number> colCycles;
+    @FXML private TableColumn<RunHistoryEntryDTO, Number> colRunId;
+    @FXML private TableColumn<RunHistoryEntryDTO, Number> colDegree;
+    @FXML private TableColumn<RunHistoryEntryDTO, String>  colInputs;
+    @FXML private TableColumn<RunHistoryEntryDTO, Number> colY;
+    @FXML private TableColumn<RunHistoryEntryDTO, Number> colCycles;
 
-    private final ObservableList<HistoryRow> items = FXCollections.observableArrayList();
+    private final ObservableList<RunHistoryEntryDTO> items = FXCollections.observableArrayList();
 
     @FXML
     private void initialize() {
-        colRunId.setCellValueFactory(new PropertyValueFactory<>("runId"));
-        colDegree.setCellValueFactory(new PropertyValueFactory<>("degree"));
-        colInputs.setCellValueFactory(new PropertyValueFactory<>("inputs"));
-        colY.setCellValueFactory(new PropertyValueFactory<>("y"));
-        colCycles.setCellValueFactory(new PropertyValueFactory<>("cycles"));
+        colRunId.setCellValueFactory(cd ->
+                new ReadOnlyIntegerWrapper(cd.getValue().getRunNumber()));
+        colDegree.setCellValueFactory(cd ->
+                new ReadOnlyIntegerWrapper(cd.getValue().getDegree()));
+        colInputs.setCellValueFactory(cd ->
+                new ReadOnlyStringWrapper(toCsv(cd.getValue().getInputs())));
+        colY.setCellValueFactory(cd ->
+                new ReadOnlyLongWrapper(cd.getValue().getYValue()));
+        colCycles.setCellValueFactory(cd ->
+                new ReadOnlyLongWrapper(cd.getValue().getCycles()));
 
         tblHistory.setItems(items);
     }
 
-    // stubs
-    public void setEntries(java.util.List<HistoryRow> rows) { /* TODO */ }
-    public void addEntry(HistoryRow row) { /* TODO */ }
-    public void clear() { /* TODO */ }
+    public void setEntries(List<RunHistoryEntryDTO> rows) {
+        items.setAll(rows);
+    }
 
-    public static class HistoryRow {
-        // TODO: fields + getters: int runId, int degree, String inputs, long y, long cycles
-        // e.g. public int getRunId(){return runId;} etc.
+    public void addEntry(RunHistoryEntryDTO row) {
+        items.add(row);
+        if (tblHistory != null) {
+            tblHistory.scrollTo(items.size() );
+        }
+    }
+
+    public void clear() {
+        items.clear();
+    }
+
+    // helper
+    private static String toCsv(List<Long> xs) {
+        if (xs == null || xs.isEmpty()) return "";
+        return xs.stream().map(String::valueOf).collect(Collectors.joining(","));
     }
 }

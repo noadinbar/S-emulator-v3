@@ -11,6 +11,8 @@ import application.table.history.HistoryController;
 import application.run.options.RunOptionsController;
 import application.outputs.OutputsController;
 import application.inputs.InputsController;
+import execution.HistoryDTO;
+import execution.RunHistoryEntryDTO;
 
 import display.Command2DTO;
 
@@ -85,6 +87,7 @@ public class ProgramSceneController {
 
         if (inputsController != null)  inputsController.clear();   // <<< חדש
         if (outputsController != null) outputsController.clear();  // <<< חדש
+        if (historyController != null) historyController.clear();
 
         // עדכון הדרגה ("0 / max") בהדר
         int max = exec.getMaxDegree();
@@ -106,26 +109,29 @@ public class ProgramSceneController {
         ExecutionRequestDTO req = new ExecutionRequestDTO(0, inputs); // degree=0 (AS IS)
         ExecutionDTO result = exec.execute(req);
 
-        // --- הדפסות בדיקה לקונסול ---
-        System.out.println("[RUN/CHECK] inputs (x1..xN) = " + inputs);
-        System.out.println("[RUN/CHECK] y = " + result.getyValue());
-        System.out.println("[RUN/CHECK] cycles = " + result.getTotalCycles());
-        System.out.println("[RUN/CHECK] finals:");
-        // --- סוף הדפסות ---
+
 
         Map<String, Long> vars = new LinkedHashMap<>();
         for (VarValueDTO vv : result.getFinals()) {
             String name = formatVarName(vv.getVar());
             Long value = vv.getValue();
-
-            // הדפסת כל משתנה ותוצאתו
-            System.out.println("    " + name + " = " + value);
-
             vars.put(name, value);
         }
 
         outputsController.setVariables(vars);
         outputsController.setCycles(result.getTotalCycles());
+        // --- היסטוריה מתוך ה-DTO של המנוע ---
+        execution.HistoryDTO hist = display.getHistory();
+        List<execution.RunHistoryEntryDTO> entries =
+                (hist != null) ? hist.getEntries() : null;
+
+        if (historyController != null && entries != null && !entries.isEmpty()) {
+            RunHistoryEntryDTO last = entries.get(entries.size() - 1);
+            historyController.addEntry(last);
+
+
+        }
+
     }
 
 

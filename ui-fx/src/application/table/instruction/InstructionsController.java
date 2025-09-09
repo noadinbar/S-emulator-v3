@@ -21,8 +21,10 @@ import types.VarRefDTO;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 public class InstructionsController {
 
@@ -36,7 +38,7 @@ public class InstructionsController {
 
     private final ObservableList<InstructionDTO> items = FXCollections.observableArrayList();
 
-    // מיפוי: מספר שורה -> ExpandedInstructionDTO (בשביל createdByChain)
+    /** מיפוי: מספר שורה -> ExpandedInstructionDTO (בשביל createdByChain/getCreatedBy) */
     private final Map<Integer, ExpandedInstructionDTO> expandedByNumber = new HashMap<>();
 
     @FXML
@@ -52,13 +54,9 @@ public class InstructionsController {
         colInstruction.setCellValueFactory(d -> new ReadOnlyStringWrapper(formatBody(d.getValue().getBody())));
     }
 
-    // ===== ספירות (לסאמרי אם צריך) =====
-    public long countBasic() {
-        return items.stream().filter(i -> i.getKind() == InstrKindDTO.BASIC).count();
-    }
-    public long countSynthetic() {
-        return items.stream().filter(i -> i.getKind() == InstrKindDTO.SYNTHETIC).count();
-    }
+    // ===== ספירות (לסאמרי) =====
+    public long countBasic()    { return items.stream().filter(i -> i.getKind() == InstrKindDTO.BASIC).count(); }
+    public long countSynthetic(){ return items.stream().filter(i -> i.getKind() == InstrKindDTO.SYNTHETIC).count(); }
 
     /** חשיפה לרשימת הפריטים (אם צריך) */
     public ObservableList<InstructionDTO> getItemsView() { return items; }
@@ -96,8 +94,8 @@ public class InstructionsController {
 
     /** מציג רשימת הוראות ישירה */
     public void show(List<InstructionDTO> instructions) {
-        expandedByNumber.clear(); // הצגה ישירה בלי expand
-        setRows(instructions);
+        // חשוב: לא לנקות כאן את expandedByNumber, כי המיפוי רלוונטי לטבלה העליונה בלבד
+        items.setAll(instructions == null ? List.of() : instructions);
     }
 
     public void setRows(List<InstructionDTO> rows) {
@@ -108,7 +106,13 @@ public class InstructionsController {
         items.clear();
         expandedByNumber.clear();
     }
+    public void hideLineColumn() {
+        if (colLine != null) colLine.setVisible(false);
+    }
 
+    public void showLineColumn() {
+        if (colLine != null) colLine.setVisible(true);
+    }
     // ===== בחירה ושרשרת יוחסין =====
 
     public InstructionDTO getSelectedItem() {
@@ -119,12 +123,41 @@ public class InstructionsController {
         return tblInstructions.getSelectionModel().selectedItemProperty();
     }
 
-    /** מחזיר את השרשרת כפי שה-Engine סיפק: אב מיידי → ... → מקור (האחרונה) */
+    /**
+     * שרשרת היוצרים כפי שה-Engine סיפק: אב מיידי → ... → מקור (האחרונה).
+     * אם getCreatedByChain() ריק/‏null, נופלים אחורה להרכבה רקורסיבית מ-getCreatedBy().
+     */
     public List<InstructionDTO> getCreatedByChainFor(InstructionDTO instr) {
         if (instr == null) return List.of();
         ExpandedInstructionDTO ei = expandedByNumber.get(instr.getNumber());
-        if (ei == null || ei.getCreatedByChain() == null) return List.of();
-        return ei.getCreatedByChain();
+        if (ei == null) return List.of();
+
+        List<InstructionDTO> chain = ei.getCreatedByChain();
+        if (chain != null && !chain.isEmpty()) {
+            return chain; // כבר ממוינת: הורה מיידי → ... → מקורית
+        }
+
+        // נפילה אחורית: עומק-קודם, הורה מיידי קודם, ואז האבות שלו...
+        return buildChainDepthFirst(ei, new LinkedHashSet<>());
+    }
+
+    /** בניית שרשרת רקורסיבית על בסיס getCreatedBy(), עם הגנה מלולאות. */
+    private List<InstructionDTO> buildChainDepthFirst(ExpandedInstructionDTO node, Set<Integer> seen) {
+        List<InstructionDTO> out = new ArrayList<>();
+        if (node == null) return out;
+
+        for (InstructionDTO parent : node.getCreatedByChain()) {
+            if (parent == null) continue;
+            int num = parent.getNumber();
+            if (seen.add(num)) {
+                out.add(parent); // ההורה המיידי ראשון
+                ExpandedInstructionDTO parentEi = expandedByNumber.get(num);
+                if (parentEi != null) {
+                    out.addAll(buildChainDepthFirst(parentEi, seen)); // ואז האבות שלו
+                }
+            }
+        }
+        return out; // סדר: אב מיידי, סב, ..., מקורית (האחרונה)
     }
 
     // ===== פורמט תצוגה =====
@@ -150,8 +183,7 @@ public class InstructionsController {
             case ASSIGNMENT:
                 return String.format("%s <- %s", formatVar(b.getDest()), formatVar(b.getSource()));
             case CONSTANT_ASSIGNMENT:
-                return String.format("%s <- %d", formatVar(b.getDest()), b.getConstant()) ;
-
+                return String.format("%s <- %d", formatVar(b.getDest()), b.getConstant());
             case ZERO_VARIABLE:
                 return String.format("%s <- 0", formatVar(b.getDest()));
             case JUMP_NOT_ZERO:

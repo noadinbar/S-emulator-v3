@@ -1,9 +1,12 @@
 package application.outputs;
 
+import execution.ExecutionDTO;
 import javafx.fxml.FXML;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
+import types.VarOptionsDTO;
 
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -49,6 +52,48 @@ public class OutputsController {
     public void setCycles(long cycles) {
         if (txtCycles != null) {
             txtCycles.setText(Long.toString(cycles));
+        }
+    }
+
+
+
+
+    private static String formatFinalsForDisplay(ExecutionDTO result) {
+        StringBuilder sb = new StringBuilder();
+
+        // 1) y קודם
+        sb.append("y = ").append(result.getyValue()).append('\n');
+
+        // 2) כל ה-x לפי אינדקס עולה
+        result.getFinals().stream()
+                .filter(v -> v.getVar().getVariable() == VarOptionsDTO.x)
+                .sorted(Comparator.comparingInt(v -> v.getVar().getIndex()))
+                .forEach(v -> sb.append('x')
+                        .append(v.getVar().getIndex())
+                        .append(" = ")
+                        .append(v.getValue())
+                        .append('\n'));
+
+        // 3) כל ה-z לפי אינדקס עולה
+        result.getFinals().stream()
+                .filter(v -> v.getVar().getVariable() == VarOptionsDTO.z)
+                .sorted(Comparator.comparingInt(v -> v.getVar().getIndex()))
+                .forEach(v -> sb.append('z')
+                        .append(v.getVar().getIndex())
+                        .append(" = ")
+                        .append(v.getValue())
+                        .append('\n'));
+
+
+        return sb.toString().trim();
+    }
+
+    public void showExecution(ExecutionDTO result) {
+        if (txtCycles != null) {
+            txtCycles.setText(Long.toString(result.getTotalCycles()));
+        }
+        if (txtVariables != null) {
+            txtVariables.setText(formatFinalsForDisplay(result));
         }
     }
 

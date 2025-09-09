@@ -119,22 +119,20 @@ public class ProgramSceneController {
     private void handleRun() {
         List<Long> inputs = inputsController.collectValuesPadded();
 
-        if (exec == null) exec = display.execution();
-        ExecutionRequestDTO req = new ExecutionRequestDTO(0, inputs); // degree=0 (AS IS)
+        int degree = headerController.getCurrentDegree();
+
+
+        exec = display.executionForDegree(degree);
+
+        ExecutionRequestDTO req = new ExecutionRequestDTO(degree, inputs);
         ExecutionDTO result = exec.execute(req);
 
 
 
-        Map<String, Long> vars = new LinkedHashMap<>();
-        for (VarValueDTO vv : result.getFinals()) {
-            String name = formatVarName(vv.getVar());
-            Long value = vv.getValue();
-            vars.put(name, value);
-        }
 
-        outputsController.setVariables(vars);
-        outputsController.setCycles(result.getTotalCycles());
-        // --- היסטוריה מתוך ה-DTO של המנוע ---
+        outputsController.showExecution(result);
+
+
         execution.HistoryDTO hist = display.getHistory();
         List<execution.RunHistoryEntryDTO> entries =
                 (hist != null) ? hist.getEntries() : null;

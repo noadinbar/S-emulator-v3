@@ -41,29 +41,28 @@ public class ExecuteAction {
             Integer degree = null;
             Command3DTO expandedDto = null;
 
-            // ←← לולאת בחירת דרגה: מאמתים מיד דרך ה-engine; על שגיאה — חוזרים לשאול
+
             while (true) {
                 System.out.print("Enter desired degree (0 for no expansion): ");
                 int d = parseIntOr(sc.nextLine(), 0);
                 System.out.println(ExecutionFormatter.confirmDegree(d));
                 try {
-                    // אימות במנוע: יזרוק InvalidDegreeException אם d שלילי / גדול מה-max
-                    // נקרא תמיד; אם d==0 לא נדפיס הרחבה בהמשך, אבל זה מאמת מוקדם.
+
                     Command3DTO probe = displayAPI.expand(d);
                     if (d > 0) {
-                        expandedDto = probe; // נשמור להדפסה בהמשך
+                        expandedDto = probe;
                     } else {
-                        expandedDto = null;  // אין הרחבה להדפיס
+                        expandedDto = null;
                     }
                     degree = d;
-                    break; // דרגה תקינה → יציאה מהלולאה
+                    break;
                 } catch (InvalidDegreeException e) {
                     System.out.println("Error: " + e.getMessage());
-                    // חוזרים לראש הלולאה ושואלים שוב דרגה
+
                 }
             }
 
-            // מכאן ואילך — רק אחרי שדרגה עברה אימות
+
             Command2DTO c2 = displayAPI.getCommand2();
             System.out.println(ExecutionFormatter.formatInputsInUse(c2.getInputsInUse()));
 
@@ -95,7 +94,7 @@ public class ExecuteAction {
                 System.out.println();
             }
 
-            // ריצה בפועל (אפשר להישאר עם אותו דפוס)
+
             ExecutionAPI runner = (degree == 0)
                     ? baseExec
                     : displayAPI.executionForDegree(degree);

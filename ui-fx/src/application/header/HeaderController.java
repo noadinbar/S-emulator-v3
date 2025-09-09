@@ -190,6 +190,7 @@ public class HeaderController {
 
     public void setCurrentDegree(int current) { currentDegree.set(current); }
     public void setMaxDegree(int max)         { maxDegree.set(max); }
+    public int getCurrentDegree() { return currentDegree.get(); }
 
     // אופציונלי לשמירה על תאימות:
    // public void setDegree(int current, int max) { currentDegree.set(current); maxDegree.set(max); }

@@ -18,6 +18,8 @@ import display.Command2DTO;
 import display.Command3DTO;
 import display.ExpandedInstructionDTO;
 import display.InstructionDTO;
+
+import java.util.ArrayList;
 import java.util.stream.Collectors;
 
 import api.DisplayAPI;
@@ -66,6 +68,15 @@ public class ProgramSceneController {
             headerController.setOnLoaded(this::onProgramLoaded);
             headerController.setOnExpand(()  -> changeDegreeAndShow(+1));
             headerController.setOnCollapse(() -> changeDegreeAndShow(-1));
+        }
+
+
+        if (summaryController != null && programTableController != null) {
+            summaryController.wireTo(programTableController);
+        }
+
+        if (programTableController != null && chainTableController != null) {
+            wireLineage();
         }
 
     }
@@ -172,7 +183,7 @@ public class ProgramSceneController {
         }
     }
 
-    /** מוזנק מכפתור START כדי לפתוח/לערוך אינפוטים. */
+
     public void showInputsForEditing() {
         if (display == null || inputsController == null) return;
         Command2DTO dto = display.getCommand2();
@@ -181,6 +192,34 @@ public class ProgramSceneController {
 
     }
 
+    private void wireLineage() {
+        // עדכון ראשוני (אם כבר יש בחירה)
+        updateChain(programTableController.getSelectedItem());
+
+        // מאזין לשינויים בבחירה
+        programTableController.selectedItemProperty().addListener((obs, oldSel, newSel) -> {
+            updateChain(newSel);
+        });
+    }
+
+    private void updateChain(InstructionDTO selected) {
+        if (chainTableController == null) return;
+
+        if (selected == null) {
+            chainTableController.clear();
+            // אופציונלי: לכבות כשהטבלה ריקה
+            chainTableController.getTableView().setDisable(true);
+            return;
+        }
+
+        List<InstructionDTO> lineage = new ArrayList<>();
+        lineage.add(selected); // הנבחרת למעלה
+        lineage.addAll(programTableController.getCreatedByChainFor(selected)); // המקורית בסוף
+
+        chainTableController.setRows(lineage);
+        // אופציונלי: לכבות כשהטבלה ריקה
+        chainTableController.getTableView().setDisable(lineage.isEmpty());
+    }
     // --- עזרים ---
     private static String formatVarName(VarRefDTO v) {
         if (v == null) return "";

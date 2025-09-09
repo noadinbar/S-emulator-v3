@@ -46,7 +46,7 @@ public class HeaderController {
     // בראש המחלקה (שדות) — הוסיפי:
     private Path lastValidXmlPath;
     // בראש המחלקה:
-    private File lastDir; // התיקייה האחרונה שנבחר ממנה קובץ
+    private File lastDir;
 
 
     @FXML
@@ -54,9 +54,8 @@ public class HeaderController {
         txtPath.setEditable(false);
         txtDegree.setEditable(false);
         txtDegree.setFocusTraversable(false);
-        txtDegree.setText("0 / 0");
 
-
+        txtDegree.disableProperty().bind(busy.or(loaded.not()));
         cmbProgram.disableProperty().bind(busy.or(loaded.not()));
         cmbHighlight.disableProperty().bind(busy.or(loaded.not()));
 

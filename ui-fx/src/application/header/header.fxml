@@ -1,5 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
+<?import java.net.URL?>
+<?import javafx.geometry.Insets?>
 <?import javafx.scene.control.Button?>
 <?import javafx.scene.control.ComboBox?>
 <?import javafx.scene.control.Label?>
@@ -8,7 +10,13 @@
 <?import javafx.scene.control.TextField?>
 <?import javafx.scene.layout.AnchorPane?>
 
-<SplitPane dividerPositions="0.5" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" orientation="VERTICAL" prefHeight="94.0" prefWidth="780.0" xmlns="http://javafx.com/javafx/24.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="application.header.HeaderController">
+<SplitPane dividerPositions="0.5" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" orientation="VERTICAL" prefHeight="94.0" prefWidth="788.0" xmlns="http://javafx.com/javafx/24.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="application.header.HeaderController">
+    <stylesheets>
+        <URL value="@header.css" />
+    </stylesheets>
+    <padding>
+        <Insets bottom="8" left="8" right="8" top="8" />
+    </padding>
   <items>
     <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="100.0" prefWidth="160.0">
          <children>
@@ -18,12 +26,13 @@
          </children></AnchorPane>
     <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="71.0" prefWidth="777.0">
          <children>
-            <ComboBox fx:id="cmbProgram" layoutX="14.0" layoutY="8.0" prefHeight="25.0" prefWidth="193.0" promptText="Program\Function selection" />
-            <Button fx:id="btnCollapse" layoutX="214.0" layoutY="8.0" mnemonicParsing="false" onAction="#onCollapseClicked" text="Collapse" />
-            <Label layoutX="310.0" layoutY="-2.0" prefHeight="45.0" prefWidth="119.0" text="Current/Max Degree:" />
-            <TextField fx:id="txtDegree" layoutX="430.0" layoutY="8.0" prefHeight="25.0" prefWidth="43.0" />
-            <Button fx:id="btnExpand" layoutX="488.0" layoutY="8.0" mnemonicParsing="false" onAction="#onExpandClicked" text="Expand" />
-            <ComboBox fx:id="cmbHighlight" layoutX="553.0" layoutY="8.0" prefHeight="25.0" prefWidth="142.0" promptText="Highlight selection" />
+            <ComboBox fx:id="cmbProgram" layoutY="5.0" prefHeight="25.0" prefWidth="193.0" promptText="Program\Function selection" />
+            <Button fx:id="btnCollapse" layoutX="206.0" layoutY="5.0" mnemonicParsing="false" onAction="#onCollapseClicked" text="Collapse" />
+            <Label layoutX="280.0" layoutY="-5.0" prefHeight="45.0" prefWidth="119.0" text="Current/Max Degree:" />
+            <TextField fx:id="txtDegree" layoutX="399.0" layoutY="8.0" prefHeight="25.0" prefWidth="43.0" />
+            <Button fx:id="btnExpand" layoutX="458.0" layoutY="8.0" mnemonicParsing="false" onAction="#onExpandClicked" text="Expand" />
+            <ComboBox fx:id="cmbHighlight" layoutX="523.0" layoutY="8.0" prefHeight="25.0" prefWidth="142.0" promptText="Highlight selection" />
+            <ComboBox fx:id="cmbTheme" layoutX="680.0" layoutY="8.0" prefHeight="25.0" prefWidth="89.0" promptText="Theme" />
          </children></AnchorPane>
   </items>
 </SplitPane>

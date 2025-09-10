@@ -1,5 +1,6 @@
 package application;
 
+import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
 import javafx.application.Platform;
 
@@ -24,9 +25,15 @@ import execution.ExecutionRequestDTO;
 import execution.HistoryDTO;
 import execution.RunHistoryEntryDTO;
 
+import javafx.scene.layout.VBox;
 import types.VarOptionsDTO;
 import types.VarRefDTO;
 
+import javafx.beans.binding.Bindings;
+import javafx.beans.binding.DoubleBinding;
+import javafx.scene.control.ScrollPane;
+import javafx.scene.layout.Region;
+import javafx.scene.layout.VBox;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -41,6 +48,9 @@ public class ProgramSceneController {
     @FXML private OutputsController outputsController;
     @FXML private InputsController inputsController;
     @FXML private HistoryController historyController;
+
+    @FXML private ScrollPane rootScroll;
+    @FXML private VBox contentRoot;
 
     private DisplayAPI display;
     private ExecutionAPI execute;
@@ -57,6 +67,8 @@ public class ProgramSceneController {
             headerController.setOnLoaded(this::onProgramLoaded);
             headerController.setOnExpand(()  -> changeDegreeAndShow(+1));
             headerController.setOnCollapse(() -> changeDegreeAndShow(-1));
+            headerController.setOnThemeChanged(this::applyTheme);
+
         }
 
         if (summaryController != null && programTableController != null) {
@@ -73,6 +85,22 @@ public class ProgramSceneController {
         if (chainTableController != null) {
             chainTableController.hideLineColumn();
         }
+
+        rootScroll.setFitToWidth(false);
+        rootScroll.setFitToHeight(false);
+
+        contentRoot.setMinSize(Region.USE_PREF_SIZE, Region.USE_PREF_SIZE);
+        contentRoot.setMaxSize(Region.USE_PREF_SIZE, Region.USE_PREF_SIZE);
+
+        DoubleBinding viewportW = Bindings.selectDouble(rootScroll.viewportBoundsProperty(), "width");
+        DoubleBinding viewportH = Bindings.selectDouble(rootScroll.viewportBoundsProperty(), "height");
+
+        contentRoot.translateXProperty().bind(
+                Bindings.max(0, viewportW.subtract(contentRoot.widthProperty()).divide(2))
+        );
+        contentRoot.translateYProperty().bind(
+                Bindings.max(0, viewportH.subtract(contentRoot.heightProperty()).divide(2))
+        );
 
     }
 
@@ -206,6 +234,30 @@ public class ProgramSceneController {
 
         chainTableController.setRows(ancestry);
         chainTableController.getTableView().setDisable(ancestry.isEmpty());
+    }
+
+
+
+    //bonus
+
+    public void applyTheme(String themeClass) {
+        ObservableList<String> classes = rootScroll.getStyleClass();
+        classes.removeIf(s -> s.startsWith("theme-"));
+        // Clear selections to avoid style conflicts
+        if (programTableController != null && programTableController.getTableView() != null) {
+            programTableController.getTableView().getSelectionModel().clearSelection();
+        }
+        if (chainTableController != null && chainTableController.getTableView() != null) {
+            chainTableController.getTableView().getSelectionModel().clearSelection();
+        }
+        if(historyController != null && historyController.getTableView() != null) {
+            historyController.getTableView().getSelectionModel().clearSelection();
+        }
+
+
+        if (themeClass != null && !themeClass.isBlank()) {
+            classes.add(themeClass);
+        }
     }
 
 

@@ -4,7 +4,11 @@
 <?import javafx.scene.control.ListView?>
 <?import javafx.scene.layout.VBox?>
 
-<VBox spacing="8.0" xmlns="http://javafx.com/javafx/24.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="application.inputs.InputsController">
+<?import java.net.URL?>
+<VBox spacing="8.0" xmlns="http://javafx.com/javafx/24.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="application.inputs.InputsController" styleClass="inputs-root">
+   <stylesheets>
+      <URL value="@inputs.css"/>
+   </stylesheets>
    <children>
       <Label text="Inputs:" />
       <!-- רשימה דינמית של שורות Input; יש לה גלילה פנימית -->

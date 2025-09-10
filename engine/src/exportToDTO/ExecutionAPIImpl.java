@@ -96,7 +96,7 @@ public class ExecutionAPIImpl implements ExecutionAPI {
 
         return new ExecutionDTO(y, cycles, finals, executed);
     }
-
+/*
     @Override
     public DebugStateDTO debugInit(ExecutionRequestDTO req) {
         // חייבים DisplayAPI מוזרק (באמצעות הבנאי שעשינו קודם)
@@ -135,7 +135,7 @@ public class ExecutionAPIImpl implements ExecutionAPI {
         // cyclesSoFar = 0 במצב התחלתי
         return new DebugStateDTO(degree, pc, 0L, varsSnapshot, terminated);
     }
-
+*/
 
     private static void collectXFromInputs(Command2DTO dto, SortedSet<Integer> xs) {
         if (dto.getInputsInUse() == null) return;

@@ -7,74 +7,70 @@
 <?import javafx.scene.layout.StackPane?>
 <?import javafx.scene.layout.VBox?>
 
-<ScrollPane
-        prefHeight="620.0"
-        prefWidth="801.0"
-        xmlns="http://javafx.com/javafx/24.0.1"
-        xmlns:fx="http://javafx.com/fxml/1"
-        fx:controller="application.ProgramSceneController">
+<?import java.net.URL?>
+<ScrollPane fx:id="rootScroll" prefHeight="620.0" prefWidth="801.0" xmlns="http://javafx.com/javafx/24.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="application.ProgramSceneController">
+
+   <stylesheets>
+      <URL value="@app.css"/>
+   </stylesheets>
 
    <content>
-      <VBox
-              minHeight="410.0"
-              minWidth="600.0"
-              prefHeight="600.0"
-              prefWidth="800.0">
+      <VBox fx:id="contentRoot" styleClass="content-root" minHeight="410.0" minWidth="600.0" prefHeight="600.0" prefWidth="800.0">
 
          <children>
-            <!-- כותרת -->
-            <fx:include fx:id="header" source="header/header.fxml"/>
 
-            <!-- גוף: שמאל/ימין -->
+            <fx:include fx:id="header" source="header/header.fxml" />
+
+
             <SplitPane dividerPositions="0.6" VBox.vgrow="ALWAYS">
                <items>
 
-                  <!-- עמודה שמאלית -->
+
                   <VBox spacing="8.0">
                      <children>
-                        <!-- טבלת התוכנית (גדלה) -->
+
                         <StackPane VBox.vgrow="ALWAYS">
-                           <fx:include fx:id="programTable" source="table/instruction/instructions.fxml"/>
+                           <fx:include fx:id="programTable" source="table/instruction/instructions.fxml" />
                         </StackPane>
 
-                        <!-- סיכום (קומפקטי) -->
-                        <fx:include fx:id="summary" source="summary/summary.fxml"/>
 
-                        <!-- שרשרת (גדלה) -->
+                        <fx:include fx:id="summary" source="summary/summary.fxml" />
+
+
                         <StackPane VBox.vgrow="ALWAYS">
-                           <fx:include fx:id="chainTable" source="table/instruction/instructions.fxml"/>
+                           <fx:include fx:id="chainTable" source="table/instruction/instructions.fxml" />
                         </StackPane>
                      </children>
                      <padding>
-                        <Insets top="8" right="8" bottom="8" left="8"/>
+                        <Insets bottom="8" left="8" right="8" top="8" />
                      </padding>
                   </VBox>
 
-                  <!-- עמודה ימנית -->
+
                   <VBox spacing="8.0">
                      <children>
-                        <!-- אפשרויות ריצה (קומפקטי) -->
-                        <fx:include fx:id="runOptions" source="run/options/run_options.fxml"/>
 
-                        <!-- פלטים/קלטים זה לצד זה (שניהם גדלים) -->
-                        <HBox spacing="8.0" fillHeight="true">
+                        <fx:include fx:id="runOptions" source="run/options/run_options.fxml" />
+
+
+                        <HBox fillHeight="true" spacing="8.0">
                            <children>
                               <StackPane HBox.hgrow="ALWAYS">
-                                 <fx:include fx:id="outputs" source="outputs/outputs.fxml"/>
+                                 <fx:include fx:id="outputs" source="outputs/outputs.fxml" />
                               </StackPane>
                               <StackPane HBox.hgrow="ALWAYS">
-                                 <fx:include fx:id="inputs" source="inputs/inputs.fxml"/>
+                                 <fx:include fx:id="inputs" source="inputs/inputs.fxml" />
                               </StackPane>
                            </children>
                         </HBox>
 
-                        <!-- היסטוריה (גדלה) -->
+
                         <StackPane VBox.vgrow="ALWAYS">
-                           <fx:include fx:id="history" source="table/history/history.fxml"/>
+                           <fx:include fx:id="history" source="table/history/history.fxml" />
                         </StackPane>
                      </children>
                      <padding>
-                        <Insets top="8" right="8" bottom="8" left="8"/>
+                        <Insets bottom="8" left="8" right="8" top="8" />
                      </padding>
                   </VBox>
 
@@ -83,7 +79,7 @@
          </children>
 
          <padding>
-            <Insets top="8" right="8" bottom="8" left="8"/>
+            <Insets bottom="8" left="8" right="8" top="8" />
          </padding>
       </VBox>
    </content>

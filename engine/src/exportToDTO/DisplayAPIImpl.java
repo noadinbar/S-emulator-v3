@@ -43,6 +43,7 @@ public class DisplayAPIImpl implements DisplayAPI {
     public api.ExecutionAPI execution() {
         ((ProgramImpl) program).setCurrentRunDegree(0);
         return new ExecutionAPIImpl(((ProgramImpl) program), ((ProgramImpl) program));
+
     }
 
     @Override
@@ -63,7 +64,8 @@ public class DisplayAPIImpl implements DisplayAPI {
 
         ExpandResult res = ProgramExpander.expandTo(program, degree);
         Program expanded = res.getExpandedProgram();
-        return new ExecutionAPIImpl(((ProgramImpl) expanded), ((ProgramImpl) program));
+       return new ExecutionAPIImpl(((ProgramImpl) expanded), ((ProgramImpl) program));
+
     }
 
     @Override

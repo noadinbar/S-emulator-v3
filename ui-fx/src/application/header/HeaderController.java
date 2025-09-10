@@ -32,7 +32,9 @@ public class HeaderController {
     @FXML private TextField txtDegree;     // תצוגה בלבד
     @FXML private Button btnExpand;
     @FXML private ComboBox<String> cmbHighlight;
+    @FXML private ComboBox<String> cmbTheme;
 
+    private Consumer<String> onThemeChanged;
     // סטטוסי UI
     private final BooleanProperty busy   = new SimpleBooleanProperty(false); // בזמן טעינה
     private final BooleanProperty loaded = new SimpleBooleanProperty(false); // האם נטען תוכנית
@@ -74,6 +76,15 @@ public class HeaderController {
 
         progressBar.setVisible(false);
 
+        if (cmbTheme != null) {
+            cmbTheme.getItems().setAll("Default", "Rose");
+            cmbTheme.getSelectionModel().select("Default");
+            cmbTheme.getSelectionModel().selectedItemProperty().addListener((obs, oldV, v) -> {
+                if (onThemeChanged == null) return;
+                onThemeChanged.accept("Rose".equals(v) ? "theme-rose" : null);
+            });
+        }
+
 
     }
 
@@ -81,7 +92,7 @@ public class HeaderController {
     public void setOnLoaded(Consumer<DisplayAPI> consumer) {
         onLoaded.set(consumer);
     }
-
+    public void setOnThemeChanged(Consumer<String> cb) { this.onThemeChanged = cb; }
 
 
 

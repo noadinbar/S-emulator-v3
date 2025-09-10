@@ -56,6 +56,7 @@ public class HistoryController {
     public void clear() {
         items.clear();
     }
+    public TableView<RunHistoryEntryDTO> getTableView() { return tblHistory; }
 
     // helper
     private static String toCsv(List<Long> xs) {

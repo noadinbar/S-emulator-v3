@@ -3,8 +3,10 @@
 <?import javafx.scene.control.TableColumn?>
 <?import javafx.scene.control.TableView?>
 
-<TableView fx:id="tblInstructions" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="132.0" prefWidth="370.0" xmlns="http://javafx.com/javafx/24.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="application.table.instruction.InstructionsController">
-  <columns>
+<?import java.net.URL?>
+<TableView fx:id="tblInstructions" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="179.0" prefWidth="457.0" xmlns="http://javafx.com/javafx/24.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="application.table.instruction.InstructionsController" styleClass="instructions-root">
+    <stylesheets><URL value="@instructions.css"/></stylesheets>
+    <columns>
     <TableColumn fx:id="colLine" prefWidth="75.0" text="Line" />
     <TableColumn fx:id="colBS" prefWidth="75.0" text="B/S" />
       <TableColumn fx:id="colLabel" prefWidth="75.0" text="Label" />

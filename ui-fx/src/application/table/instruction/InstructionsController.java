@@ -61,7 +61,7 @@ public class InstructionsController {
     /** חשיפה לרשימת הפריטים (אם צריך) */
     public ObservableList<InstructionDTO> getItemsView() { return items; }
 
-    /** גישה ל-TableView (ל־setDisable אופציונלי) */
+
     public TableView<InstructionDTO> getTableView() { return tblInstructions; }
 
     // ===== ממשק פומבי להצגה =====

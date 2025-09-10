@@ -10,8 +10,9 @@ import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 
 import execution.RunHistoryEntryDTO;
-
+import javafx.scene.control.Button;
 import java.util.List;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 public class HistoryController {
@@ -25,6 +26,9 @@ public class HistoryController {
     @FXML private TableColumn<RunHistoryEntryDTO, Number> colCycles;
 
     private final ObservableList<RunHistoryEntryDTO> items = FXCollections.observableArrayList();
+    @FXML private Button btnRerun; // ודאי שב־FXML הכפתור עם fx:id="btnRerun"
+    private Consumer<RunHistoryEntryDTO> onRerun;
+    public void setOnRerun(Consumer<RunHistoryEntryDTO> cb) { this.onRerun = cb; }
 
     @FXML
     private void initialize() {
@@ -40,6 +44,10 @@ public class HistoryController {
                 new ReadOnlyLongWrapper(cd.getValue().getCycles()));
 
         tblHistory.setItems(items);
+
+        btnRerun.disableProperty().bind(
+                tblHistory.getSelectionModel().selectedItemProperty().isNull()
+        );
     }
 
     public void setEntries(List<RunHistoryEntryDTO> rows) {
@@ -63,4 +71,15 @@ public class HistoryController {
         if (xs == null || xs.isEmpty()) return "";
         return xs.stream().map(String::valueOf).collect(Collectors.joining(","));
     }
+
+    @FXML
+    private void onRerunAction() {
+        RunHistoryEntryDTO row = (tblHistory != null)
+                ? tblHistory.getSelectionModel().getSelectedItem()
+                : null;
+        if (row != null && onRerun != null) {
+            onRerun.accept(row);
+        }
+    }
+
 }

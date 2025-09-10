@@ -14,6 +14,8 @@ import javafx.scene.control.ComboBox;
 import javafx.scene.control.ProgressBar;
 import javafx.scene.control.TextField;
 import javafx.stage.FileChooser;
+import javafx.scene.control.TextArea;
+import javafx.stage.Window;
 
 import java.io.File;
 import java.nio.file.Path;
@@ -33,6 +35,7 @@ public class HeaderController {
     @FXML private Button btnExpand;
     @FXML private ComboBox<String> cmbHighlight;
     @FXML private ComboBox<String> cmbTheme;
+    @FXML private Button helpButton;
 
     private Consumer<String> onThemeChanged;
     // סטטוסי UI
@@ -201,6 +204,32 @@ public class HeaderController {
     public void setCurrentDegree(int current) { currentDegree.set(current); }
     public void setMaxDegree(int max)         { maxDegree.set(max); }
     public int getCurrentDegree() { return currentDegree.get(); }
+
+    @FXML
+    private void onHelp() {
+        Alert alert = new Alert(Alert.AlertType.INFORMATION);
+        alert.setTitle("Help");
+        alert.setHeaderText("How to use this screen");
+
+        TextArea area = new TextArea("""
+                Open the app and click Load File to choose an .xml program.
+                (Optional) Pick a Theme in the header.
+                Press Start to show the Inputs panel, edit the values, then press Run to execute.
+                The program view (left) shows the Instructions table; the right side shows Variables/Inputs; results appear in Outputs.
+                Use Expand/Collapse to change the current Degree.
+                Every run is recorded in History (bottom-right). To repeat a past run, select a row in History and click RERUN—inputs and degree are restored automatically.
+                Tip: you must press Start before Run the first time after loading a file.
+                """);
+        area.setEditable(false);
+        area.setWrapText(true);
+        alert.getDialogPane().setContent(area);
+
+        Window owner = (helpButton != null && helpButton.getScene() != null)
+                ? helpButton.getScene().getWindow() : null;
+        if (owner != null) alert.initOwner(owner);
+
+        alert.showAndWait();
+    }
 
     // אופציונלי לשמירה על תאימות:
    // public void setDegree(int current, int max) { currentDegree.set(current); maxDegree.set(max); }

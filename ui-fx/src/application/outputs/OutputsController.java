@@ -27,14 +27,14 @@ public class OutputsController {
         }
     }
 
-    /** ממלא משתנים מרשימת שורות "x1 = 5", "x2 = 9", ... */
+
     public void setVariableLines(List<String> lines) {
         if (txtVariables == null) return;
         String text = (lines == null) ? "" : String.join("\n", lines);
         txtVariables.setText(text);
     }
 
-    /** ממלא משתנים ממפה שם->ערך. */
+
     public void setVariables(Map<String, Long> vars) {
         if (txtVariables == null || vars == null) {
             if (txtVariables != null) txtVariables.clear();

@@ -124,6 +124,28 @@ public class InputsController implements Initializable {
         return vals.stream().map(String::valueOf).collect(Collectors.joining(","));
     }
 
+
+
+    public void fillInputs(List<Long> values) {
+        if (values == null || lstInputs == null) return;
+
+        for (HBox row : lstInputs.getItems()) {
+            Label lbl = (Label) row.getChildren().get(0);
+            TextField tf = (TextField) row.getChildren().get(1);
+
+            int k = parseIndex(lbl.getText());  // "x5 =" → 5
+            String text = "0";
+            if (k > 0 && k - 1 < values.size()) {
+                Long v = values.get(k - 1);
+                if (v != null) text = String.valueOf(v);
+            }
+            tf.setText(text);
+        }
+
+        // חוויה נוחה: מיקוד לשדה הראשון אחרי מילוי
+        focusFirstField();
+    }
+
 // === helpers מקומיים ===
 
     private int parseIndex(String labelText) {

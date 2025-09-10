@@ -26,14 +26,12 @@ import execution.HistoryDTO;
 import execution.RunHistoryEntryDTO;
 
 import javafx.scene.layout.VBox;
-import types.VarOptionsDTO;
-import types.VarRefDTO;
 
 import javafx.beans.binding.Bindings;
 import javafx.beans.binding.DoubleBinding;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.layout.Region;
-import javafx.scene.layout.VBox;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -84,6 +82,9 @@ public class ProgramSceneController {
         }
         if (chainTableController != null) {
             chainTableController.hideLineColumn();
+        }
+        if (historyController != null) {
+            historyController.setOnRerun(this::onHistoryRerun);
         }
 
         rootScroll.setFitToWidth(false);
@@ -150,6 +151,8 @@ public class ProgramSceneController {
             runOptionsController.setButtonsEnabled(true);
         }
 
+
+
         updateChain(programTableController != null ? programTableController.getSelectedItem() : null);
     }
 
@@ -207,8 +210,26 @@ public class ProgramSceneController {
         Command2DTO dto = display.getCommand2();
         inputsController.show(dto);
         Platform.runLater(inputsController::focusFirstField);
+
     }
 
+    private void onHistoryRerun(execution.RunHistoryEntryDTO row) {
+        if (row == null || display == null || programTableController == null || headerController == null) return;
+
+        currentDegree = row.getDegree();
+        headerController.setCurrentDegree(currentDegree);
+        display.Command3DTO expanded = display.expand(currentDegree);
+        programTableController.showExpanded(expanded);
+        updateChain(programTableController.getSelectedItem());
+        showInputsForEditing(); //אפשר לוותר לדעתי
+        inputsController.fillInputs(row.getInputs());
+        if (outputsController != null) {
+            outputsController.clear(); // מרוקן את טבלת/תצוגת ה־Outputs – בדיוק כמו בהתחלה
+        }
+
+
+
+    }
 
     private void wireAncestry() {
         updateChain(programTableController.getSelectedItem());

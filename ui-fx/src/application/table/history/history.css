@@ -1,0 +1,33 @@
+/* History table — applies ONLY when theme 'Rose' is active */
+.theme-rose .history-root .table-cell {
+    -fx-text-fill: #222222;   /* צבע טקסט בתאים */
+}
+
+/* כיסוי גם למקרה שהטקסט מצויר כ-Text node */
+.theme-rose .history-root .table-row-cell .text {
+    -fx-fill: #222222;
+}
+
+/* שורה נבחרת: מילוי + מסגרת */
+.theme-rose .history-root .table-row-cell:filled:selected {
+    -fx-background-color: rgb(236, 133, 198);
+    -fx-background-insets: 0;
+    -fx-background-radius: 6;
+    -fx-border-color: #e875bd;
+    -fx-border-width: 2;
+    -fx-border-radius: 6;
+}
+
+/* לא לכסות את המילוי, וצבע טקסט כשנבחר */
+.theme-rose .history-root .table-row-cell:filled:selected .table-cell {
+    -fx-background-color: transparent;
+    -fx-text-fill: white;
+}
+.theme-rose .history-root .table-row-cell:filled:selected .text {
+    -fx-fill: white;
+}
+
+/* טקסט ה-placeholder ("No content in table") */
+.theme-rose .history-root .placeholder .label {
+    -fx-text-fill: #555555;
+}

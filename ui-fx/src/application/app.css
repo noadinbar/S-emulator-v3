@@ -1,0 +1,41 @@
+/* === THEME: ROSE (מופעל רק כשיש class 'theme-rose' על ה-root) === */
+
+.theme-rose .scroll-pane,
+.theme-rose .scroll-pane > .viewport {
+    -fx-background-color: #fdd8d8;
+}
+
+.theme-rose .content-root {
+    -fx-background-image: url("back.jpg"); /* או back.png */
+    -fx-background-size: cover;
+    -fx-background-position: center;
+    -fx-background-repeat: no-repeat;
+    -fx-background-radius: 0;
+    -fx-padding: 10;
+}
+
+
+.theme-rose .content-root AnchorPane,
+.theme-rose .content-root VBox,
+.theme-rose .content-root HBox,
+.theme-rose .content-root StackPane,
+.theme-rose .content-root GridPane,
+.theme-rose .content-root .split-pane,
+.theme-rose .content-root .split-pane > .split-pane-divider,
+.theme-rose .content-root .scroll-pane,
+.theme-rose .content-root .scroll-pane > .viewport {
+    -fx-background-color: transparent;
+}
+
+/* TableView שקוף (רקעים) */
+.theme-rose .content-root .table-view {
+    -fx-background-color: transparent;
+    -fx-control-inner-background: transparent;
+    -fx-background-insets: 0;
+    -fx-padding: 0;
+}
+.theme-rose .content-root .table-row-cell,
+.theme-rose .content-root .column-header-background,
+.theme-rose .content-root .filler {
+    -fx-background-color: transparent;
+}

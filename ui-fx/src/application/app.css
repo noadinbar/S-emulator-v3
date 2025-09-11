@@ -6,7 +6,7 @@
 }
 
 .theme-rose .content-root {
-    -fx-background-image: url("back.jpg"); /* או back.png */
+    -fx-background-image: url("back.jpg");
     -fx-background-size: cover;
     -fx-background-position: center;
     -fx-background-repeat: no-repeat;
@@ -27,7 +27,6 @@
     -fx-background-color: transparent;
 }
 
-/* TableView שקוף (רקעים) */
 .theme-rose .content-root .table-view {
     -fx-background-color: transparent;
     -fx-control-inner-background: transparent;

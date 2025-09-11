@@ -105,7 +105,7 @@ public class HeaderController {
         FileChooser fc = new FileChooser();
         fc.setTitle("Choose S-Emulator XML");
 
-        // מאפשר לבחור רק קבצי XML (כולל .XML)
+
         FileChooser.ExtensionFilter xmlFilter =
                 new FileChooser.ExtensionFilter("XML files (*.xml)", "*.xml", "*.XML");
         fc.getExtensionFilters().setAll(xmlFilter);
@@ -122,16 +122,16 @@ public class HeaderController {
                 if (home.isDirectory()) fc.setInitialDirectory(home);
             }
         } catch (SecurityException ignore) {
-            // במידה וה־OS/הרשאות חוסמות גישה — פשוט מתעלמים וניתן ל־FileChooser לבחור ברירת מחדל
+
         }
 
-        // ישירות מעל ה-Window של הכפתור (ללא משתנה owner)
+
         File f = fc.showOpenDialog(btnLoad.getScene().getWindow());
         if (f == null) return;
 
         lastDir = f.getParentFile();
 
-        // חגורת-וגומייה: אם איכשהו לא XML — עוצרים
+
         if (!f.getName().toLowerCase().endsWith(".xml")) {
             showError("Invalid file", "Please choose an .xml file.");
             return;
@@ -139,7 +139,7 @@ public class HeaderController {
         final Path chosenXml = f.toPath();
 
 
-        // Task ברקע לטעינה
+
         Task<DisplayAPI> task = new Task<>() {
             @Override
             protected DisplayAPI call() throws Exception {
@@ -231,8 +231,6 @@ public class HeaderController {
         alert.showAndWait();
     }
 
-    // אופציונלי לשמירה על תאימות:
-   // public void setDegree(int current, int max) { currentDegree.set(current); maxDegree.set(max); }
 
     @FXML private void onProgramChanged()   { /* בהמשך */ }
 

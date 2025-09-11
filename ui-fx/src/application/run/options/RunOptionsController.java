@@ -4,6 +4,7 @@ import javafx.fxml.FXML;
 import javafx.scene.control.Button;
 
 import application.ProgramSceneController;
+import javafx.scene.control.Tooltip;
 
 public class RunOptionsController {
 
@@ -15,7 +16,7 @@ public class RunOptionsController {
     @FXML private Button btnStepOver;
     //@FXML private Button btnStepBack;
 
-    // רפרנס לקונטרולר הראשי מוזרק מה-ProgramSceneController.initialize()
+
     private ProgramSceneController main;
 
     public void setMainController(ProgramSceneController main) {
@@ -23,9 +24,7 @@ public class RunOptionsController {
     }
 
     @FXML
-    private void initialize() {
-        setButtonsEnabled(false);
-    }
+    private void initialize() {  setButtonsEnabled(false);}
 
     public void setButtonsEnabled(boolean enabled) {
         boolean disable = !enabled;
@@ -36,6 +35,7 @@ public class RunOptionsController {
         if (btnResume != null)       btnResume.setDisable(disable);
         if (btnStepOver != null)     btnStepOver.setDisable(disable);
     }
+
 
     @FXML private void onStartAction() { main.showInputsForEditing(); }
 

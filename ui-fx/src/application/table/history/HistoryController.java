@@ -24,11 +24,10 @@ public class HistoryController {
     @FXML private TableColumn<RunHistoryEntryDTO, String>  colInputs;
     @FXML private TableColumn<RunHistoryEntryDTO, Number> colY;
     @FXML private TableColumn<RunHistoryEntryDTO, Number> colCycles;
+    @FXML private Button btnRerun;
+    @FXML private Button btnShow;
 
     private final ObservableList<RunHistoryEntryDTO> items = FXCollections.observableArrayList();
-    @FXML private Button btnRerun; // ודאי שב־FXML הכפתור עם fx:id="btnRerun"
-    private Consumer<RunHistoryEntryDTO> onRerun;
-    public void setOnRerun(Consumer<RunHistoryEntryDTO> cb) { this.onRerun = cb; }
 
     @FXML
     private void initialize() {
@@ -46,9 +45,19 @@ public class HistoryController {
         tblHistory.setItems(items);
 
         btnRerun.disableProperty().bind(
-                tblHistory.getSelectionModel().selectedItemProperty().isNull()
-        );
+                tblHistory.getSelectionModel().selectedItemProperty().isNull());
+
+        if (btnShow != null) {
+            btnShow.disableProperty().bind(
+                    tblHistory.getSelectionModel().selectedItemProperty().isNull());
+        }
     }
+
+
+    private Consumer<RunHistoryEntryDTO> onRerun;
+    public void setOnRerun(Consumer<RunHistoryEntryDTO> cb) { this.onRerun = cb; }
+    private Consumer<RunHistoryEntryDTO> onShow;
+    public void setOnShow(Consumer<RunHistoryEntryDTO> cb) { this.onShow = cb; }
 
     public void setEntries(List<RunHistoryEntryDTO> rows) {
         items.setAll(rows);
@@ -79,6 +88,16 @@ public class HistoryController {
                 : null;
         if (row != null && onRerun != null) {
             onRerun.accept(row);
+        }
+    }
+
+    @FXML
+    private void onShowAction() {
+        RunHistoryEntryDTO row = (tblHistory != null)
+                ? tblHistory.getSelectionModel().getSelectedItem()
+                : null;
+        if (row != null && onShow != null) {
+            onShow.accept(row);
         }
     }
 

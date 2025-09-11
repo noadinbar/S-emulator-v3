@@ -175,7 +175,7 @@ public class InputsController implements Initializable {
         if (lstInputs == null || lstInputs.getItems().isEmpty()) return;
         HBox row = lstInputs.getItems().get(0);
         TextField tf = (TextField) row.getChildren().get(1);
-        //Platform.runLater(() -> { tf.requestFocus(); tf.selectAll(); });
+        Platform.runLater(() -> { tf.requestFocus(); tf.selectAll(); });
         tf.requestFocus();
     }
 

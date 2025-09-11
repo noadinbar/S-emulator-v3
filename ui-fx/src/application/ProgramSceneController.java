@@ -4,7 +4,7 @@ import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
 import javafx.application.Platform;
 
-
+import format.ExecutionFormatter;
 import application.header.HeaderController;
 import application.table.instruction.InstructionsController;
 import application.summary.SummaryController;
@@ -25,16 +25,18 @@ import execution.ExecutionRequestDTO;
 import execution.HistoryDTO;
 import execution.RunHistoryEntryDTO;
 
+import javafx.scene.Scene;
+import javafx.scene.control.TextArea;
 import javafx.scene.layout.VBox;
 
 import javafx.beans.binding.Bindings;
 import javafx.beans.binding.DoubleBinding;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.layout.Region;
+import javafx.stage.Modality;
+import javafx.stage.Stage;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 
 public class ProgramSceneController {
 
@@ -54,6 +56,8 @@ public class ProgramSceneController {
     private ExecutionAPI execute;
 
     private int currentDegree = 0;
+    private final Map<Integer, ExecutionDTO> runSnapshots = new HashMap<>();
+
 
     @FXML
     private void initialize() {
@@ -85,17 +89,15 @@ public class ProgramSceneController {
         }
         if (historyController != null) {
             historyController.setOnRerun(this::onHistoryRerun);
+            historyController.setOnShow(this::onHistoryShow);
         }
 
         rootScroll.setFitToWidth(false);
         rootScroll.setFitToHeight(false);
-
         contentRoot.setMinSize(Region.USE_PREF_SIZE, Region.USE_PREF_SIZE);
         contentRoot.setMaxSize(Region.USE_PREF_SIZE, Region.USE_PREF_SIZE);
-
         DoubleBinding viewportW = Bindings.selectDouble(rootScroll.viewportBoundsProperty(), "width");
         DoubleBinding viewportH = Bindings.selectDouble(rootScroll.viewportBoundsProperty(), "height");
-
         contentRoot.translateXProperty().bind(
                 Bindings.max(0, viewportW.subtract(contentRoot.widthProperty()).divide(2))
         );
@@ -131,6 +133,7 @@ public class ProgramSceneController {
         if (outputsController != null) outputsController.clear();
         if (historyController != null) historyController.clear();
 
+        runSnapshots.clear();
 
         if (chainTableController != null) {
             chainTableController.clear();
@@ -174,7 +177,9 @@ public class ProgramSceneController {
         if (historyController != null && entries != null && !entries.isEmpty()) {
             RunHistoryEntryDTO last = entries.getLast();
             historyController.addEntry(last);
+            runSnapshots.put(last.getRunNumber(), result);
         }
+
     }
 
     private void changeDegreeAndShow(int i) {
@@ -211,6 +216,7 @@ public class ProgramSceneController {
         inputsController.show(dto);
         Platform.runLater(inputsController::focusFirstField);
 
+
     }
 
     private void onHistoryRerun(execution.RunHistoryEntryDTO row) {
@@ -221,15 +227,51 @@ public class ProgramSceneController {
         display.Command3DTO expanded = display.expand(currentDegree);
         programTableController.showExpanded(expanded);
         updateChain(programTableController.getSelectedItem());
-        showInputsForEditing(); //אפשר לוותר לדעתי
         inputsController.fillInputs(row.getInputs());
         if (outputsController != null) {
-            outputsController.clear(); // מרוקן את טבלת/תצוגת ה־Outputs – בדיוק כמו בהתחלה
+            outputsController.clear();
         }
 
 
 
     }
+
+    private void onHistoryShow(RunHistoryEntryDTO row) {
+        if (row == null) return;
+        ExecutionDTO snap = runSnapshots.get(row.getRunNumber());
+        String text = buildRunText(row, snap);
+        openTextPopup("Run #" + row.getRunNumber() + " ", text);
+    }
+
+    private String buildRunText(RunHistoryEntryDTO row, ExecutionDTO snap) {
+        StringBuilder sb = new StringBuilder();
+
+        sb.append("Run #").append(row.getRunNumber())
+                .append(" | Degree: ").append(row.getDegree())
+                .append("\n");
+
+        sb.append("y = ").append(row.getYValue());
+        if (snap != null && snap.getFinals() != null && !snap.getFinals().isEmpty()) {
+            sb.append("\n").append(ExecutionFormatter.formatAllVars(snap.getFinals())).append("\n");
+        }
+
+        return sb.toString();
+    }
+
+
+    private void openTextPopup(String title, String text) {
+        TextArea ta = new TextArea(text);
+        ta.setEditable(false);
+        ta.setWrapText(true);
+
+        Stage st = new Stage();
+        st.setTitle(title);
+        st.initOwner(rootScroll.getScene().getWindow());
+        st.initModality(Modality.NONE);
+        st.setScene(new Scene(ta, 250, 200));
+        st.show();
+    }
+
 
     private void wireAncestry() {
         updateChain(programTableController.getSelectedItem());

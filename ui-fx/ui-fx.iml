@@ -10,5 +10,6 @@
     <orderEntry type="library" name="jfx" level="project" />
     <orderEntry type="module" module-name="dto" />
     <orderEntry type="module" module-name="engine" />
+    <orderEntry type="module" module-name="ui" />
   </component>
 </module>

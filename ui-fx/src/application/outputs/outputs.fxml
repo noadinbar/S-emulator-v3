@@ -9,6 +9,8 @@
 <?import javafx.scene.layout.HBox?>
 
 <?import java.net.URL?>
+<?import javafx.scene.control.ScrollPane?>
+<?import javafx.scene.layout.VBox?>
 <SplitPane dividerPositions="0.65" orientation="VERTICAL" prefHeight="203.0" prefWidth="164.0" xmlns="http://javafx.com/javafx/24.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="application.outputs.OutputsController" styleClass="outputs-root">
     <stylesheets>
         <URL value="@outputs.css"/>
@@ -21,7 +23,13 @@
                 <HBox prefHeight="102.0" prefWidth="143.0" spacing="8.0" AnchorPane.bottomAnchor="10.0" AnchorPane.leftAnchor="10.0" AnchorPane.rightAnchor="10.0" AnchorPane.topAnchor="10.0">
                     <children>
                         <Label text="Variables:" />
-                        <TextArea fx:id="txtVariables" editable="false" prefHeight="102.0" prefRowCount="5" prefWidth="72.0" wrapText="true" />
+                        <ScrollPane fx:id="variablesScroll"
+                                    fitToWidth="true" hbarPolicy="NEVER" vbarPolicy="AS_NEEDED"
+                                    prefHeight="102.0" prefWidth="72.0">
+                            <content>
+                                <VBox fx:id="linesBox" spacing="4" fillWidth="true"/>
+                            </content>
+                        </ScrollPane>
                     </children>
                 </HBox>
             </children>

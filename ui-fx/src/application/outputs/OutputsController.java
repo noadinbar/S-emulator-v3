@@ -2,69 +2,75 @@ package application.outputs;
 
 import execution.ExecutionDTO;
 import javafx.fxml.FXML;
-import javafx.scene.control.TextArea;
+// TextArea import removed in this version.
 import javafx.scene.control.TextField;
+import javafx.scene.control.Label;   // Single label per output line
+import javafx.scene.layout.VBox;    // Container for dynamic lines
 import types.VarOptionsDTO;
 
+import java.util.Arrays;            // Split formatted text into lines
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
 public class OutputsController {
-    // fx:id: ב-FXML – txtVariables (TextArea), txtCycles (TextField)
-    @FXML private TextArea txtVariables;
+
+    @FXML private VBox linesBox;
     @FXML private TextField txtCycles;
 
     @FXML
     private void initialize() {
-        if (txtVariables != null) {
-            txtVariables.setEditable(false);
-            txtVariables.setWrapText(true);
-        }
         if (txtCycles != null) {
             txtCycles.setEditable(false);
         }
     }
 
-
+    /**lines as non-editable labels.*/
     public void setVariableLines(List<String> lines) {
-        if (txtVariables == null) return;
-        String text = (lines == null) ? "" : String.join("\n", lines);
-        txtVariables.setText(text);
+        if (linesBox == null) return;
+        linesBox.getChildren().clear();
+        if (lines == null || lines.isEmpty()) return;
+
+        for (String s : lines) {
+            String text = (s == null) ? "" : s.trim();
+            Label line = new Label(" " + text); // leading space as requested
+            line.getStyleClass().add("out-line"); // CSS hook for coloring whole line later
+            linesBox.getChildren().add(line);
+        }
     }
 
 
     public void setVariables(Map<String, Long> vars) {
-        if (txtVariables == null || vars == null) {
-            if (txtVariables != null) txtVariables.clear();
-            return;
-        }
-        // שורות בפורמט name = value (ממויין לפי שם, כדי שיפה לעין)
-        String text = vars.entrySet().stream()
+        if (linesBox == null) return;
+        linesBox.getChildren().clear();
+        if (vars == null || vars.isEmpty()) return;
+
+        List<String> lines = vars.entrySet().stream()
                 .sorted(Map.Entry.comparingByKey())
                 .map(e -> e.getKey() + " = " + e.getValue())
-                .collect(Collectors.joining("\n"));
-        txtVariables.setText(text);
+                .collect(Collectors.toList());
+        setVariableLines(lines);
     }
 
-    /** עדכון מספר הסייקלים. */
+    /** Update the cycles count text. */
     public void setCycles(long cycles) {
         if (txtCycles != null) {
             txtCycles.setText(Long.toString(cycles));
         }
     }
 
-
-
-
+    /**
+     * y first, then all x in ascending index, then all z in ascending index.
+     * builds a single multi-line string, which we split into labels per line.
+     */
     private static String formatFinalsForDisplay(ExecutionDTO result) {
         StringBuilder sb = new StringBuilder();
 
-        // 1) y קודם
+        // 1) y first
         sb.append("y = ").append(result.getyValue()).append('\n');
 
-        // 2) כל ה-x לפי אינדקס עולה
+        // 2) all x by ascending index
         result.getFinals().stream()
                 .filter(v -> v.getVar().getVariable() == VarOptionsDTO.x)
                 .sorted(Comparator.comparingInt(v -> v.getVar().getIndex()))
@@ -74,7 +80,7 @@ public class OutputsController {
                         .append(v.getValue())
                         .append('\n'));
 
-        // 3) כל ה-z לפי אינדקס עולה
+        // 3) all z by ascending index
         result.getFinals().stream()
                 .filter(v -> v.getVar().getVariable() == VarOptionsDTO.z)
                 .sorted(Comparator.comparingInt(v -> v.getVar().getIndex()))
@@ -84,28 +90,33 @@ public class OutputsController {
                         .append(v.getValue())
                         .append('\n'));
 
-
         return sb.toString().trim();
     }
 
+    /**
+     * Show execution results: cycles + variables.
+     * Uses formatting, then splits into single-label lines.
+     */
     public void showExecution(ExecutionDTO result) {
         if (txtCycles != null) {
             txtCycles.setText(Long.toString(result.getTotalCycles()));
         }
-        if (txtVariables != null) {
-            txtVariables.setText(formatFinalsForDisplay(result));
+        if (linesBox != null) {
+            String text = formatFinalsForDisplay(result);
+            List<String> lines = Arrays.asList(text.split("\\R"));
+            setVariableLines(lines);
         }
     }
 
-    /** ניקוי כל הפאנל. */
+    /** Clear all output. */
     public void clear() {
-        if (txtVariables != null) txtVariables.clear();
+        if (linesBox != null) linesBox.getChildren().clear();
         if (txtCycles != null) txtCycles.clear();
     }
 
-    /** השבתה/הפעלה של הפאנל. */
+    /** Enable/disable the whole outputs panel. */
     public void setDisabled(boolean disabled) {
-        if (txtVariables != null) txtVariables.setDisable(disabled);
+        if (linesBox != null) linesBox.setDisable(disabled);
         if (txtCycles != null) txtCycles.setDisable(disabled);
     }
 }

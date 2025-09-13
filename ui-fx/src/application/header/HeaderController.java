@@ -31,7 +31,7 @@ public class HeaderController {
     // תחתון (משמאל לימין)
     @FXML private ComboBox<String> cmbProgram;
     @FXML private Button btnCollapse;
-    @FXML private TextField txtDegree;     // תצוגה בלבד
+    @FXML private TextField txtDegree;
     @FXML private Button btnExpand;
     @FXML private ComboBox<String> cmbHighlight;
     @FXML private ComboBox<String> cmbTheme;
@@ -45,8 +45,6 @@ public class HeaderController {
     private final IntegerProperty maxDegree     = new SimpleIntegerProperty(0);
     private final ObjectProperty<Runnable> onExpand   = new SimpleObjectProperty<>();
     private final ObjectProperty<Runnable> onCollapse = new SimpleObjectProperty<>();
-
-    // callback שה-Controller הראשי ירשום כדי לקבל DisplayAPI טעון
     private final ObjectProperty<Consumer<DisplayAPI>> onLoaded = new SimpleObjectProperty<>();
     // בראש המחלקה (שדות) — הוסיפי:
     private Path lastValidXmlPath;

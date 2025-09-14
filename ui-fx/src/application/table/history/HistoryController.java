@@ -13,6 +13,13 @@ import javafx.scene.control.Button;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
+import javafx.animation.FadeTransition;
+import javafx.animation.Interpolator;
+import javafx.application.Platform;
+import javafx.scene.Node;
+import javafx.scene.control.TableRow;
+import javafx.util.Duration;
+
 
 public class HistoryController {
 
@@ -27,6 +34,12 @@ public class HistoryController {
     @FXML private Button btnShow;
 
     private final ObservableList<RunHistoryEntryDTO> items = FXCollections.observableArrayList();
+
+    // === BONUS: Row fade-in on new history entry (BEGIN) ===
+    // Which row should animate now + a unique "stamp" per addition to avoid double-runs
+    private int  animateIndex = -1;
+    private long animateStamp = 0;
+    // === BONUS: Row fade-in on new history entry (END) ===
 
     @FXML
     private void initialize() {
@@ -50,8 +63,58 @@ public class HistoryController {
             btnShow.disableProperty().bind(
                     tblHistory.getSelectionModel().selectedItemProperty().isNull());
         }
+
+        // === BONUS: Row fade-in on new history entry (BEGIN) ===
+        // RowFactory animates ONLY the cells of the newly added row, once per "stamp"
+        tblHistory.setRowFactory(tv -> new TableRow<>() {
+            @Override
+            protected void updateItem(RunHistoryEntryDTO item, boolean empty) {
+                super.updateItem(item, empty);
+                if (empty || item == null) return;
+
+                if (getIndex() == animateIndex) {
+                    // guard: run at most once per stamp, even if updateItem fires again
+                    Object done   = getProperties().get("animDoneStamp");
+                    Object queued = getProperties().get("animQueuedStamp");
+                    if (Long.valueOf(animateStamp).equals(done) || Long.valueOf(animateStamp).equals(queued)) {
+                        return;
+                    }
+                    getProperties().put("animQueuedStamp", animateStamp);
+
+                    // Defer to next pulse so cells exist (handles virtualization + scroll)
+                    Platform.runLater(() -> {
+                        // If the row scrolled/reused, bail out cleanly
+                        if (getIndex() != animateIndex) {
+                            getProperties().put("animDoneStamp", animateStamp);
+                            getProperties().remove("animQueuedStamp");
+                            return;
+                        }
+                        animateCellsOnce(this, 1200 /*ms*/, 0.2 /*from opacity*/);
+                        getProperties().put("animDoneStamp", animateStamp);
+                        getProperties().remove("animQueuedStamp");
+                        if (getIndex() == animateIndex) {
+                            animateIndex = -1;
+                        }
+                    });
+                }
+            }
+        });
+        // === BONUS: Row fade-in on new history entry (END) ===
     }
 
+    // === BONUS: Row fade-in on new history entry (BEGIN) ===
+    // Fade-in the row's visible cells (not the background) for a noticeable effect without white gaps
+    private void animateCellsOnce(TableRow<?> row, double millis, double fromOpacity) {
+        for (Node cell : row.lookupAll(".table-cell")) {
+            cell.setOpacity(fromOpacity);
+            FadeTransition ft = new FadeTransition(Duration.millis(millis), cell);
+            ft.setFromValue(fromOpacity);
+            ft.setToValue(1.0);
+            ft.setInterpolator(Interpolator.EASE_OUT);
+            ft.play();
+        }
+    }
+    // === BONUS: Row fade-in on new history entry (END) ===
 
     private Consumer<RunHistoryEntryDTO> onRerun;
     public void setOnRerun(Consumer<RunHistoryEntryDTO> cb) { this.onRerun = cb; }
@@ -65,7 +128,13 @@ public class HistoryController {
     public void addEntry(RunHistoryEntryDTO row) {
         items.add(row);
         if (tblHistory != null) {
-            tblHistory.scrollTo(items.size() );
+            // === BONUS: Row fade-in on new history entry (BEGIN) ===
+            int index = items.size() - 1;
+            animateIndex = index;
+            animateStamp++;              // new "stamp" for this addition
+            tblHistory.scrollTo(index);  // ensure the row is realized
+            tblHistory.layout();         // stabilize VirtualFlow to avoid white flashes
+            // === BONUS: Row fade-in on new history entry (END) ===
         }
     }
 

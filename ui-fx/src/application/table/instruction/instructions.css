@@ -5,12 +5,15 @@
 
 /* Regular (unselected) text color in cells — for all themes */
 .theme-default .instructions-root .table-cell,
-.theme-rose    .instructions-root .table-cell { -fx-text-fill: #222222; }
+.theme-rose    .instructions-root .table-cell,
+.theme-sky    .instructions-root .table-cell { -fx-text-fill: #222222; }
 
 .theme-default .instructions-root .table-row-cell .text,
-.theme-rose    .instructions-root .table-row-cell .text { -fx-fill: #222222; }
+.theme-rose    .instructions-root .table-row-cell .text ,
+.theme-sky    .instructions-root .table-row-cell .text { -fx-fill: #222222; }
 
 /* Placeholder text color when the table has no data */
 .theme-default .instructions-root .placeholder .label,
-.theme-rose    .instructions-root .placeholder .label { -fx-text-fill: #555555; }
+.theme-rose    .instructions-root .placeholder .label,
+.theme-sky    .instructions-root .placeholder .label{ -fx-text-fill: #555555; }
 

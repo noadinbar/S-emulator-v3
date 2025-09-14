@@ -1,6 +1,7 @@
 /* default */
 .theme-default .scroll-pane,
 .theme-default .scroll-pane > .viewport { -fx-background-color: white; }
+.theme-default .label { -fx-font-size: 13px; }
 
 .theme-default .content-root {
     -fx-background-image: null;

@@ -35,13 +35,13 @@ public class SummaryController {
         if (txtSynthetic != null) txtSynthetic.clear();
     }
 
-    /** מנקה וגם מכבה – כמו שביקשת. */
+
     public void clear() {
         setDisabled(true);
         clearText();
     }
 
-    /** חיבור: מתעדכן אוטומטית בכל שינוי ברשימת ההוראות. */
+
     public void wireTo(InstructionsController tableCtrl) {
         if (tableCtrl == null) return;
 
@@ -56,10 +56,7 @@ public class SummaryController {
             }
         };
 
-        // חישוב ראשוני
         recalc.run();
-
-        // מאזין לשינויים (add/remove/replace/clear)
         if (items != null) {
             items.addListener((ListChangeListener<InstructionDTO>) c -> recalc.run());
         }

@@ -1,9 +1,38 @@
-/* === THEME: ROSE (מופעל רק כשיש class 'theme-rose' על ה-root) === */
+/* default */
+.theme-default .scroll-pane,
+.theme-default .scroll-pane > .viewport { -fx-background-color: white; }
 
-.theme-rose .scroll-pane,
-.theme-rose .scroll-pane > .viewport {
-    -fx-background-color: #fdd8d8;
+.theme-default .content-root {
+    -fx-background-image: null;
+    -fx-background-color: #ffffff;
+    -fx-background-radius: 0;
+    -fx-padding: 10;
 }
+
+.theme-default .content-root AnchorPane,
+.theme-default .content-root VBox,
+.theme-default .content-root HBox,
+.theme-default .content-root StackPane,
+.theme-default .content-root GridPane,
+.theme-default .content-root .split-pane,
+.theme-default .content-root .split-pane > .split-pane-divider,
+.theme-default .content-root .scroll-pane,
+.theme-default .content-root .scroll-pane > .viewport { -fx-background-color: transparent; }
+
+.theme-default .content-root .table-view {
+    -fx-background-color: transparent;
+    -fx-control-inner-background: white;
+    -fx-control-inner-background-alt: derive(white, -2%);
+    -fx-background-insets: 0;
+    -fx-padding: 0;
+}
+.theme-default .content-root .table-row-cell,
+.theme-default .content-root .column-header-background,
+.theme-default .content-root .filler { -fx-background-color: transparent; }
+
+/* pink theme */
+.theme-rose .scroll-pane,
+.theme-rose .scroll-pane > .viewport { -fx-background-color: #fdd8d8; }
 
 .theme-rose .content-root {
     -fx-background-image: url("back.jpg");
@@ -14,7 +43,6 @@
     -fx-padding: 10;
 }
 
-
 .theme-rose .content-root AnchorPane,
 .theme-rose .content-root VBox,
 .theme-rose .content-root HBox,
@@ -23,9 +51,7 @@
 .theme-rose .content-root .split-pane,
 .theme-rose .content-root .split-pane > .split-pane-divider,
 .theme-rose .content-root .scroll-pane,
-.theme-rose .content-root .scroll-pane > .viewport {
-    -fx-background-color: transparent;
-}
+.theme-rose .content-root .scroll-pane > .viewport { -fx-background-color: transparent; }
 
 .theme-rose .content-root .table-view {
     -fx-background-color: transparent;
@@ -35,6 +61,153 @@
 }
 .theme-rose .content-root .table-row-cell,
 .theme-rose .content-root .column-header-background,
-.theme-rose .content-root .filler {
-    -fx-background-color: transparent;
+.theme-rose .content-root .filler { -fx-background-color: transparent; }
+
+/* sky theme */
+.theme-sky .scroll-pane,
+.theme-sky .scroll-pane > .viewport { -fx-background-color: #e6f3ff; }
+
+.theme-sky .content-root {
+    -fx-background-image: null;
+    -fx-background-color: #e6f3ff;
+    -fx-background-radius: 0;
+    -fx-padding: 10;
 }
+
+.theme-sky .content-root AnchorPane,
+.theme-sky .content-root VBox,
+.theme-sky .content-root HBox,
+.theme-sky .content-root StackPane,
+.theme-sky .content-root GridPane,
+.theme-sky .content-root .split-pane,
+.theme-sky .content-root .split-pane > .split-pane-divider,
+.theme-sky .content-root .scroll-pane,
+.theme-sky .content-root .scroll-pane > .viewport { -fx-background-color: transparent; }
+
+.theme-sky .content-root .table-view {
+    -fx-background-color: transparent;
+    -fx-control-inner-background: transparent;
+    -fx-background-insets: 0;
+    -fx-padding: 0;
+}
+.theme-sky .content-root .table-row-cell,
+.theme-sky .content-root .column-header-background,
+.theme-sky .content-root .filler { -fx-background-color: transparent; }
+
+/* all theme variables and highlight */
+.theme-default {
+    -fx-table-text: #222222;
+    -fx-table-sel-bg: rgb(106, 86, 86);
+    -fx-table-sel-border: #6a5656;
+}
+.theme-rose {
+    -fx-table-text: #222222;
+    -fx-table-sel-bg: rgb(106, 86, 86);
+    -fx-table-sel-border: #6a5656;
+}
+.theme-sky {
+    -fx-table-text: #222222;
+    -fx-table-sel-bg: #3b82f6;
+    -fx-table-sel-border: #2563eb;
+}
+
+/*all tables styles for all themes*/
+
+.theme-default .table-view .table-cell,
+.theme-rose    .table-view .table-cell,
+.theme-sky     .table-view .table-cell { -fx-text-fill: -fx-table-text; }
+
+.theme-default .table-row-cell .text,
+.theme-rose    .table-row-cell .text,
+.theme-sky     .table-row-cell .text { -fx-fill: -fx-table-text; }
+
+.theme-default .placeholder .label,
+.theme-rose    .placeholder .label,
+.theme-sky     .placeholder .label { -fx-text-fill: #555555; }
+
+.theme-default .table-row-cell:filled:selected,
+.theme-default .table-row-cell:filled:focused:selected,
+.theme-rose    .table-row-cell:filled:selected,
+.theme-rose    .table-row-cell:filled:focused:selected,
+.theme-sky     .table-row-cell:filled:selected,
+.theme-sky     .table-row-cell:filled:focused:selected {
+    -fx-background-color: -fx-table-sel-bg;
+    -fx-background-insets: 0;
+    -fx-background-radius: 6;
+    -fx-border-color: -fx-table-sel-border;
+    -fx-border-width: 2;
+    -fx-border-radius: 6;
+}
+
+.theme-default .table-row-cell:filled:selected .table-cell,
+.theme-default .table-row-cell:filled:focused:selected .table-cell,
+.theme-rose    .table-row-cell:filled:selected .table-cell,
+.theme-rose    .table-row-cell:filled:focused:selected .table-cell,
+.theme-sky     .table-row-cell:filled:selected .table-cell,
+.theme-sky     .table-row-cell:filled:focused:selected .table-cell {
+    -fx-background-color: transparent;
+    -fx-text-fill: white;
+}
+
+.theme-default .table-row-cell:filled:selected .text,
+.theme-default .table-row-cell:filled:focused:selected .text,
+.theme-rose    .table-row-cell:filled:selected .text,
+.theme-rose    .table-row-cell:filled:focused:selected .text,
+.theme-sky     .table-row-cell:filled:selected .text,
+.theme-sky     .table-row-cell:filled:focused:selected .text {
+    -fx-fill: white;
+}
+
+/*bonus*/
+
+/* ROSE */
+.theme-rose .combo-box {
+    -fx-background-color: #ef4d7e;
+    -fx-border-color: #c44b73;
+    -fx-text-fill: white;
+}
+.theme-rose .combo-box .label { -fx-text-fill: white; }
+.theme-rose .combo-box .arrow-button { -fx-background-color: transparent; -fx-border-color: transparent; }
+.theme-rose .combo-box .arrow { -fx-background-color: white; }
+.theme-rose .combo-box .list-cell { -fx-text-fill: white; }
+.theme-rose .combo-box-popup .list-view { -fx-background-color: #ef4d7e; }
+.theme-rose .combo-box-popup .list-view .list-cell { -fx-background-color: transparent; -fx-text-fill: white; }
+.theme-rose .combo-box-popup .list-view .list-cell:filled:selected,
+.theme-rose .combo-box-popup .list-view .list-cell:filled:focused:selected { -fx-background-color: #c44b73; -fx-text-fill: white; }
+
+.theme-rose .table-view .column-header-background,
+.theme-rose .table-view .column-header,
+.theme-rose .table-view .filler { -fx-background-color: #ef4d7e; -fx-background-insets: 0; }
+.theme-rose .table-view .column-header .label { -fx-text-fill: white; }
+.theme-rose .button { -fx-background-color: #ef4d7e; -fx-text-fill: white; -fx-border-color: #c44b73; }
+.theme-rose .label { -fx-font-family: "Segoe UI Semibold", "Segoe UI", "Arial"; -fx-font-size: 14px; }
+
+/* SKY */
+.theme-sky .combo-box {
+    -fx-background-color: #60a5fa;
+    -fx-border-color: #3b82f6;
+    -fx-text-fill: white;
+}
+.theme-sky .combo-box .label,
+.theme-sky .combo-box .list-cell { -fx-text-fill: white; -fx-font-size: 12px; }
+.theme-sky .combo-box .arrow-button { -fx-background-color: transparent; -fx-border-color: transparent; }
+.theme-sky .combo-box .arrow { -fx-background-color: white; }
+
+.theme-sky .combo-box-popup .list-view { -fx-background-color: #60a5fa; }
+.theme-sky .combo-box-popup .list-view .list-cell {
+    -fx-background-color: transparent;
+    -fx-text-fill: white;
+    -fx-font-size: 12px;
+}
+.theme-sky .combo-box-popup .list-view .list-cell:filled:selected,
+.theme-sky .combo-box-popup .list-view .list-cell:filled:focused:selected { -fx-background-color: #3b82f6; -fx-text-fill: white; }
+
+.theme-sky .table-view .column-header-background,
+.theme-sky .table-view .column-header,
+.theme-sky .table-view .filler { -fx-background-color: #60a5fa; -fx-background-insets: 0; }
+.theme-sky .table-view .column-header .label { -fx-text-fill: white; -fx-font-size: 15px; }
+.theme-sky .table-view .column-header .arrow,
+.theme-sky .table-view .column-header .sort-order-dot { -fx-background-color: white; }
+
+.theme-sky .button { -fx-background-color: #60a5fa; -fx-text-fill: white; -fx-border-color: #3b82f6; }
+.theme-sky .label { -fx-font-family: "Trebuchet MS", "Verdana", "Arial"; -fx-font-size: 16px; }

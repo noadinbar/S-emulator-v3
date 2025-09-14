@@ -23,12 +23,13 @@ import java.util.function.Consumer;
 
 public class HeaderController {
 
-    // עליון
+    // upper
     @FXML private Button btnLoad;
     @FXML private TextField txtPath;
     @FXML private ProgressBar progressBar;
-
-    // תחתון (משמאל לימין)
+    private Path lastValidXmlPath;
+    private File lastDir;
+    // lower
     @FXML private ComboBox<String> cmbProgram;
     @FXML private Button btnCollapse;
     @FXML private TextField txtDegree;
@@ -38,7 +39,7 @@ public class HeaderController {
     @FXML private Button helpButton;
 
     private Consumer<String> onThemeChanged;
-    // סטטוסי UI
+    // UI state properties
     private final BooleanProperty busy   = new SimpleBooleanProperty(false); // בזמן טעינה
     private final BooleanProperty loaded = new SimpleBooleanProperty(false); // האם נטען תוכנית
     private final IntegerProperty currentDegree = new SimpleIntegerProperty(0);
@@ -46,10 +47,7 @@ public class HeaderController {
     private final ObjectProperty<Runnable> onExpand   = new SimpleObjectProperty<>();
     private final ObjectProperty<Runnable> onCollapse = new SimpleObjectProperty<>();
     private final ObjectProperty<Consumer<DisplayAPI>> onLoaded = new SimpleObjectProperty<>();
-    // בראש המחלקה (שדות) — הוסיפי:
-    private Path lastValidXmlPath;
-    // בראש המחלקה:
-    private File lastDir;
+
 
 
     @FXML
@@ -78,15 +76,12 @@ public class HeaderController {
         progressBar.setVisible(false);
 
         if (cmbTheme != null) {
-            cmbTheme.getItems().setAll("Default", "Rose");
+            cmbTheme.getItems().setAll("Default", "Rose", "Sky");
             cmbTheme.getSelectionModel().select("Default");
-            cmbTheme.getSelectionModel().selectedItemProperty().addListener((obs, oldV, v) -> {
+            cmbTheme.getSelectionModel().selectedItemProperty().addListener((obs, o, v) -> {
                 if (onThemeChanged == null) return;
-                onThemeChanged.accept("Rose".equals(v) ? "theme-rose" : null);
-            });
+                String theme = "Rose".equals(v) ? "theme-rose" : "Sky".equals(v)  ? "theme-sky"  : "theme-default"; onThemeChanged.accept(theme);});
         }
-
-
     }
 
 
@@ -100,41 +95,41 @@ public class HeaderController {
     // === Handlers ===
     @FXML
     private void onLoadClicked() {
-        FileChooser fc = new FileChooser();
-        fc.setTitle("Choose S-Emulator XML");
+        FileChooser chooser = new FileChooser();
+        chooser.setTitle("Choose S-Emulator XML");
 
 
         FileChooser.ExtensionFilter xmlFilter =
                 new FileChooser.ExtensionFilter("XML files (*.xml)", "*.xml", "*.XML");
-        fc.getExtensionFilters().setAll(xmlFilter);
-        fc.setSelectedExtensionFilter(xmlFilter);
+        chooser.getExtensionFilters().setAll(xmlFilter);
+        chooser.setSelectedExtensionFilter(xmlFilter);
 
         try {
             if (lastDir != null && lastDir.isDirectory()) {
-                fc.setInitialDirectory(lastDir);
+                chooser.setInitialDirectory(lastDir);
             } else if (lastValidXmlPath!= null && lastValidXmlPath.getParent() != null) {
                 File parent = lastValidXmlPath.getParent().toFile();
-                if (parent.isDirectory()) fc.setInitialDirectory(parent);
+                if (parent.isDirectory()) chooser.setInitialDirectory(parent);
             } else {
                 File home = new File(System.getProperty("user.home"));
-                if (home.isDirectory()) fc.setInitialDirectory(home);
+                if (home.isDirectory()) chooser.setInitialDirectory(home);
             }
         } catch (SecurityException ignore) {
 
         }
 
 
-        File f = fc.showOpenDialog(btnLoad.getScene().getWindow());
-        if (f == null) return;
+        File file = chooser.showOpenDialog(btnLoad.getScene().getWindow());
+        if (file == null) return;
 
-        lastDir = f.getParentFile();
+        lastDir = file.getParentFile();
 
 
-        if (!f.getName().toLowerCase().endsWith(".xml")) {
+        if (!file.getName().toLowerCase().endsWith(".xml")) {
             showError("Invalid file", "Please choose an .xml file.");
             return;
         }
-        final Path chosenXml = f.toPath();
+        final Path chosenXml = file.toPath();
 
 
 
@@ -142,7 +137,7 @@ public class HeaderController {
             @Override
             protected DisplayAPI call() throws Exception {
                 updateProgress(0, 1);
-                Thread.sleep(300);          // השהיה סימולטיבית קצרה להצגת progress
+                Thread.sleep(300);
                 updateProgress(0.3, 1);
 
                 LoadAPI loader = new LoadAPIImpl();
@@ -190,7 +185,7 @@ public class HeaderController {
                     (ex != null && ex.getMessage() != null) ? ex.getMessage() : "Unknown error");
         });
 
-        // הפעלה ברקע — כמו שסיכמנו ב-study
+
         new Thread(task, "xml-loader").start();
     }
     @FXML private void onExpandClicked()   { var r = onExpand.get();   if (r != null) r.run(); }

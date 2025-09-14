@@ -2,13 +2,11 @@ package application.outputs;
 
 import execution.ExecutionDTO;
 import javafx.fxml.FXML;
-// TextArea import removed in this version.
 import javafx.scene.control.TextField;
-import javafx.scene.control.Label;   // Single label per output line
-import javafx.scene.layout.VBox;    // Container for dynamic lines
+import javafx.scene.control.Label;
+import javafx.scene.layout.VBox;
 import types.VarOptionsDTO;
-
-import java.util.Arrays;            // Split formatted text into lines
+import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
@@ -32,8 +30,8 @@ public class OutputsController {
         linesBox.getChildren().clear();
         if (lines == null || lines.isEmpty()) return;
 
-        for (String s : lines) {
-            String text = (s == null) ? "" : s.trim();
+        for (String str : lines) {
+            String text = (str == null) ? "" : str.trim();
             Label line = new Label(" " + text); // leading space as requested
             line.getStyleClass().add("out-line"); // CSS hook for coloring whole line later
             linesBox.getChildren().add(line);
@@ -53,7 +51,7 @@ public class OutputsController {
         setVariableLines(lines);
     }
 
-    /** Update the cycles count text. */
+    /** Update the cycle count text. */
     public void setCycles(long cycles) {
         if (txtCycles != null) {
             txtCycles.setText(Long.toString(cycles));
@@ -65,16 +63,16 @@ public class OutputsController {
      * builds a single multi-line string, which we split into labels per line.
      */
     private static String formatFinalsForDisplay(ExecutionDTO result) {
-        StringBuilder sb = new StringBuilder();
+        StringBuilder stringB = new StringBuilder();
 
         // 1) y first
-        sb.append("y = ").append(result.getyValue()).append('\n');
+        stringB.append("y = ").append(result.getyValue()).append('\n');
 
         // 2) all x by ascending index
         result.getFinals().stream()
                 .filter(v -> v.getVar().getVariable() == VarOptionsDTO.x)
                 .sorted(Comparator.comparingInt(v -> v.getVar().getIndex()))
-                .forEach(v -> sb.append('x')
+                .forEach(v -> stringB.append('x')
                         .append(v.getVar().getIndex())
                         .append(" = ")
                         .append(v.getValue())
@@ -84,13 +82,13 @@ public class OutputsController {
         result.getFinals().stream()
                 .filter(v -> v.getVar().getVariable() == VarOptionsDTO.z)
                 .sorted(Comparator.comparingInt(v -> v.getVar().getIndex()))
-                .forEach(v -> sb.append('z')
+                .forEach(v -> stringB.append('z')
                         .append(v.getVar().getIndex())
                         .append(" = ")
                         .append(v.getValue())
                         .append('\n'));
 
-        return sb.toString().trim();
+        return stringB.toString().trim();
     }
 
     /**

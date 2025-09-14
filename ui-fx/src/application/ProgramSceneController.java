@@ -172,8 +172,8 @@ public class ProgramSceneController {
 
         outputsController.showExecution(result);
 
-        HistoryDTO hist = display.getHistory();
-        List<RunHistoryEntryDTO> entries = (hist != null) ? hist.getEntries() : null;
+        HistoryDTO history = display.getHistory();
+        List<RunHistoryEntryDTO> entries = (history != null) ? history.getEntries() : null;
         if (historyController != null && entries != null && !entries.isEmpty()) {
             RunHistoryEntryDTO last = entries.getLast();
             historyController.addEntry(last);
@@ -244,32 +244,32 @@ public class ProgramSceneController {
     }
 
     private String buildRunText(RunHistoryEntryDTO row, ExecutionDTO snap) {
-        StringBuilder sb = new StringBuilder();
+        StringBuilder str = new StringBuilder();
 
-        sb.append("Run #").append(row.getRunNumber())
+        str.append("Run #").append(row.getRunNumber())
                 .append(" | Degree: ").append(row.getDegree())
                 .append("\n");
 
-        sb.append("y = ").append(row.getYValue());
+        str.append("y = ").append(row.getYValue());
         if (snap != null && snap.getFinals() != null && !snap.getFinals().isEmpty()) {
-            sb.append("\n").append(ExecutionFormatter.formatAllVars(snap.getFinals())).append("\n");
+            str.append("\n").append(ExecutionFormatter.formatAllVars(snap.getFinals())).append("\n");
         }
 
-        return sb.toString();
+        return str.toString();
     }
 
 
     private void openTextPopup(String title, String text) {
-        TextArea ta = new TextArea(text);
-        ta.setEditable(false);
-        ta.setWrapText(true);
+        TextArea area = new TextArea(text);
+        area.setEditable(false);
+        area.setWrapText(true);
 
-        Stage st = new Stage();
-        st.setTitle(title);
-        st.initOwner(rootScroll.getScene().getWindow());
-        st.initModality(Modality.NONE);
-        st.setScene(new Scene(ta, 250, 200));
-        st.show();
+        Stage stage = new Stage();
+        stage.setTitle(title);
+        stage.initOwner(rootScroll.getScene().getWindow());
+        stage.initModality(Modality.NONE);
+        stage.setScene(new Scene(area, 250, 200));
+        stage.show();
     }
 
 
@@ -306,22 +306,24 @@ public class ProgramSceneController {
     public void applyTheme(String themeClass) {
         ObservableList<String> classes = rootScroll.getStyleClass();
         classes.removeIf(s -> s.startsWith("theme-"));
-        // Clear selections to avoid style conflicts
+
+        // clear selections to avoid color conflicts
         if (programTableController != null && programTableController.getTableView() != null) {
             programTableController.getTableView().getSelectionModel().clearSelection();
         }
         if (chainTableController != null && chainTableController.getTableView() != null) {
             chainTableController.getTableView().getSelectionModel().clearSelection();
         }
-        if(historyController != null && historyController.getTableView() != null) {
+        if (historyController != null && historyController.getTableView() != null) {
             historyController.getTableView().getSelectionModel().clearSelection();
         }
 
 
-        if (themeClass != null && !themeClass.isBlank()) {
+        if (themeClass != null && !themeClass.isBlank() && !classes.contains(themeClass)) {
             classes.add(themeClass);
         }
-    }
 
+        rootScroll.applyCss();
+    }
 
 }

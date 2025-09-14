@@ -8,7 +8,6 @@ import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
-
 import execution.RunHistoryEntryDTO;
 import javafx.scene.control.Button;
 import java.util.List;
@@ -75,7 +74,6 @@ public class HistoryController {
     }
     public TableView<RunHistoryEntryDTO> getTableView() { return tblHistory; }
 
-    // helper
     private static String toCsv(List<Long> xs) {
         if (xs == null || xs.isEmpty()) return "";
         return xs.stream().map(String::valueOf).collect(Collectors.joining(","));

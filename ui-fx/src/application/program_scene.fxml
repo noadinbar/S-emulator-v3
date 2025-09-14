@@ -8,7 +8,7 @@
 <?import javafx.scene.layout.VBox?>
 
 <?import java.net.URL?>
-<ScrollPane fx:id="rootScroll" prefHeight="620.0" prefWidth="801.0" xmlns="http://javafx.com/javafx/24.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="application.ProgramSceneController">
+<ScrollPane fx:id="rootScroll" styleClass="theme-default" prefHeight="620.0" prefWidth="801.0" xmlns="http://javafx.com/javafx/24.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="application.ProgramSceneController">
 
    <stylesheets>
       <URL value="@app.css"/>

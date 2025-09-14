@@ -1,33 +1,16 @@
-/* Instructions table — applies ONLY when theme 'Rose' is active */
-.theme-rose .instructions-root .table-cell {
-    -fx-text-fill: #222222;   /* צבע טקסט בתאים */
+.theme-default .instructions-root .table-view {
+    -fx-control-inner-background: white;
+    -fx-control-inner-background-alt: derive(white, -2%);
 }
 
-/* אם ה-Skin מצייר כ-Text ולא Label */
-.theme-rose .instructions-root .table-row-cell .text {
-    -fx-fill: #222222;
-}
+/* Regular (unselected) text color in cells — for all themes */
+.theme-default .instructions-root .table-cell,
+.theme-rose    .instructions-root .table-cell { -fx-text-fill: #222222; }
 
-/* שורה נבחרת: מילוי + מסגרת */
-.theme-rose .instructions-root .table-row-cell:filled:selected {
-    -fx-background-color: rgb(236, 133, 198);
-    -fx-background-insets: 0;
-    -fx-background-radius: 6;
-    -fx-border-color: #e875bd;
-    -fx-border-width: 2;
-    -fx-border-radius: 6;
-}
+.theme-default .instructions-root .table-row-cell .text,
+.theme-rose    .instructions-root .table-row-cell .text { -fx-fill: #222222; }
 
-/* אל תכסו את המילוי ברקע תא; צבע טקסט לשורה נבחרת */
-.theme-rose .instructions-root .table-row-cell:filled:selected .table-cell {
-    -fx-background-color: transparent;
-    -fx-text-fill: white;
-}
-.theme-rose .instructions-root .table-row-cell:filled:selected .text {
-    -fx-fill: white;
-}
+/* Placeholder text color when the table has no data */
+.theme-default .instructions-root .placeholder .label,
+.theme-rose    .instructions-root .placeholder .label { -fx-text-fill: #555555; }
 
-/* טקסט ה-placeholder כשאין נתונים */
-.theme-rose .instructions-root .placeholder .label {
-    -fx-text-fill: #555555;
-}

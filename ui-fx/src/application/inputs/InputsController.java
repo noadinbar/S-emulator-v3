@@ -25,7 +25,6 @@ import java.util.stream.Collectors;
 
 public class InputsController implements Initializable {
 
-    // כל פריט ברשימה: HBox עם Label "Xk =" + TextField עריכתי
     @FXML private ListView<HBox> lstInputs;
 
     @Override
@@ -33,49 +32,28 @@ public class InputsController implements Initializable {
         clear();
     }
 
-    /** מציג שורות לפי ה-DTO: קורא X-ים מתוך getInputsInUse (VarRefDTO) ומייצר Xk = */
     public void show(Command2DTO dto) {
         clear();
 
         List<Integer> indices = new ArrayList<>();
-        for (Object o : dto.getInputsInUse()) {
-            VarRefDTO v = (VarRefDTO) o;               // הרשימה אצלך היא VarRefDTO
-            if (v.getVariable() == VarOptionsDTO.x) {
-                int idx = v.getIndex();
+        for (VarRefDTO o : dto.getInputsInUse()) {
+            if (o.getVariable() == VarOptionsDTO.x) {
+                int idx = o.getIndex();
                 if (idx > 0) indices.add(idx);
             }
         }
 
         indices.sort(Comparator.naturalOrder());
         for (Integer idx : indices) {
-            lstInputs.getItems().add(createRow(idx));  // Xk = + TextField מאותחל ל-"0"
+            lstInputs.getItems().add(createRow(idx));
         }
     }
 
-    /** ניקוי הרשימה. */
     public void clear() {
         if (lstInputs != null) lstInputs.getItems().clear();
     }
 
-    // ---------- עוזר פנימי ----------
 
-    /** שורת קלט אחת: Label "Xk =" + TextField מאותחל ל-"0" (מספרים בלבד או ריק).
-    private HBox createRow(int index) {
-        Label lbl = new Label("x" + index + " =");
-
-        TextField tf = new TextField("0"); // ערך התחלתי; המשתמש יכול לערוך
-        // מאפשר רק ספרות; ריק מותר (בהמשך יפורש כ-0 כשנאסוף ערכים)
-        tf.setTextFormatter(new TextFormatter<>(chg ->
-                chg.getControlNewText().matches("\\d*") ? chg : null
-        ));
-
-        tf.setPrefColumnCount(3);                 // רוחב לפי מספר תווים
-        HBox.setHgrow(tf, Priority.NEVER);
-
-        HBox row = new HBox(8, lbl, tf);
-        row.setAlignment(Pos.CENTER_LEFT);
-        return row;
-    }*/
     private HBox createRow(int index) {
         Label lbl = new Label("x" + index + " =");
         TextField tf = new TextField("0");
@@ -87,27 +65,25 @@ public class InputsController implements Initializable {
         row.setAlignment(Pos.CENTER_LEFT);
         HBox.setHgrow(tf, Priority.NEVER);
 
-        tf.setOnAction(e -> focusNextFromRow(row)); // Enter -> לשורה הבאה
+        tf.setOnAction(e -> focusNextFromRow(row));
         return row;
     }
 
-    // === PUBLIC API: איסוף ערכי הקלט מה-UI ===
 
-    /** אוסף ערכים מהטקסט-פילדים לפי האינדקס בלייבל (Xk =), מרפד באפסים עד המקסימום, ומחזיר ברשימה. */
     public List<Long> collectValuesPadded() {
         Map<Integer, Long> byIndex = new HashMap<>();
         int maxIndex = 0;
 
         for (HBox row : lstInputs.getItems()) {
             Label lbl = (Label) row.getChildren().get(0);
-            TextField tf = (TextField) row.getChildren().get(1);
+            TextField textField = (TextField) row.getChildren().get(1);
 
             String text = lbl.getText();
             int k = parseIndex(text);
-            long val = parseOrZero(tf.getText());
+            long value = parseOrZero(textField.getText());
 
             if (k > 0) {
-                byIndex.put(k, val);
+                byIndex.put(k, value);
                 if (k > maxIndex) maxIndex = k;
             }
         }
@@ -131,30 +107,28 @@ public class InputsController implements Initializable {
 
         for (HBox row : lstInputs.getItems()) {
             Label lbl = (Label) row.getChildren().get(0);
-            TextField tf = (TextField) row.getChildren().get(1);
+            TextField textField = (TextField) row.getChildren().get(1);
 
             int k = parseIndex(lbl.getText());  // "x5 =" → 5
             String text = "0";
             if (k > 0 && k - 1 < values.size()) {
-                Long v = values.get(k - 1);
-                if (v != null) text = String.valueOf(v);
+                Long value = values.get(k - 1);
+                if (value != null) text = String.valueOf(value);
             }
-            tf.setText(text);
+            textField.setText(text);
         }
 
-        // חוויה נוחה: מיקוד לשדה הראשון אחרי מילוי
         focusFirstField();
     }
 
-// === helpers מקומיים ===
+
 
     private int parseIndex(String labelText) {
 
         labelText = labelText.trim();
 
-        labelText = labelText.substring(1).trim(); // "12 =" → "12 ="
+        labelText = labelText.substring(1).trim();
 
-        // קוטם כל מה שלא ספרה בסוף
         int i = 0;
         while (i < labelText.length() && Character.isDigit(labelText.charAt(i))) i++;
 
@@ -165,24 +139,24 @@ public class InputsController implements Initializable {
         }
     }
 
-    private long parseOrZero(String s) {
-        if (s == null || s.isBlank()) return 0L;
-        try { return Long.parseLong(s.trim()); }
+    private long parseOrZero(String str) {
+        if (str == null || str.isBlank()) return 0L;
+        try { return Long.parseLong(str.trim()); }
         catch (NumberFormatException e) { return 0L; }
     }
 
     public void focusFirstField() {
         if (lstInputs == null || lstInputs.getItems().isEmpty()) return;
         HBox row = lstInputs.getItems().get(0);
-        TextField tf = (TextField) row.getChildren().get(1);
-        Platform.runLater(() -> { tf.requestFocus(); tf.selectAll(); });
-        tf.requestFocus();
+        TextField textField = (TextField) row.getChildren().get(1);
+        Platform.runLater(() -> { textField.requestFocus(); textField.selectAll(); });
+        textField.requestFocus();
     }
 
     private void focusTextFieldAt(int rowIndex) {
         HBox row = lstInputs.getItems().get(rowIndex);
-        TextField tf = (TextField) row.getChildren().get(1);
-        Platform.runLater(() -> { tf.requestFocus(); tf.selectAll(); });
+        TextField textField = (TextField) row.getChildren().get(1);
+        Platform.runLater(() -> { textField.requestFocus(); textField.selectAll(); });
     }
 
     private void focusNextFromRow(HBox currentRow) {
@@ -191,10 +165,4 @@ public class InputsController implements Initializable {
             focusTextFieldAt(i + 1);
         }
     }
-
-
-
-
-
-
 }

@@ -151,7 +151,10 @@ public class ProgramSceneController {
         }
 
         if (runOptionsController != null) {
-            runOptionsController.setButtonsEnabled(true);
+            runOptionsController.startEnabled(true);
+            runOptionsController.setButtonsEnabled(false);
+
+
         }
 
 

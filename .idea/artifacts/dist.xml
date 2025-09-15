@@ -5,6 +5,7 @@
       <element id="artifact" artifact-name="dto" />
       <element id="artifact" artifact-name="engine" />
       <element id="artifact" artifact-name="ui" />
+      <element id="artifact" artifact-name="ui-fx" />
     </root>
   </artifact>
 </component>

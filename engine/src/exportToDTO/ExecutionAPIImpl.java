@@ -96,46 +96,7 @@ public class ExecutionAPIImpl implements ExecutionAPI {
 
         return new ExecutionDTO(y, cycles, finals, executed);
     }
-/*
-    @Override
-    public DebugStateDTO debugInit(ExecutionRequestDTO req) {
-        // חייבים DisplayAPI מוזרק (באמצעות הבנאי שעשינו קודם)
-        if (display == null) {
-            throw new IllegalStateException("DisplayAPI not injected into ExecutionAPIImpl");
-        }
 
-        // הדרגה שעליה נרוץ בדיבאג
-        final int degree = req.getDegree();
-
-        // מרחיבים לדרגה הזו כדי לקבוע את ה-PC ההתחלתי (מס' ההוראה הראשון)
-        final Command3DTO c3 = display.expand(degree);
-        final java.util.List<ExpandedInstructionDTO> expanded =
-                (c3 != null) ? c3.getInstructions() : null;
-
-        final boolean noCode = (expanded == null || expanded.isEmpty());
-        final int pc = noCode ? -1 : expanded.get(0).getInstruction().getNumber();
-        final boolean terminated = noCode; // אם אין קוד — כבר "סיים"
-
-        // צילום מצב משתנים התחלתי:
-        // y = 0, וכל x_i מתוך הקלט (NULL -> 0). Z לא נדרש בשלב זה.
-        final java.util.List<Long> inputs = req.getInputs();
-        final java.util.List<VarValueDTO> varsSnapshot = new java.util.ArrayList<>();
-
-        // y קודם
-        varsSnapshot.add(new VarValueDTO(new VarRefDTO(VarOptionsDTO.y, 0), 0L));
-
-        // x1, x2, ... לפי הקלט
-        if (inputs != null) {
-            for (int i = 0; i < inputs.size(); i++) {
-                long val = (inputs.get(i) == null) ? 0L : inputs.get(i);
-                varsSnapshot.add(new VarValueDTO(new VarRefDTO(VarOptionsDTO.x, i + 1), val));
-            }
-        }
-
-        // cyclesSoFar = 0 במצב התחלתי
-        return new DebugStateDTO(degree, pc, 0L, varsSnapshot, terminated);
-    }
-*/
 
     private static void collectXFromInputs(Command2DTO dto, SortedSet<Integer> xs) {
         if (dto.getInputsInUse() == null) return;

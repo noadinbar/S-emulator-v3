@@ -36,7 +36,7 @@
 .theme-rose .scroll-pane > .viewport { -fx-background-color: #fdd8d8; }
 
 .theme-rose .content-root {
-    -fx-background-image: url("back.jpg");
+    -fx-background-image: url("resources/back.jpg");
     -fx-background-size: cover;
     -fx-background-position: center;
     -fx-background-repeat: no-repeat;
@@ -158,9 +158,6 @@
 .theme-sky     .table-row-cell:filled:focused:selected .text {
     -fx-fill: white;
 }
-
-/*bonus*/
-
 /* ROSE */
 .theme-rose .combo-box {
     -fx-background-color: #ef4d7e;
@@ -212,3 +209,57 @@
 
 .theme-sky .button { -fx-background-color: #60a5fa; -fx-text-fill: white; -fx-border-color: #3b82f6; }
 .theme-sky .label { -fx-font-family: "Trebuchet MS", "Verdana", "Arial"; -fx-font-size: 16px; }
+
+
+
+.check-box > .box {
+    -fx-background-color: -fx-outer-border, -fx-inner-border, -fx-body-color;
+    -fx-background-insets: 0, 1, 2;
+    -fx-background-radius: 3, 2, 1;
+    -fx-padding: 0.083333em;
+    -fx-min-width: 1.166667em;
+    -fx-min-height: 1.166667em;
+    -fx-border-color: transparent;
+}
+
+.check-box:selected > .box > .mark {
+    -fx-background-color: -fx-mark-highlight-color, -fx-mark-color;
+    -fx-background-insets: 0, 1;
+}
+
+
+/* === THEME: ROSE === */
+.theme-rose .check-box {
+    -fx-mark-color: white;
+    -fx-mark-highlight-color: rgba(255,255,255,0.9);
+}
+.theme-rose .check-box > .box {
+
+    -fx-background-color: #F48FB1, #F8BBD0, #FCE4EC; /* outer, inner, body */
+    -fx-background-insets: 0, 1, 2;
+    -fx-background-radius: 3, 2, 1;
+}
+.theme-rose .check-box:selected > .box {
+
+    -fx-background-color: #EC407A, #F48FB1, #F06292; /* outer, inner, body */
+    -fx-background-insets: 0, 1, 2;
+    -fx-background-radius: 3, 2, 1;
+}
+
+/* === THEME: SKY === */
+.theme-sky .check-box {
+    -fx-mark-color: white;
+    -fx-mark-highlight-color: rgba(255,255,255,0.9);
+}
+.theme-sky .check-box > .box {
+
+    -fx-background-color: #90CAF9, #BBDEFB, #E3F2FD; /* outer, inner, body */
+    -fx-background-insets: 0, 1, 2;
+    -fx-background-radius: 3, 2, 1;
+}
+.theme-sky .check-box:selected > .box {
+
+    -fx-background-color: #1E88E5, #64B5F6, #42A5F5; /* outer, inner, body */
+    -fx-background-insets: 0, 1, 2;
+    -fx-background-radius: 3, 2, 1;
+}

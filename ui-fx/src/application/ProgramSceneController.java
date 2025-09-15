@@ -1,5 +1,6 @@
 package application;
 
+import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
 import javafx.application.Platform;
@@ -51,10 +52,8 @@ public class ProgramSceneController {
 
     @FXML private ScrollPane rootScroll;
     @FXML private VBox contentRoot;
-
     private DisplayAPI display;
     private ExecutionAPI execute;
-
     private int currentDegree = 0;
     private final Map<Integer, ExecutionDTO> runSnapshots = new HashMap<>();
 
@@ -105,6 +104,21 @@ public class ProgramSceneController {
                 Bindings.max(0, viewportH.subtract(contentRoot.heightProperty()).divide(2))
         );
 
+        if (programTableController != null
+                && programTableController.getTableView() != null
+                && headerController != null) {
+
+            programTableController.getTableView()
+                    .getItems()
+                    .addListener((ListChangeListener<InstructionDTO>) change -> {
+                        if (display != null) {
+                            Command2DTO cmd2 = display.getCommand2();
+                            headerController.populateHighlight(cmd2.getInstructions());
+                        }
+                    });
+        }
+
+
     }
 
 
@@ -148,6 +162,11 @@ public class ProgramSceneController {
         if (programTableController != null) {
             Command3DTO expanded = this.display.expand(currentDegree);
             programTableController.showExpanded(expanded);
+            if (headerController != null && programTableController != null && programTableController.getTableView() != null) {
+                headerController.populateHighlight(programTableController.getTableView().getItems());
+            }
+
+
         }
 
         if (runOptionsController != null) {
@@ -192,8 +211,12 @@ public class ProgramSceneController {
 
         Command3DTO expanded = display.expand(target);
         programTableController.showExpanded(expanded);
+        if (headerController != null && programTableController != null && programTableController.getTableView() != null) {
+            headerController.populateHighlight(programTableController.getTableView().getItems());
+        }
 
         currentDegree = target;
+        assert headerController != null;
         headerController.setCurrentDegree(currentDegree);
 
 
@@ -210,6 +233,10 @@ public class ProgramSceneController {
         if (programTableController != null) {
             programTableController.show(dto);
             updateChain(null);
+            if (headerController != null && dto != null) {
+                headerController.populateHighlight(dto.getInstructions());
+            }
+
         }
     }
 

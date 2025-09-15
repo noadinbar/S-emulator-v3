@@ -2,6 +2,8 @@ package application.header;
 
 import api.DisplayAPI;
 import api.LoadAPI;
+import display.Command2DTO;
+import display.InstructionDTO;
 import exportToDTO.LoadAPIImpl;
 import javafx.application.Platform;
 import javafx.beans.binding.Bindings;
@@ -16,9 +18,16 @@ import javafx.scene.control.TextField;
 import javafx.stage.FileChooser;
 import javafx.scene.control.TextArea;
 import javafx.stage.Window;
+import types.LabelDTO;
+import types.VarOptionsDTO;
+import types.VarRefDTO;
 
 import java.io.File;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.SortedSet;
+import java.util.TreeSet;
 import java.util.function.Consumer;
 
 public class HeaderController {
@@ -48,6 +57,8 @@ public class HeaderController {
     private final ObjectProperty<Runnable> onCollapse = new SimpleObjectProperty<>();
     private final ObjectProperty<Consumer<DisplayAPI>> onLoaded = new SimpleObjectProperty<>();
 
+
+    private Consumer<String> onHighlightChangedCb;
 
 
     @FXML
@@ -228,7 +239,77 @@ public class HeaderController {
     @FXML private void onProgramChanged()   { /* בהמשך */ }
 
 
-    @FXML private void onHighlightChanged() { /* בהמשך */ }
+    @FXML private void onHighlightChanged() {
+        if (onHighlightChangedCb != null && cmbHighlight != null) {
+        onHighlightChangedCb.accept(cmbHighlight.getValue());
+    } }
+
+    public void setOnHighlightChanged(Consumer<String> cb) { this.onHighlightChangedCb= cb; }
+    public void populateHighlight(List<InstructionDTO> rows) {
+        if (cmbHighlight == null || rows == null) return;
+
+        String prev = cmbHighlight.getValue();
+
+        boolean hasY = false;
+        boolean jumpToExit = false;
+        SortedSet<Integer> xs = new TreeSet<>();
+        SortedSet<Integer> zs = new TreeSet<>();
+        SortedSet<Integer> ls = new TreeSet<>();
+
+        for (InstructionDTO ins : rows) {
+            LabelDTO lbl = (LabelDTO) ins.getLabel();
+            if (lbl != null && !lbl.isExit()) {
+                String name = lbl.getName(); // "L12"
+                if (name != null && name.startsWith("L")) {
+                    try { ls.add(Integer.parseInt(name.substring(1))); } catch (Exception ignore) {}
+                }
+            }
+
+            var body = ins.getBody();
+            if (body == null) continue;
+
+            LabelDTO jt = (LabelDTO) body.getJumpTo();
+            if (jt != null && jt.isExit()) {
+                jumpToExit = true;
+            }
+
+            for (VarRefDTO ref : new VarRefDTO[] {
+                    (VarRefDTO) body.getVariable(),
+                    (VarRefDTO) body.getDest(),
+                    (VarRefDTO) body.getSource(),
+                    (VarRefDTO) body.getCompare(),
+                    (VarRefDTO) body.getCompareWith()
+            }) {
+                if (ref == null) continue;
+                VarOptionsDTO kind = ref.getVariable(); // x / y / z
+                int idx = ref.getIndex();
+
+                if (kind == VarOptionsDTO.y)       hasY = true;
+                else if (kind == VarOptionsDTO.x)  xs.add(idx);
+                else if (kind == VarOptionsDTO.z)  zs.add(idx);
+            }
+        }
+
+        List<String> list = new ArrayList<>();
+        if (hasY) list.add("y");
+        for (int i : xs) list.add("x" + i);
+        for (int i : zs) list.add("z" + i);
+        for (int i : ls) list.add("L" + i);
+        if (jumpToExit) list.add("EXIT");
+
+        cmbHighlight.getItems().setAll(list);
+
+        if (prev != null && list.contains(prev)) {
+            cmbHighlight.setValue(prev);
+        } else if (!list.isEmpty()) {
+            cmbHighlight.getSelectionModel().selectFirst();
+        } else {
+            cmbHighlight.getSelectionModel().clearSelection();
+        }
+    }
+
+
+    private static int intPart(String v) { return Integer.parseInt(v.substring(1)); }
 
     // === Utils ===
     private void showError(String title, String msg) {

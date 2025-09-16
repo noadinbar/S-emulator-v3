@@ -110,14 +110,11 @@ public class HeaderController {
         return (v == null || "NONE".equals(v)) ? null : v;
     }
 
-
-
     public void setOnLoaded(Consumer<DisplayAPI> consumer) {
         onLoaded.set(consumer);
     }
+
     public void setOnThemeChanged(Consumer<String> cb) { this.onThemeChanged = cb; }
-
-
 
     // === Handlers ===
     @FXML
@@ -251,9 +248,7 @@ public class HeaderController {
         alert.showAndWait();
     }
 
-
     @FXML private void onProgramChanged()   { /* בהמשך */ }
-
 
     @FXML private void onHighlightChanged() {
         if (onHighlightChangedCb != null && cmbHighlight != null) {

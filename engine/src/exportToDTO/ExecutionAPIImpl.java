@@ -27,7 +27,6 @@ public class ExecutionAPIImpl implements ExecutionAPI {
         this(program, originalProgram, null);
     }
 
-    // בנאי חדש עם DisplayAPI — נשתמש בו בהמשך לדיבאג/expand
     public ExecutionAPIImpl(ProgramImpl program,
                             ProgramImpl originalProgram,
                             DisplayAPI display) {
@@ -35,8 +34,6 @@ public class ExecutionAPIImpl implements ExecutionAPI {
         this.originalProgram = originalProgram;
         this.display = display;
     }
-
-
 
     @Override
     public int getMaxDegree() {

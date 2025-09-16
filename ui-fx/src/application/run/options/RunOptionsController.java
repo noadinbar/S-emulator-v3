@@ -27,7 +27,6 @@ public class RunOptionsController {
         startEnabled(false);
         setButtonsEnabled(false);
 
-        // כשמסמנים Run – מכבים Debug ומודיעים ל-Main
         chkRun.selectedProperty().addListener((o, was, is) -> {
             if (is) {
                 chkDebug.setSelected(false);
@@ -67,10 +66,15 @@ public class RunOptionsController {
         if (btnStop != null)         btnStop.setDisable(disable);
         if (btnResume != null)       btnResume.setDisable(disable);
         if (btnStepOver != null)     btnStepOver.setDisable(disable);
-        if (chkRun != null) chkRun.setDisable(disable);
-        if (chkDebug != null)  chkDebug.setDisable(disable);
+        if (chkRun != null) {
+            chkRun.setDisable(disable);
+            chkRun.setSelected(false);
+        }
+        if (chkDebug != null) {
+            chkDebug.setDisable(disable);
+            chkDebug.setSelected(false);
+        }
     }
-
 
     @FXML private void onStartAction() {
         main.showInputsForEditing();
@@ -79,29 +83,20 @@ public class RunOptionsController {
         chkDebug.setDisable(false);
     }
 
-
     @FXML private void onRunAction() { main.runExecute(); }
 
-    @FXML private void onDebugAction() { // Execute כש-Debug מסומן
-        if (main != null) main.runExecute(); // ב-ProgramSceneController זה יבצע debugStep()
-    }
+    @FXML private void onDebugAction() { main.runExecute();  }
 
-    @FXML private void onStopAction()  {
-        if (main != null) main.debugStop();
-    }
+    @FXML private void onStopAction()  { main.debugStop(); }
 
     @FXML private void onResumeAction() {
-        if (main != null) {
-            chkDebug.setSelected(true); // מוודא ש-Debug פעיל
-            main.debugResume();
-        }
+        chkDebug.setSelected(true); // מוודא ש-Debug פעיל
+        main.debugResume();
     }
 
     @FXML private void onStepOverAction() {
-        if (main != null) {
-            chkDebug.setSelected(true);
-            main.debugStep();
-        }
+        chkDebug.setSelected(true);
+        main.debugStep();
     }
 
     //@FXML private void onStepBack()   { /* TODO */ }
@@ -117,22 +112,19 @@ public class RunOptionsController {
 
     public void setResumeBusy(boolean busy) {
         if (busy) {
-            // בזמן Resume: משביתים הכול חוץ מ-Stop
             if (btnStop != null)     btnStop.setDisable(false);
             if (btnResume != null)   btnResume.setDisable(true);
             if (btnStepOver != null) btnStepOver.setDisable(true);
-            if (btnExecute != null)  btnExecute.setDisable(true);
             if (chkRun != null)      chkRun.setDisable(true);
             if (chkDebug != null)    chkDebug.setDisable(true);
-        } else {
-            // חזרה למצב רגיל לפי מה שמסומן
+        }
+        else {
             boolean debugOn = chkDebug != null && chkDebug.isSelected();
             boolean anyMode = (chkRun != null && chkRun.isSelected()) || debugOn;
 
             if (btnStop != null)     btnStop.setDisable(!debugOn);
             if (btnResume != null)   btnResume.setDisable(!debugOn);
             if (btnStepOver != null) btnStepOver.setDisable(!debugOn);
-            if (btnExecute != null)  btnExecute.setDisable(!anyMode);
             if (chkRun != null)      chkRun.setDisable(false);
             if (chkDebug != null)    chkDebug.setDisable(false);
         }

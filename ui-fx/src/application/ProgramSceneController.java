@@ -179,8 +179,6 @@ public class ProgramSceneController {
         if (runOptionsController != null) {
             runOptionsController.startEnabled(true);
             runOptionsController.setButtonsEnabled(false);
-
-
         }
         updateChain(programTableController != null ? programTableController.getSelectedItem() : null);
     }
@@ -232,17 +230,34 @@ public class ProgramSceneController {
 
         Command3DTO expanded = display.expand(target);
         programTableController.showExpanded(expanded);
-        if (headerController != null && programTableController != null && programTableController.getTableView() != null) {
+
+        if (headerController != null && programTableController.getTableView() != null) {
             headerController.populateHighlight(programTableController.getTableView().getItems());
             wireHighlight(programTableController);
             currentHighlight = headerController.getSelectedHighlight();
             programTableController.getTableView().refresh();
         }
+
+        if (programTableController.getTableView() != null) {
+            programTableController.getTableView().getSelectionModel().clearSelection();
+        }
+
+        if (outputsController != null) {
+            outputsController.clear();
+        }
+
+        debugStarted = false;
+        debugApi = null;
+        debugStopRequested = false;
+        if (debugResumeTask != null) {
+            debugResumeTask.cancel();
+            debugResumeTask = null;
+        }
         currentDegree = target;
-        assert headerController != null;
         headerController.setCurrentDegree(currentDegree);
         updateChain(programTableController.getSelectedItem());
     }
+
 
     public void setDebugMode(boolean on) {
         this.debugMode = on;
@@ -265,7 +280,7 @@ public class ProgramSceneController {
         DebugStateDTO state = debugApi.init(new ExecutionRequestDTO(degree, inputs));
         debugStarted = true;
         showDebugState(state);
-        selectAndScrollProgramRow(state.getPc());
+
     }
 
     public void debugStep() {
@@ -286,40 +301,34 @@ public class ProgramSceneController {
         if (debugApi == null || (debugResumeTask != null && debugResumeTask.isRunning())) return;
 
         debugStopRequested = false;
-
         if (runOptionsController != null) runOptionsController.setResumeBusy(true);
 
         debugResumeTask = new Task<>() {
             @Override
             protected Void call() {
-                while (!isCancelled() && !debugStopRequested && !debugApi.isTerminated()) {
-                    DebugStepDTO step = debugApi.step();
-                    DebugStateDTO state = step.getNewState();
+                while (!isCancelled() && !debugStopRequested) {
+                    var step  = debugApi.step();            // מבצעים צעד תמיד
+                    var state = step.getNewState();
 
                     Platform.runLater(() -> {
                         showDebugState(state);
                         selectAndScrollProgramRow(state.getPc());
                     });
+
+                    if (debugApi.isTerminated()) break;
                 }
                 return null;
             }
         };
 
-        debugResumeTask.setOnSucceeded(ev -> {
-            if (runOptionsController != null) runOptionsController.setResumeBusy(false);
-        });
-        debugResumeTask.setOnCancelled(ev -> {
-            if (runOptionsController != null) runOptionsController.setResumeBusy(false);
-        });
-        debugResumeTask.setOnFailed(ev -> {
-            if (runOptionsController != null) runOptionsController.setResumeBusy(false);
-        });
+        debugResumeTask.setOnSucceeded(e -> { if (runOptionsController != null) runOptionsController.setResumeBusy(false); });
+        debugResumeTask.setOnCancelled(e -> { if (runOptionsController != null) runOptionsController.setResumeBusy(false); });
+        debugResumeTask.setOnFailed(e -> { if (runOptionsController != null) runOptionsController.setResumeBusy(false); });
 
         Thread t = new Thread(debugResumeTask, "debug-resume");
         t.setDaemon(true);
         t.start();
     }
-
 
     public void debugStop() {
         debugStopRequested = true;
@@ -377,14 +386,21 @@ public class ProgramSceneController {
         outputsController.setVariableLines(lines);
     }
 
-
-
     private void selectAndScrollProgramRow(int pc) {
         if (programTableController == null || programTableController.getTableView() == null) return;
         var tv = programTableController.getTableView();
-        if (pc < 0 || pc >= tv.getItems().size()) return;
-        tv.getSelectionModel().clearAndSelect(pc);
-        tv.scrollTo(pc);
+        int n = tv.getItems().size();
+        if (n == 0) return;
+
+        if (pc <= 0) {
+            tv.getSelectionModel().clearSelection();
+            return;
+        }
+
+        int row = Math.min(pc, n) - 1;  // clamp(pc,1..n) - 1
+        tv.getSelectionModel().clearAndSelect(row);
+        tv.getFocusModel().focus(row);
+        tv.scrollTo(row);
     }
 
     public void setDisplay(DisplayAPI display) {
@@ -444,7 +460,6 @@ public class ProgramSceneController {
         if (snap != null && snap.getFinals() != null && !snap.getFinals().isEmpty()) {
             str.append("\n").append(ExecutionFormatter.formatAllVars(snap.getFinals())).append("\n");
         }
-
         return str.toString();
     }
 
@@ -453,7 +468,6 @@ public class ProgramSceneController {
         TextArea area = new TextArea(text);
         area.setEditable(false);
         area.setWrapText(true);
-
         Stage stage = new Stage();
         stage.setTitle(title);
         stage.initOwner(rootScroll.getScene().getWindow());
@@ -462,12 +476,10 @@ public class ProgramSceneController {
         stage.show();
     }
 
-
     private void wireAncestry() {
         updateChain(programTableController.getSelectedItem());
         programTableController.selectedItemProperty().addListener((obs, oldSel, newSel) -> updateChain(newSel));
     }
-
 
     private void updateChain(InstructionDTO selected) {
         if (chainTableController == null) return;
@@ -477,27 +489,21 @@ public class ProgramSceneController {
             chainTableController.getTableView().setDisable(true);
             return;
         }
-
-
         List<InstructionDTO> ancestry = new ArrayList<>();
         ancestry.add(selected);
         ancestry.addAll(programTableController.getCreatedByChainFor(selected));
-
         Collections.reverse(ancestry);
-
         chainTableController.setRows(ancestry);
         chainTableController.getTableView().setDisable(ancestry.isEmpty());
     }
 
     private void wireHighlight(InstructionsController ic) {
         if (ic == null || ic.getTableView() == null) return;
-
         ic.getTableView().setRowFactory(tv -> new TableRow<InstructionDTO>() {
             @Override
             protected void updateItem(InstructionDTO ins, boolean empty) {
                 super.updateItem(ins, empty);
 
-                // נקה תמיד כשאין פריט
                 if (empty || ins == null) {
                     getStyleClass().removeAll(HIGHLIGHT_CLASS);
                     return;
@@ -519,11 +525,11 @@ public class ProgramSceneController {
                         on = isMy || j2L; // גם שורת התווית וגם מי שקופץ אליה
                     } else if (body != null) {
                         for (VarRefDTO r : new VarRefDTO[]{
-                                (VarRefDTO) body.getVariable(),
-                                (VarRefDTO) body.getDest(),
-                                (VarRefDTO) body.getSource(),
-                                (VarRefDTO) body.getCompare(),
-                                (VarRefDTO) body.getCompareWith()
+                               body.getVariable(),
+                               body.getDest(),
+                               body.getSource(),
+                               body.getCompare(),
+                               body.getCompareWith()
                         }) {
                             if (r == null) continue;
                             VarOptionsDTO k = r.getVariable();

@@ -108,17 +108,6 @@ public class DebugAPIImpl implements DebugAPI {
         return terminated;
     }
 
-    @Override
-    public DebugStateDTO state() {
-        return new DebugStateDTO(
-                degree,
-                pc,
-                runner.getCycles(),
-                snapshotVars(context),
-                terminated
-        );
-    }
-
     // ===== utils =====
 
     private static Map<String,Integer> buildLabelIndex(List<Instruction> instructions) {

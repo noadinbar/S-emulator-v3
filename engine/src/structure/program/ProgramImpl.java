@@ -57,7 +57,6 @@ public class ProgramImpl implements Program, Serializable {
 
         for (Instruction instr : instructions) {
             Label targetLabel = null;
-
             switch (instr.getName()) {
                 case "JUMP_NOT_ZERO":
                     targetLabel = ((JumpNotZeroInstruction) instr).getTargetLabel();
@@ -75,10 +74,8 @@ public class ProgramImpl implements Program, Serializable {
                     targetLabel = ((GoToInstruction) instr).getTarget();
                     break;
                 default:
-
                     break;
             }
-
 
             if (isExit(targetLabel)) continue;
 
@@ -170,14 +167,6 @@ public class ProgramImpl implements Program, Serializable {
                 .orElse(0);
     }
 
-    @Override
-    public int calculateCycles() {
-        int cycles = 0;
-        for (Instruction ins : getInstructions()) {
-            cycles += ins.cycles();
-        }
-        return cycles;
-    }
 
     private static boolean isExit(Label l) {
         if (l == null) return false;

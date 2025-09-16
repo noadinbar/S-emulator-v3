@@ -18,10 +18,6 @@ public class ExecutionContextImpl implements ExecutionContext {
         values.put(v.getRepresentation(), value);
     }
 
-    void put(String repr, long value) {
-        values.put(repr, value);
-    }
-
     @Override
     public Map<String, Long> snapshot() {
         return new HashMap<>(values);

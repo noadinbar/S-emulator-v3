@@ -13,6 +13,4 @@ public interface Program {
 
     ParseResult validate();
     int calculateMaxDegree();
-    int calculateCycles();
-
 }

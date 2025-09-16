@@ -1,5 +1,6 @@
 package exportToDTO;
 
+import api.DebugAPI;
 import api.DisplayAPI;
 import api.ExecutionAPI;
 import display.Command2DTO;
@@ -93,4 +94,21 @@ public class DisplayAPIImpl implements DisplayAPI {
             throw new StatePersistenceException("Failed to load state from: " + path, e);
         }
     }
+
+    @Override
+    public api.DebugAPI debugForDegree(int degree) {
+        if (degree == 0) {
+            ((ProgramImpl) program).setCurrentRunDegree(0);
+            // expanded=original כשה-degree 0
+            return new DebugAPIImpl(((ProgramImpl) program), ((ProgramImpl) program), 0);
+        }
+        int max = ((ProgramImpl) program).calculateMaxDegree();
+        if (degree < 0 || degree > max) {
+            throw new InvalidDegreeException("Degree must be between 0 and " + max);
+        }
+        var res = ProgramExpander.expandTo(program, degree);
+        Program expanded = res.getExpandedProgram();
+        return new DebugAPIImpl(((ProgramImpl) expanded), ((ProgramImpl) program), degree);
+    }
+
 }

@@ -50,28 +50,7 @@ public class ProgramExecutorImpl implements ProgramExecutor{
 
         int pc = 0;
         while (pc >= 0 && pc < instructions.size()) {
-            Instruction current = instructions.get(pc);
-
-            Label next = current.execute(context);
-
-            cycles += current.cycles();
-
-            if (next == FixedLabel.EXIT) {
-                break;
-            } else if (next == FixedLabel.EMPTY) {
-                pc++;
-            } else {
-                String rep = next.getLabelRepresentation();
-                if (rep.isBlank()) {
-                    pc++;
-                } else {
-                    Integer jumpTo = labelToIndex.get(rep.trim());
-                    if (jumpTo == null) {
-                        break;
-                    }
-                    pc = jumpTo;
-                }
-            }
+            pc = singleExecute(instructions, labelToIndex, context, pc);
         }
         long y = context.getVariableValue(Variable.RESULT);
 
@@ -101,6 +80,32 @@ public class ProgramExecutorImpl implements ProgramExecutor{
 
         return y;
     }
+
+    public int singleExecute(List<Instruction> instructions,
+                              Map<String, Integer> labelToIndex,
+                              ExecutionContext context,
+                              int pc) {
+
+        Instruction current = instructions.get(pc);
+        Label next = current.execute(context);
+        cycles += current.cycles();
+        if (next == FixedLabel.EXIT) {
+            return -1;
+        } else if (next == FixedLabel.EMPTY) {
+            return pc + 1;
+        } else {
+            String rep = next.getLabelRepresentation();
+            if (rep == null || rep.isBlank()) {
+                return pc + 1;
+            }
+            Integer jumpTo = labelToIndex.get(rep.trim());
+            if (jumpTo == null) {
+                return -1;
+            }
+            return jumpTo;
+        }
+    }
+
 
     public int getCycles() {
         return cycles;

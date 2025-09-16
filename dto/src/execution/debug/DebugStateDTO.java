@@ -15,7 +15,7 @@ public final class DebugStateDTO {
         this.degree = degree;
         this.pc = pc;
         this.cyclesSoFar = cyclesSoFar;
-        this.vars = (vars == null) ? List.of() : List.copyOf(vars); // אימיוטבילי
+        this.vars = (vars == null) ? List.of() : List.copyOf(vars);
         this.terminated = terminated;
     }
 

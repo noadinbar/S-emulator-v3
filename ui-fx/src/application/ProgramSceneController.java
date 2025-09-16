@@ -1,8 +1,12 @@
 package application;
 
+import api.DebugAPI;
+import execution.*;
+import execution.debug.DebugStateDTO;
+import execution.debug.DebugStepDTO;
 import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
-import javafx.css.PseudoClass;
+import javafx.concurrent.Task;
 import javafx.fxml.FXML;
 import javafx.application.Platform;
 
@@ -22,11 +26,6 @@ import display.Command2DTO;
 import display.Command3DTO;
 import display.InstructionDTO;
 
-import execution.ExecutionDTO;
-import execution.ExecutionRequestDTO;
-import execution.HistoryDTO;
-import execution.RunHistoryEntryDTO;
-
 import javafx.scene.Scene;
 import javafx.scene.control.TableRow;
 import javafx.scene.control.TextArea;
@@ -45,7 +44,6 @@ import types.VarRefDTO;
 import java.util.*;
 
 public class ProgramSceneController {
-
     @FXML private HeaderController headerController;
     @FXML private InstructionsController programTableController;
     @FXML private SummaryController summaryController;
@@ -61,10 +59,14 @@ public class ProgramSceneController {
     private ExecutionAPI execute;
     private int currentDegree = 0;
     private final Map<Integer, ExecutionDTO> runSnapshots = new HashMap<>();
+    private DebugAPI debugApi = null;
+    private boolean debugMode = false;
+    private boolean debugStarted = false;
+    private volatile boolean debugStopRequested = false;
+    private Task<Void> debugResumeTask = null;
 
     private String currentHighlight = null;
-    private static final String HILITE_CLASS = "hilite";
-
+    private static final String HIGHLIGHT_CLASS = "hilite";
 
     @FXML
     private void initialize() {
@@ -138,27 +140,14 @@ public class ProgramSceneController {
         wireHighlight(programTableController);
     }
 
-
-    public void runExecute() {
-        if (!Platform.isFxApplicationThread()) {
-            Platform.runLater(this::runExecute);
-            return;
-        }
-
-        if (display == null || inputsController == null) return;
-
-        String csv = inputsController.collectValuesCsvPadded();
-        if (outputsController != null) {
-            outputsController.setVariableLines(List.of("Inputs: " + csv));
-        }
-
-        handleRun();
-    }
-
-
     private void onProgramLoaded(DisplayAPI display) {
         this.display = display;
         this.execute = display.execution();
+        debugApi = null;
+        debugMode = false;
+        debugStarted = false;
+        debugStopRequested = false;
+        debugResumeTask = null;
 
         if (inputsController != null)  inputsController.clear();
         if (outputsController != null) outputsController.clear();
@@ -196,6 +185,24 @@ public class ProgramSceneController {
         updateChain(programTableController != null ? programTableController.getSelectedItem() : null);
     }
 
+    public void runExecute() {
+        if (!Platform.isFxApplicationThread()) {
+            Platform.runLater(this::runExecute);
+            return;
+        }
+
+        if (display == null || inputsController == null) return;
+        if (debugMode) {
+            debugStep();
+            return;
+        }
+
+        String csv = inputsController.collectValuesCsvPadded();
+        if (outputsController != null) {
+            outputsController.setVariableLines(List.of(csv));
+        }
+        handleRun();
+    }
 
     private void handleRun() {
         if (display == null) return;
@@ -237,6 +244,148 @@ public class ProgramSceneController {
         updateChain(programTableController.getSelectedItem());
     }
 
+    public void setDebugMode(boolean on) {
+        this.debugMode = on;
+        if (!on) {
+            debugApi = null;
+            debugStarted = false;
+            debugStopRequested = false;
+            debugResumeTask = null;
+        }
+    }
+
+    private void ensureDebugInit() {
+        if (debugStarted || !debugMode || display == null) return;
+        List<Long> inputs = (inputsController != null)
+                ? inputsController.collectValuesPadded()
+                : Collections.emptyList();
+
+        int degree = (headerController != null) ? headerController.getCurrentDegree() : 0;
+        debugApi = display.debugForDegree(degree);
+        DebugStateDTO state = debugApi.init(new ExecutionRequestDTO(degree, inputs));
+        debugStarted = true;
+        showDebugState(state);
+        selectAndScrollProgramRow(state.getPc());
+    }
+
+    public void debugStep() {
+        if (!debugMode) return;
+
+        ensureDebugInit();
+        if (debugApi == null) return;
+
+        DebugStepDTO step = debugApi.step();
+        DebugStateDTO state = step.getNewState(); // אם השם שונה אצלך, עדכני לגטר הקיים
+        showDebugState(state);
+        selectAndScrollProgramRow(state.getPc());
+    }
+
+    public void debugResume() {
+        if (!debugMode) return;
+        ensureDebugInit();
+        if (debugApi == null || (debugResumeTask != null && debugResumeTask.isRunning())) return;
+
+        debugStopRequested = false;
+
+        if (runOptionsController != null) runOptionsController.setResumeBusy(true);
+
+        debugResumeTask = new Task<>() {
+            @Override
+            protected Void call() {
+                while (!isCancelled() && !debugStopRequested && !debugApi.isTerminated()) {
+                    DebugStepDTO step = debugApi.step();
+                    DebugStateDTO state = step.getNewState();
+
+                    Platform.runLater(() -> {
+                        showDebugState(state);
+                        selectAndScrollProgramRow(state.getPc());
+                    });
+                }
+                return null;
+            }
+        };
+
+        debugResumeTask.setOnSucceeded(ev -> {
+            if (runOptionsController != null) runOptionsController.setResumeBusy(false);
+        });
+        debugResumeTask.setOnCancelled(ev -> {
+            if (runOptionsController != null) runOptionsController.setResumeBusy(false);
+        });
+        debugResumeTask.setOnFailed(ev -> {
+            if (runOptionsController != null) runOptionsController.setResumeBusy(false);
+        });
+
+        Thread t = new Thread(debugResumeTask, "debug-resume");
+        t.setDaemon(true);
+        t.start();
+    }
+
+
+    public void debugStop() {
+        debugStopRequested = true;
+        if (debugResumeTask != null) debugResumeTask.cancel();
+        if (runOptionsController != null) runOptionsController.setResumeBusy(false);
+    }
+
+
+    private void showDebugState(DebugStateDTO state) {
+        if (state == null || outputsController == null) return;
+        outputsController.setCycles(state.getCyclesSoFar());
+
+        Set<String> names = new LinkedHashSet<>();
+        names.add("y");
+        if (programTableController != null && programTableController.getTableView() != null) {
+            Set<Integer> xs = new TreeSet<>();
+            Set<Integer> zs = new TreeSet<>();
+            for (display.InstructionDTO ins : programTableController.getTableView().getItems()) {
+                var body = (ins != null) ? ins.getBody() : null;
+                if (body == null) continue;
+                for (types.VarRefDTO r : new types.VarRefDTO[]{
+                      body.getVariable(),
+                      body.getDest(),
+                      body.getSource(),
+                      body.getCompare(),
+                      body.getCompareWith()
+                }) {
+                    if (r == null) continue;
+                    switch (r.getVariable()) {
+                        case x -> xs.add(r.getIndex());
+                        case z -> zs.add(r.getIndex());
+                        case y -> {}
+                    }
+                }
+            }
+            xs.forEach(i -> names.add("x" + i));
+            zs.forEach(i -> names.add("z" + i));
+        }
+
+        Map<String, Long> values = new java.util.HashMap<>();
+        for (VarValueDTO v : state.getVars()) {
+            String n = switch (v.getVar().getVariable()) {
+                case y -> "y";
+                case x -> "x" + v.getVar().getIndex();
+                case z -> "z" + v.getVar().getIndex();
+            };
+            values.put(n, v.getValue());
+        }
+
+        java.util.List<String> lines = new java.util.ArrayList<>(names.size());
+        for (String n : names) {
+            long val = values.getOrDefault(n, 0L);
+            lines.add(n + " = " + val);
+        }
+        outputsController.setVariableLines(lines);
+    }
+
+
+
+    private void selectAndScrollProgramRow(int pc) {
+        if (programTableController == null || programTableController.getTableView() == null) return;
+        var tv = programTableController.getTableView();
+        if (pc < 0 || pc >= tv.getItems().size()) return;
+        tv.getSelectionModel().clearAndSelect(pc);
+        tv.scrollTo(pc);
+    }
 
     public void setDisplay(DisplayAPI display) {
         this.display = display;
@@ -253,7 +402,6 @@ public class ProgramSceneController {
                 currentHighlight = headerController.getSelectedHighlight();
                 programTableController.getTableView().refresh();
             }
-
         }
     }
 
@@ -262,8 +410,6 @@ public class ProgramSceneController {
         Command2DTO dto = display.getCommand2();
         inputsController.show(dto);
         Platform.runLater(inputsController::focusFirstField);
-
-
     }
 
     private void onHistoryRerun(execution.RunHistoryEntryDTO row) {
@@ -278,9 +424,6 @@ public class ProgramSceneController {
         if (outputsController != null) {
             outputsController.clear();
         }
-
-
-
     }
 
     private void onHistoryShow(RunHistoryEntryDTO row) {
@@ -356,7 +499,7 @@ public class ProgramSceneController {
 
                 // נקה תמיד כשאין פריט
                 if (empty || ins == null) {
-                    getStyleClass().removeAll(HILITE_CLASS);
+                    getStyleClass().removeAll(HIGHLIGHT_CLASS);
                     return;
                 }
 
@@ -392,8 +535,8 @@ public class ProgramSceneController {
                     }
                 }
 
-                getStyleClass().removeAll(HILITE_CLASS);
-                if (on) getStyleClass().add(HILITE_CLASS);
+                getStyleClass().removeAll(HIGHLIGHT_CLASS);
+                if (on) getStyleClass().add(HIGHLIGHT_CLASS);
             }
         });
     }
@@ -421,5 +564,4 @@ public class ProgramSceneController {
 
         rootScroll.applyCss();
     }
-
 }

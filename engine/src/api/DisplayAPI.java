@@ -14,4 +14,5 @@ public interface DisplayAPI {
     HistoryDTO getHistory();
     void saveState(Path path);
     DisplayAPI loadState(Path path);
+    DebugAPI debugForDegree(int degree);
 }

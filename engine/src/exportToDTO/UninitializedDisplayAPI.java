@@ -1,5 +1,6 @@
 package exportToDTO;
 
+import api.DebugAPI;
 import api.DisplayAPI;
 import api.ExecutionAPI;
 import display.Command2DTO;
@@ -36,6 +37,9 @@ public class UninitializedDisplayAPI implements DisplayAPI {
     public ExecutionAPI executionForDegree(int degree) {
         throw notLoaded();
     }
+
+    @Override
+    public DebugAPI debugForDegree(int degree) { throw notLoaded(); }
 
     @Override
     public HistoryDTO getHistory() {

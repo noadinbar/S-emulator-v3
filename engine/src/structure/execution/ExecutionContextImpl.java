@@ -24,6 +24,6 @@ public class ExecutionContextImpl implements ExecutionContext {
 
     @Override
     public Map<String, Long> snapshot() {
-        return new HashMap<>(values); // עותק מבודד החוצה
+        return new HashMap<>(values);
     }
 }

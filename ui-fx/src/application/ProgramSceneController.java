@@ -79,12 +79,13 @@ public class ProgramSceneController {
             headerController.setOnThemeChanged(this::applyTheme);
 
             headerController.setOnHighlightChanged(sel -> {
-                currentHighlight = sel;
+                currentHighlight = ("NONE".equals(sel) ? null : sel);
                 if (programTableController != null && programTableController.getTableView() != null)
                     programTableController.getTableView().refresh();
                 if (chainTableController != null && chainTableController.getTableView() != null)
                     chainTableController.getTableView().refresh();
             });
+
 
         }
 
@@ -179,7 +180,7 @@ public class ProgramSceneController {
             Command3DTO expanded = this.display.expand(currentDegree);
             programTableController.showExpanded(expanded);
             if (headerController != null && programTableController != null && programTableController.getTableView() != null) {
-                headerController.populateHighlight(programTableController.getTableView().getItems());
+                headerController.populateHighlight(programTableController.getTableView().getItems(), true); // ← לאפס ל-NONE
                 wireHighlight(programTableController);
                 currentHighlight = headerController.getSelectedHighlight();
                 programTableController.getTableView().refresh();

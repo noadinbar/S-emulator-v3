@@ -106,8 +106,10 @@ public class HeaderController {
     }
 
     public String getSelectedHighlight() {
-        return (cmbHighlight != null) ? cmbHighlight.getValue() : null;
+        String v = (cmbHighlight != null) ? cmbHighlight.getValue() : null;
+        return (v == null || "NONE".equals(v)) ? null : v;
     }
+
 
 
     public void setOnLoaded(Consumer<DisplayAPI> consumer) {
@@ -260,10 +262,16 @@ public class HeaderController {
     }
 
     public void setOnHighlightChanged(Consumer<String> cb) { this.onHighlightChangedCb= cb; }
+
     public void populateHighlight(List<InstructionDTO> rows) {
-        if (cmbHighlight == null || rows == null) return;
+        populateHighlight(rows, false); // ברירת מחדל: לא לאפס
+    }
+
+    public void populateHighlight(List<InstructionDTO> rows, boolean resetToNone) {
+        if (cmbHighlight == null) return;
 
         String prev = cmbHighlight.getValue();
+        if (resetToNone) prev = null; // ← מבטל שימור בחירה קודמת
 
         boolean hasY = false;
         boolean jumpToExit = false;
@@ -271,42 +279,36 @@ public class HeaderController {
         SortedSet<Integer> zs = new TreeSet<>();
         SortedSet<Integer> ls = new TreeSet<>();
 
-        for (InstructionDTO ins : rows) {
-            LabelDTO lbl = ins.getLabel();
-            if (lbl != null && !lbl.isExit()) {
-                String name = lbl.getName(); // "L12"
-                if (name != null && name.startsWith("L")) {
-                    try { ls.add(Integer.parseInt(name.substring(1))); } catch (Exception ignore) {}
+        if (rows != null) {
+            for (InstructionDTO ins : rows) {
+                LabelDTO lbl = ins.getLabel();
+                if (lbl != null && !lbl.isExit()) {
+                    String name = lbl.getName();
+                    if (name != null && name.startsWith("L")) {
+                        try { ls.add(Integer.parseInt(name.substring(1))); } catch (Exception ignore) {}
+                    }
                 }
-            }
+                var body = ins.getBody();
+                if (body == null) continue;
 
-            var body = ins.getBody();
-            if (body == null) continue;
+                LabelDTO jt = body.getJumpTo();
+                if (jt != null && jt.isExit()) jumpToExit = true;
 
-            LabelDTO jt = body.getJumpTo();
-            if (jt != null && jt.isExit()) {
-                jumpToExit = true;
-            }
-
-            for (VarRefDTO ref : new VarRefDTO[] {
-                    body.getVariable(),
-                    body.getDest(),
-                    body.getSource(),
-                    body.getCompare(),
-                    body.getCompareWith()
-            }) {
-                if (ref == null) continue;
-                VarOptionsDTO kind = ref.getVariable(); // x / y / z
-                int idx = ref.getIndex();
-
-                if (kind == VarOptionsDTO.y)       hasY = true;
-                else if (kind == VarOptionsDTO.x)  xs.add(idx);
-                else if (kind == VarOptionsDTO.z)  zs.add(idx);
+                for (VarRefDTO ref : new VarRefDTO[]{
+                        body.getVariable(), body.getDest(), body.getSource(), body.getCompare(), body.getCompareWith()
+                }) {
+                    if (ref == null) continue;
+                    switch (ref.getVariable()) {
+                        case y -> hasY = true;
+                        case x -> xs.add(ref.getIndex());
+                        case z -> zs.add(ref.getIndex());
+                    }
+                }
             }
         }
 
         List<String> list = new ArrayList<>();
-        list.add("NONE");
+        list.add("NONE");                 // תמיד ראשון
         if (hasY) list.add("y");
         for (int i : xs) list.add("x" + i);
         for (int i : zs) list.add("z" + i);
@@ -316,9 +318,9 @@ public class HeaderController {
         cmbHighlight.getItems().setAll(list);
 
         if (prev != null && list.contains(prev)) {
-            cmbHighlight.setValue(prev);  // נשמר בחירה קודמת אם אפשר
+            cmbHighlight.setValue(prev);
         } else {
-            cmbHighlight.setValue("NONE"); // ← ברירת מחדל
+            cmbHighlight.setValue("NONE"); // ← אפס לברירת המחדל
         }
     }
 

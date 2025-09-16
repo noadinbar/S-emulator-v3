@@ -38,7 +38,7 @@ public class ProgramExecutorImpl implements ProgramExecutor{
             }
         }
 
-        ExecutionContext context = new ExecutionContextImpl();
+        ExecutionContextImpl context = new ExecutionContextImpl();
         List<Long> inputsList = new ArrayList<>(input.length);
 
         for (int i = 0; i < input.length; i++) {
@@ -75,7 +75,7 @@ public class ProgramExecutorImpl implements ProgramExecutor{
         }
         long y = context.getVariableValue(Variable.RESULT);
 
-        Map<String, Long> snap = ((ExecutionContextImpl) context).snapshot();
+        Map<String, Long> snap = context.snapshot();
         Map<Variable, Long> state = new HashMap<>();
         for (Map.Entry<String, Long> e : snap.entrySet()) {
             String name = e.getKey();

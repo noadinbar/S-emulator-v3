@@ -180,9 +180,10 @@ public class ProgramSceneController {
             programTableController.showExpanded(expanded);
             if (headerController != null && programTableController != null && programTableController.getTableView() != null) {
                 headerController.populateHighlight(programTableController.getTableView().getItems());
+                wireHighlight(programTableController);
+                currentHighlight = headerController.getSelectedHighlight();
+                programTableController.getTableView().refresh();
             }
-
-
         }
 
         if (runOptionsController != null) {
@@ -191,9 +192,6 @@ public class ProgramSceneController {
 
 
         }
-
-
-
         updateChain(programTableController != null ? programTableController.getSelectedItem() : null);
     }
 
@@ -222,20 +220,19 @@ public class ProgramSceneController {
 
     private void changeDegreeAndShow(int i) {
         if (display == null || programTableController == null) return;
-
         int target = currentDegree + i;
 
         Command3DTO expanded = display.expand(target);
         programTableController.showExpanded(expanded);
         if (headerController != null && programTableController != null && programTableController.getTableView() != null) {
             headerController.populateHighlight(programTableController.getTableView().getItems());
+            wireHighlight(programTableController);
+            currentHighlight = headerController.getSelectedHighlight();
+            programTableController.getTableView().refresh();
         }
-
         currentDegree = target;
         assert headerController != null;
         headerController.setCurrentDegree(currentDegree);
-
-
         updateChain(programTableController.getSelectedItem());
     }
 
@@ -251,6 +248,9 @@ public class ProgramSceneController {
             updateChain(null);
             if (headerController != null && dto != null) {
                 headerController.populateHighlight(dto.getInstructions());
+                wireHighlight(programTableController);
+                currentHighlight = headerController.getSelectedHighlight();
+                programTableController.getTableView().refresh();
             }
 
         }
@@ -353,38 +353,37 @@ public class ProgramSceneController {
             protected void updateItem(InstructionDTO ins, boolean empty) {
                 super.updateItem(ins, empty);
 
+                // נקה תמיד כשאין פריט
+                if (empty || ins == null) {
+                    getStyleClass().removeAll(HILITE_CLASS);
+                    return;
+                }
+
                 boolean on = false;
                 String sel = currentHighlight;
 
-                if (!empty && ins != null && sel != null && !sel.isBlank()) {
-                    var body = ins.getBody();
+                if (sel != null && !sel.isBlank()) {
+                    var body    = ins.getBody();
+                    LabelDTO my = (LabelDTO) ins.getLabel();
+                    LabelDTO jt = (body != null) ? (LabelDTO) body.getJumpTo() : null;
 
-                    // 1) בחירה היא EXIT → שורה מודגשת אם jumpTo הוא EXIT
                     if ("EXIT".equals(sel)) {
-                        if (body != null) {
-                            LabelDTO jt = (LabelDTO) body.getJumpTo();
-                            on = (jt != null && jt.isExit());
-                        }
-                    }
-                    // 2) בחירה היא Label L# → שורה מודגשת אם label.name == sel
-                    else if (sel.startsWith("L")) {
-                        LabelDTO lbl = (LabelDTO) ins.getLabel();
-                        on = (lbl != null && !lbl.isExit() && sel.equals(lbl.getName()));
-                    }
-                    // 3) בחירה היא משתנה (y / xN / zN) → מודגשת אם מופיע באחד משדות הגוף
-                    else if (body != null) {
-                        VarRefDTO[] refs = new VarRefDTO[] {
+                        on = (jt != null && jt.isExit());
+                    } else if (sel.startsWith("L")) {
+                        boolean isMy = (my != null && !my.isExit() && sel.equals(my.getName()));
+                        boolean j2L  = (jt != null && !jt.isExit() && sel.equals(jt.getName()));
+                        on = isMy || j2L; // גם שורת התווית וגם מי שקופץ אליה
+                    } else if (body != null) {
+                        for (VarRefDTO r : new VarRefDTO[]{
                                 (VarRefDTO) body.getVariable(),
                                 (VarRefDTO) body.getDest(),
                                 (VarRefDTO) body.getSource(),
                                 (VarRefDTO) body.getCompare(),
                                 (VarRefDTO) body.getCompareWith()
-                        };
-                        for (VarRefDTO r : refs) {
+                        }) {
                             if (r == null) continue;
                             VarOptionsDTO k = r.getVariable();
                             int idx = r.getIndex();
-
                             if ("y".equals(sel) && k == VarOptionsDTO.y) { on = true; break; }
                             if (k == VarOptionsDTO.x && sel.equals("x" + idx)) { on = true; break; }
                             if (k == VarOptionsDTO.z && sel.equals("z" + idx)) { on = true; break; }
@@ -392,16 +391,13 @@ public class ProgramSceneController {
                     }
                 }
 
-                getStyleClass().remove(HILITE_CLASS);
+                getStyleClass().removeAll(HILITE_CLASS);
                 if (on) getStyleClass().add(HILITE_CLASS);
-
             }
         });
     }
 
-
     //bonus
-
     public void applyTheme(String themeClass) {
         ObservableList<String> classes = rootScroll.getStyleClass();
         classes.removeIf(s -> s.startsWith("theme-"));

@@ -69,8 +69,10 @@
 .theme-sky .scroll-pane > .viewport { -fx-background-color: #e6f3ff; }
 
 .theme-sky .content-root {
-    -fx-background-image: null;
-    -fx-background-color: #e6f3ff;
+    -fx-background-image: url("resources/blue.jpg");
+    -fx-background-size: cover;
+    -fx-background-position: center;
+    -fx-background-repeat: no-repeat;
     -fx-background-radius: 0;
     -fx-padding: 10;
 }
@@ -203,12 +205,12 @@
 .theme-sky .table-view .column-header-background,
 .theme-sky .table-view .column-header,
 .theme-sky .table-view .filler { -fx-background-color: #60a5fa; -fx-background-insets: 0; }
-.theme-sky .table-view .column-header .label { -fx-text-fill: white; -fx-font-size: 15px; }
+.theme-sky .table-view .column-header .label { -fx-text-fill: white; -fx-font-size: 12px; }
 .theme-sky .table-view .column-header .arrow,
 .theme-sky .table-view .column-header .sort-order-dot { -fx-background-color: white; }
 
 .theme-sky .button { -fx-background-color: #60a5fa; -fx-text-fill: white; -fx-border-color: #3b82f6; }
-.theme-sky .label { -fx-font-family: "Trebuchet MS", "Verdana", "Arial"; -fx-font-size: 16px; }
+.theme-sky .label { -fx-font-family: "Gisha", "Gisha", "Gisha"; -fx-font-size: 12px; }
 
 
 
@@ -264,11 +266,23 @@
     -fx-background-radius: 3, 2, 1;
 }
 
-.table-row-cell.hilite {
-    -fx-background-color: #ae2020; /* אדום עדין */
-}
+/* ====== HIGHLIGHT (מוחלף לספציפיות גבוהה) ====== */
+/* הדגשה רגילה */
+.theme-default .content-root .table-row-cell.hilite { -fx-background-color: #c5abab !important; }
+.theme-rose    .content-root .table-row-cell.hilite { -fx-background-color: #ffffff !important; }
+.theme-sky     .content-root .table-row-cell.hilite { -fx-background-color: #ffffff !important; }
 
-.table-row-cell.hilite:selected,
-.table-row-cell.hilite:focused {
-    -fx-background-color: #d31b1b; /* מעט חזק יותר כשמסומן/בפוקוס */
+/* תאים בתוך שורה מודגשת יהיו שקופים כדי שהרקע של השורה ייראה */
+.theme-default .content-root .table-row-cell.hilite .table-cell,
+.theme-rose    .content-root .table-row-cell.hilite .table-cell,
+.theme-sky     .content-root .table-row-cell.hilite .table-cell { -fx-background-color: transparent !important; }
+
+/* טקסט ב-Bold בכל שורה עם hilite (בלי לשנות צבעים) */
+.theme-default .content-root .table-row-cell.hilite .table-cell,
+.theme-default .content-root .table-row-cell.hilite .text,
+.theme-rose    .content-root .table-row-cell.hilite .table-cell,
+.theme-rose    .content-root .table-row-cell.hilite .text,
+.theme-sky     .content-root .table-row-cell.hilite .table-cell,
+.theme-sky     .content-root .table-row-cell.hilite .text {
+    -fx-font-weight: bold !important;
 }

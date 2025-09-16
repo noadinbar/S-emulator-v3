@@ -71,6 +71,8 @@ public class HeaderController {
         cmbProgram.disableProperty().bind(busy.or(loaded.not()));
         cmbHighlight.disableProperty().bind(busy.or(loaded.not()));
 
+
+
         txtDegree.textProperty().bind(
                 Bindings.createStringBinding(
                         () -> currentDegree.get() + " / " + maxDegree.get(),
@@ -93,6 +95,18 @@ public class HeaderController {
                 if (onThemeChanged == null) return;
                 String theme = "Rose".equals(v) ? "theme-rose" : "Sky".equals(v)  ? "theme-sky"  : "theme-default"; onThemeChanged.accept(theme);});
         }
+
+        if (cmbHighlight != null) {
+            cmbHighlight.valueProperty().addListener((obs, oldV, newV) -> {
+                if (onHighlightChangedCb != null) {
+                    onHighlightChangedCb.accept(newV);
+                }
+            });
+        }
+    }
+
+    public String getSelectedHighlight() {
+        return (cmbHighlight != null) ? cmbHighlight.getValue() : null;
     }
 
 
@@ -242,7 +256,8 @@ public class HeaderController {
     @FXML private void onHighlightChanged() {
         if (onHighlightChangedCb != null && cmbHighlight != null) {
         onHighlightChangedCb.accept(cmbHighlight.getValue());
-    } }
+    }
+    }
 
     public void setOnHighlightChanged(Consumer<String> cb) { this.onHighlightChangedCb= cb; }
     public void populateHighlight(List<InstructionDTO> rows) {
@@ -257,7 +272,7 @@ public class HeaderController {
         SortedSet<Integer> ls = new TreeSet<>();
 
         for (InstructionDTO ins : rows) {
-            LabelDTO lbl = (LabelDTO) ins.getLabel();
+            LabelDTO lbl = ins.getLabel();
             if (lbl != null && !lbl.isExit()) {
                 String name = lbl.getName(); // "L12"
                 if (name != null && name.startsWith("L")) {
@@ -268,17 +283,17 @@ public class HeaderController {
             var body = ins.getBody();
             if (body == null) continue;
 
-            LabelDTO jt = (LabelDTO) body.getJumpTo();
+            LabelDTO jt = body.getJumpTo();
             if (jt != null && jt.isExit()) {
                 jumpToExit = true;
             }
 
             for (VarRefDTO ref : new VarRefDTO[] {
-                    (VarRefDTO) body.getVariable(),
-                    (VarRefDTO) body.getDest(),
-                    (VarRefDTO) body.getSource(),
-                    (VarRefDTO) body.getCompare(),
-                    (VarRefDTO) body.getCompareWith()
+                    body.getVariable(),
+                    body.getDest(),
+                    body.getSource(),
+                    body.getCompare(),
+                    body.getCompareWith()
             }) {
                 if (ref == null) continue;
                 VarOptionsDTO kind = ref.getVariable(); // x / y / z
@@ -291,6 +306,7 @@ public class HeaderController {
         }
 
         List<String> list = new ArrayList<>();
+        list.add("NONE");
         if (hasY) list.add("y");
         for (int i : xs) list.add("x" + i);
         for (int i : zs) list.add("z" + i);
@@ -300,16 +316,11 @@ public class HeaderController {
         cmbHighlight.getItems().setAll(list);
 
         if (prev != null && list.contains(prev)) {
-            cmbHighlight.setValue(prev);
-        } else if (!list.isEmpty()) {
-            cmbHighlight.getSelectionModel().selectFirst();
+            cmbHighlight.setValue(prev);  // נשמר בחירה קודמת אם אפשר
         } else {
-            cmbHighlight.getSelectionModel().clearSelection();
+            cmbHighlight.setValue("NONE"); // ← ברירת מחדל
         }
     }
-
-
-    private static int intPart(String v) { return Integer.parseInt(v.substring(1)); }
 
     // === Utils ===
     private void showError(String title, String msg) {

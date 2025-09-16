@@ -263,3 +263,12 @@
     -fx-background-insets: 0, 1, 2;
     -fx-background-radius: 3, 2, 1;
 }
+
+.table-row-cell.hilite {
+    -fx-background-color: #ae2020; /* אדום עדין */
+}
+
+.table-row-cell.hilite:selected,
+.table-row-cell.hilite:focused {
+    -fx-background-color: #d31b1b; /* מעט חזק יותר כשמסומן/בפוקוס */
+}

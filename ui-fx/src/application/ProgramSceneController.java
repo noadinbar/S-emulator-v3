@@ -2,6 +2,7 @@ package application;
 
 import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
+import javafx.css.PseudoClass;
 import javafx.fxml.FXML;
 import javafx.application.Platform;
 
@@ -27,6 +28,7 @@ import execution.HistoryDTO;
 import execution.RunHistoryEntryDTO;
 
 import javafx.scene.Scene;
+import javafx.scene.control.TableRow;
 import javafx.scene.control.TextArea;
 import javafx.scene.layout.VBox;
 
@@ -36,6 +38,9 @@ import javafx.scene.control.ScrollPane;
 import javafx.scene.layout.Region;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
+import types.LabelDTO;
+import types.VarOptionsDTO;
+import types.VarRefDTO;
 
 import java.util.*;
 
@@ -57,6 +62,9 @@ public class ProgramSceneController {
     private int currentDegree = 0;
     private final Map<Integer, ExecutionDTO> runSnapshots = new HashMap<>();
 
+    private String currentHighlight = null;
+    private static final String HILITE_CLASS = "hilite";
+
 
     @FXML
     private void initialize() {
@@ -69,6 +77,14 @@ public class ProgramSceneController {
             headerController.setOnExpand(()  -> changeDegreeAndShow(+1));
             headerController.setOnCollapse(() -> changeDegreeAndShow(-1));
             headerController.setOnThemeChanged(this::applyTheme);
+
+            headerController.setOnHighlightChanged(sel -> {
+                currentHighlight = sel;
+                if (programTableController != null && programTableController.getTableView() != null)
+                    programTableController.getTableView().refresh();
+                if (chainTableController != null && chainTableController.getTableView() != null)
+                    chainTableController.getTableView().refresh();
+            });
 
         }
 
@@ -118,7 +134,7 @@ public class ProgramSceneController {
                     });
         }
 
-
+        wireHighlight(programTableController);
     }
 
 
@@ -329,6 +345,59 @@ public class ProgramSceneController {
         chainTableController.getTableView().setDisable(ancestry.isEmpty());
     }
 
+    private void wireHighlight(InstructionsController ic) {
+        if (ic == null || ic.getTableView() == null) return;
+
+        ic.getTableView().setRowFactory(tv -> new TableRow<InstructionDTO>() {
+            @Override
+            protected void updateItem(InstructionDTO ins, boolean empty) {
+                super.updateItem(ins, empty);
+
+                boolean on = false;
+                String sel = currentHighlight;
+
+                if (!empty && ins != null && sel != null && !sel.isBlank()) {
+                    var body = ins.getBody();
+
+                    // 1) בחירה היא EXIT → שורה מודגשת אם jumpTo הוא EXIT
+                    if ("EXIT".equals(sel)) {
+                        if (body != null) {
+                            LabelDTO jt = (LabelDTO) body.getJumpTo();
+                            on = (jt != null && jt.isExit());
+                        }
+                    }
+                    // 2) בחירה היא Label L# → שורה מודגשת אם label.name == sel
+                    else if (sel.startsWith("L")) {
+                        LabelDTO lbl = (LabelDTO) ins.getLabel();
+                        on = (lbl != null && !lbl.isExit() && sel.equals(lbl.getName()));
+                    }
+                    // 3) בחירה היא משתנה (y / xN / zN) → מודגשת אם מופיע באחד משדות הגוף
+                    else if (body != null) {
+                        VarRefDTO[] refs = new VarRefDTO[] {
+                                (VarRefDTO) body.getVariable(),
+                                (VarRefDTO) body.getDest(),
+                                (VarRefDTO) body.getSource(),
+                                (VarRefDTO) body.getCompare(),
+                                (VarRefDTO) body.getCompareWith()
+                        };
+                        for (VarRefDTO r : refs) {
+                            if (r == null) continue;
+                            VarOptionsDTO k = r.getVariable();
+                            int idx = r.getIndex();
+
+                            if ("y".equals(sel) && k == VarOptionsDTO.y) { on = true; break; }
+                            if (k == VarOptionsDTO.x && sel.equals("x" + idx)) { on = true; break; }
+                            if (k == VarOptionsDTO.z && sel.equals("z" + idx)) { on = true; break; }
+                        }
+                    }
+                }
+
+                getStyleClass().remove(HILITE_CLASS);
+                if (on) getStyleClass().add(HILITE_CLASS);
+
+            }
+        });
+    }
 
 
     //bonus

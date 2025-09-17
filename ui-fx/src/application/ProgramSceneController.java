@@ -58,12 +58,16 @@ public class ProgramSceneController {
     private DisplayAPI display;
     private ExecutionAPI execute;
     private int currentDegree = 0;
+
     private final Map<Integer, ExecutionDTO> runSnapshots = new HashMap<>();
+    private final Map<Integer, DebugStateDTO> debugSnapshots = new HashMap<>();
+
     private DebugAPI debugApi = null;
     private boolean debugMode = false;
     private boolean debugStarted = false;
     private volatile boolean debugStopRequested = false;
     private Task<Void> debugResumeTask = null;
+    private DebugStateDTO lastDebugState = null;
 
     private String currentHighlight = null;
     private static final String HIGHLIGHT_CLASS = "hilite";
@@ -105,6 +109,7 @@ public class ProgramSceneController {
         if (chainTableController != null) {
             chainTableController.hideLineColumn();
         }
+
         if (historyController != null) {
             historyController.setOnRerun(this::onHistoryRerun);
             historyController.setOnShow(this::onHistoryShow);
@@ -217,7 +222,10 @@ public class ProgramSceneController {
         HistoryDTO history = display.getHistory();
         List<RunHistoryEntryDTO> entries = (history != null) ? history.getEntries() : null;
         if (historyController != null && entries != null && !entries.isEmpty()) {
-            RunHistoryEntryDTO last = entries.getLast();
+            RunHistoryEntryDTO last = new RunHistoryEntryDTO(
+                    historyController.getTableSize()+1, degree,
+                    inputs, result.getyValue(), (int) result.getTotalCycles()
+            );
             historyController.addEntry(last);
             runSnapshots.put(last.getRunNumber(), result);
         }
@@ -279,8 +287,8 @@ public class ProgramSceneController {
         debugApi = display.debugForDegree(degree);
         DebugStateDTO state = debugApi.init(new ExecutionRequestDTO(degree, inputs));
         debugStarted = true;
+        lastDebugState = state;
         showDebugState(state);
-
     }
 
     public void debugStep() {
@@ -290,9 +298,15 @@ public class ProgramSceneController {
         if (debugApi == null) return;
 
         DebugStepDTO step = debugApi.step();
-        DebugStateDTO state = step.getNewState(); // אם השם שונה אצלך, עדכני לגטר הקיים
+        DebugStateDTO state = step.getNewState();
+        lastDebugState = state;
         showDebugState(state);
         selectAndScrollProgramRow(state.getPc());
+        if (debugApi.isTerminated() && lastDebugState != null && historyController != null) {
+            debugToHistory();
+            runOptionsController.setDebugBtnsDisabled(true);
+        }
+
     }
 
     public void debugResume() {
@@ -307,8 +321,9 @@ public class ProgramSceneController {
             @Override
             protected Void call() {
                 while (!isCancelled() && !debugStopRequested) {
-                    var step  = debugApi.step();            // מבצעים צעד תמיד
+                    var step  = debugApi.step();
                     var state = step.getNewState();
+                    lastDebugState = state;
 
                     Platform.runLater(() -> {
                         showDebugState(state);
@@ -321,7 +336,14 @@ public class ProgramSceneController {
             }
         };
 
-        debugResumeTask.setOnSucceeded(e -> { if (runOptionsController != null) runOptionsController.setResumeBusy(false); });
+        debugResumeTask.setOnSucceeded(e -> {
+            if (runOptionsController != null) runOptionsController.setResumeBusy(false);
+            if (!debugStopRequested && debugApi != null && debugApi.isTerminated() &&
+                    lastDebugState != null && historyController != null) {
+                debugToHistory();
+                runOptionsController.setDebugBtnsDisabled(true);
+            }
+        });
         debugResumeTask.setOnCancelled(e -> { if (runOptionsController != null) runOptionsController.setResumeBusy(false); });
         debugResumeTask.setOnFailed(e -> { if (runOptionsController != null) runOptionsController.setResumeBusy(false); });
 
@@ -334,6 +356,20 @@ public class ProgramSceneController {
         debugStopRequested = true;
         if (debugResumeTask != null) debugResumeTask.cancel();
         if (runOptionsController != null) runOptionsController.setResumeBusy(false);
+        if (lastDebugState != null && historyController != null) {
+            debugToHistory();
+            runOptionsController.setDebugBtnsDisabled(true);
+        }
+    }
+
+    private void debugToHistory() {
+        List<Long> inputs = (inputsController != null)
+                ? inputsController.collectValuesPadded()
+                : Collections.emptyList();
+        int degree = (headerController != null) ? headerController.getCurrentDegree() : 0;
+        int entryIndex = historyController.getTableSize() + 1;
+        debugSnapshots.put(entryIndex, lastDebugState);
+        historyController.addEntry(lastDebugState, degree, inputs);
     }
 
 
@@ -368,7 +404,7 @@ public class ProgramSceneController {
             zs.forEach(i -> names.add("z" + i));
         }
 
-        Map<String, Long> values = new java.util.HashMap<>();
+        Map<String, Long> values = new HashMap<>();
         for (VarValueDTO v : state.getVars()) {
             String n = switch (v.getVar().getVariable()) {
                 case y -> "y";
@@ -378,7 +414,7 @@ public class ProgramSceneController {
             values.put(n, v.getValue());
         }
 
-        java.util.List<String> lines = new java.util.ArrayList<>(names.size());
+        List<String> lines = new ArrayList<>(names.size());
         for (String n : names) {
             long val = values.getOrDefault(n, 0L);
             lines.add(n + " = " + val);
@@ -444,9 +480,17 @@ public class ProgramSceneController {
 
     private void onHistoryShow(RunHistoryEntryDTO row) {
         if (row == null) return;
-        ExecutionDTO snap = runSnapshots.get(row.getRunNumber());
-        String text = buildRunText(row, snap);
-        openTextPopup("Run #" + row.getRunNumber() + " ", text);
+        if(runSnapshots.containsKey(row.getRunNumber()))
+        {
+            ExecutionDTO snap = runSnapshots.get(row.getRunNumber());
+            String text = buildRunText(row, snap);
+            openTextPopup("Run #" + row.getRunNumber() + " ", text);
+        }
+        else {
+            DebugStateDTO snap = debugSnapshots.get(row.getRunNumber());
+            String text = buildRunText(row, snap);
+            openTextPopup("Run #" + row.getRunNumber() + " ", text);
+        }
     }
 
     private String buildRunText(RunHistoryEntryDTO row, ExecutionDTO snap) {
@@ -459,6 +503,20 @@ public class ProgramSceneController {
         str.append("y = ").append(row.getYValue());
         if (snap != null && snap.getFinals() != null && !snap.getFinals().isEmpty()) {
             str.append("\n").append(ExecutionFormatter.formatAllVars(snap.getFinals())).append("\n");
+        }
+        return str.toString();
+    }
+
+    private String buildRunText(RunHistoryEntryDTO row, DebugStateDTO snap) {
+        StringBuilder str = new StringBuilder();
+
+        str.append("Run #").append(row.getRunNumber())
+                .append(" | Degree: ").append(row.getDegree())
+                .append("\n");
+
+        str.append("y = ").append(row.getYValue());
+        if (snap != null && !snap.getVars().isEmpty()) {
+            str.append("\n").append(ExecutionFormatter.formatAllVars(snap.getVars())).append("\n");
         }
         return str.toString();
     }

@@ -31,9 +31,7 @@ public class RunOptionsController {
             if (is) {
                 chkDebug.setSelected(false);
                 if (main != null) main.setDebugMode(false);
-                btnStepOver.setDisable(true);
-                btnResume.setDisable(true);
-                btnStop.setDisable(true);
+                setDebugBtnsDisabled(true);
             }
         });
 
@@ -41,15 +39,10 @@ public class RunOptionsController {
             if (is) {
                 chkRun.setSelected(false);
                 if (main != null) main.setDebugMode(true);
-                // במצב Debug: כפתורי דיבאג דולקים
-                btnStepOver.setDisable(false);
-                btnResume.setDisable(false);
-                btnStop.setDisable(false);
+                setDebugBtnsDisabled(false);
             } else {
                 if (main != null) main.setDebugMode(false);
-                btnStepOver.setDisable(true);
-                btnResume.setDisable(true);
-                btnStop.setDisable(true);
+                setDebugBtnsDisabled(true);
             }
         });
 
@@ -59,13 +52,13 @@ public class RunOptionsController {
     }
 
 
-    public void startEnabled(boolean enabled) {if (btnStart != null) btnStart.setDisable(!enabled);}
+    public void startEnabled(boolean enabled) {
+        if (btnStart != null) btnStart.setDisable(!enabled);
+    }
 
     public void setButtonsEnabled(boolean enabled) {
         boolean disable = !enabled;
-        if (btnStop != null)         btnStop.setDisable(disable);
-        if (btnResume != null)       btnResume.setDisable(disable);
-        if (btnStepOver != null)     btnStepOver.setDisable(disable);
+        setDebugBtnsDisabled(disable);
         if (chkRun != null) {
             chkRun.setDisable(disable);
             chkRun.setSelected(false);
@@ -74,6 +67,12 @@ public class RunOptionsController {
             chkDebug.setDisable(disable);
             chkDebug.setSelected(false);
         }
+    }
+
+    public void setDebugBtnsDisabled(boolean disabled) {
+        if (btnStepOver != null)     btnStepOver.setDisable(disabled);
+        if (btnResume != null)       btnResume.setDisable(disabled);
+        if (btnStop != null)         btnStop.setDisable(disabled);
     }
 
     @FXML private void onStartAction() {
@@ -90,7 +89,7 @@ public class RunOptionsController {
     @FXML private void onStopAction()  { main.debugStop(); }
 
     @FXML private void onResumeAction() {
-        chkDebug.setSelected(true); // מוודא ש-Debug פעיל
+        chkDebug.setSelected(true);
         main.debugResume();
     }
 
@@ -106,7 +105,7 @@ public class RunOptionsController {
         if (chkRun.isSelected()) {
             onRunAction();
         } else if ( chkDebug.isSelected()) {
-            onDebugAction();        // עתידי; כרגע יש לך TODO
+            onDebugAction();
         }
     }
 

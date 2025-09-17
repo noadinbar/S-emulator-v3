@@ -1,5 +1,6 @@
 package application.table.history;
 
+import execution.debug.DebugStateDTO;
 import javafx.beans.property.ReadOnlyIntegerWrapper;
 import javafx.beans.property.ReadOnlyLongWrapper;
 import javafx.beans.property.ReadOnlyStringWrapper;
@@ -89,7 +90,7 @@ public class HistoryController {
                             getProperties().remove("animQueuedStamp");
                             return;
                         }
-                        animateCellsOnce(this, 1200 /*ms*/, 0.2 /*from opacity*/);
+                        animateCellsOnce(this  /*ms*/  /*from opacity*/);
                         getProperties().put("animDoneStamp", animateStamp);
                         getProperties().remove("animQueuedStamp");
                         if (getIndex() == animateIndex) {
@@ -104,11 +105,11 @@ public class HistoryController {
 
     // === BONUS: Row fade-in on new history entry (BEGIN) ===
     // Fade-in the row's visible cells (not the background) for a noticeable effect without white gaps
-    private void animateCellsOnce(TableRow<?> row, double millis, double fromOpacity) {
+    private void animateCellsOnce(TableRow<?> row) {
         for (Node cell : row.lookupAll(".table-cell")) {
-            cell.setOpacity(fromOpacity);
-            FadeTransition ft = new FadeTransition(Duration.millis(millis), cell);
-            ft.setFromValue(fromOpacity);
+            cell.setOpacity(0.2);
+            FadeTransition ft = new FadeTransition(Duration.millis(1200), cell);
+            ft.setFromValue(0.2);
             ft.setToValue(1.0);
             ft.setInterpolator(Interpolator.EASE_OUT);
             ft.play();
@@ -125,6 +126,8 @@ public class HistoryController {
         items.setAll(rows);
     }
 
+    public int getTableSize() { return items.size(); }
+
     public void addEntry(RunHistoryEntryDTO row) {
         items.add(row);
         if (tblHistory != null) {
@@ -137,6 +140,29 @@ public class HistoryController {
             // === BONUS: Row fade-in on new history entry (END) ===
         }
     }
+
+    public void addEntry(DebugStateDTO state, int degree, List<Long> inputs) {
+        if (state == null) return;
+        long cycles = state.getCyclesSoFar();
+        long y = state.getVars().stream()
+                .filter(v -> v.getVar().getVariable() == types.VarOptionsDTO.y)
+                .mapToLong(execution.VarValueDTO::getValue)
+                .findFirst().orElse(0L);
+        addDebugSnapshot(degree, inputs, y, cycles); // משתמשים ב־API קצר פנימי להצגת "צילום"
+    }
+
+    public void addDebugSnapshot(int degree, List<Long> inputs, long yValue, long cycles) {
+        if (tblHistory == null) return;
+        RunHistoryEntryDTO row = new RunHistoryEntryDTO(
+                items.size()+1,
+                degree,
+                inputs,
+                yValue,
+                (int) cycles
+        );
+        addEntry(row);
+    }
+
 
     public void clear() {
         items.clear();

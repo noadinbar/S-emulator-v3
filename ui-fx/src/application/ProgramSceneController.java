@@ -294,6 +294,7 @@ public class ProgramSceneController {
         debugStarted = true;
         lastDebugState = state;
         showDebugState(state);
+        outputsController.highlightChanged(Set.of());
     }
 
     public void debugStep() {
@@ -305,13 +306,17 @@ public class ProgramSceneController {
 
         DebugStepDTO step = debugApi.step();
         DebugStateDTO state = step.getNewState();
+        Set<String> changed = computeChangedVarNames(lastDebugState, state);
+
         lastDebugState = state;
         showDebugState(state);
+        outputsController.highlightChanged(changed);
         selectAndScrollProgramRow(state.getPc());
         if (debugApi.isTerminated() && lastDebugState != null && historyController != null) {
             debugToHistory();
             runOptionsController.setDebugBtnsDisabled(true);
         }
+
     }
 
     public void debugResume() {
@@ -328,10 +333,12 @@ public class ProgramSceneController {
                 while (!isCancelled() && !debugStopRequested) {
                     var step  = debugApi.step();
                     var state = step.getNewState();
+                    var prev = lastDebugState;
                     lastDebugState = state;
 
                     Platform.runLater(() -> {
                         showDebugState(state);
+                        outputsController.highlightChanged(computeChangedVarNames(prev, state));
                         selectAndScrollProgramRow(state.getPc());
                     });
 
@@ -427,19 +434,51 @@ public class ProgramSceneController {
         outputsController.setVariableLines(lines);
     }
 
+    private static Set<String> computeChangedVarNames(DebugStateDTO prev, DebugStateDTO curr) {
+        Set<String> changed = new HashSet<>();
+        if (curr == null) return changed;
+        Map<String, Long> pm = new HashMap<>();
+        Map<String, Long> cm = new HashMap<>();
+
+        if (prev != null) {
+            for (VarValueDTO v : prev.getVars()) {
+                String name = switch (v.getVar().getVariable()) {
+                    case y -> "y";
+                    case x -> "x" + v.getVar().getIndex();
+                    case z -> "z" + v.getVar().getIndex();
+                };
+                pm.put(name, v.getValue());
+            }
+        }
+        for (VarValueDTO v : curr.getVars()) {
+            String name = switch (v.getVar().getVariable()) {
+                case y -> "y";
+                case x -> "x" + v.getVar().getIndex();
+                case z -> "z" + v.getVar().getIndex();
+            };
+            cm.put(name, v.getValue());
+        }
+
+        Set<String> keys = new HashSet<>(cm.keySet());
+        keys.addAll(pm.keySet());
+        for (String k : keys) {
+            long oldVal = pm.getOrDefault(k, 0L);
+            long newVal = cm.getOrDefault(k, 0L);
+            if (oldVal != newVal) changed.add(k);
+        }
+        return changed;
+    }
+
     private void selectAndScrollProgramRow(int pc) {
         if (programTableController == null || programTableController.getTableView() == null) return;
         var tv = programTableController.getTableView();
         int n = tv.getItems().size();
         if (n == 0) return;
-
         if (pc < 0 || pc >= n) {
-            // אם סיימנו (pc == n) או ערך חריג – לא מסמנים כלום
             tv.getSelectionModel().clearSelection();
             return;
         }
 
-        // מסמנים את השורה הבאה להרצה בדיוק
         tv.getSelectionModel().clearAndSelect(pc);
         tv.getFocusModel().focus(pc);
         tv.scrollTo(pc);

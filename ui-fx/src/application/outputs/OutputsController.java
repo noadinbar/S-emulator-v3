@@ -6,16 +6,17 @@ import javafx.scene.control.TextField;
 import javafx.scene.control.Label;
 import javafx.scene.layout.VBox;
 import types.VarOptionsDTO;
-import java.util.Arrays;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Map;
+
+import java.util.*;
 import java.util.stream.Collectors;
 
 public class OutputsController {
 
     @FXML private VBox linesBox;
     @FXML private TextField txtCycles;
+
+    private final Map<String, javafx.scene.control.Label> varLabels = new HashMap<>();
+
 
     @FXML
     private void initialize() {
@@ -34,9 +35,36 @@ public class OutputsController {
             String text = (str == null) ? "" : str.trim();
             Label line = new Label(" " + text); // leading space as requested
             line.getStyleClass().add("out-line"); // CSS hook for coloring whole line later
+
+            String varName = text;
+            int eq = text.indexOf('=');
+            if (eq > 0) varName = text.substring(0, eq).trim(); // "y", "x1", "z2"...
+            line.setUserData(varName);
+            varLabels.put(varName, line);
+
             linesBox.getChildren().add(line);
         }
     }
+
+    public void highlightChanged(java.util.Set<String> changedNames) {
+        if (linesBox == null) return;
+
+        for (var lbl : varLabels.values()) {
+            lbl.getStyleClass().remove("var-changed");
+            lbl.setStyle("");
+        }
+
+        if (changedNames == null) return;
+
+        for (String name : changedNames) {
+            javafx.scene.control.Label lbl = varLabels.get(name);
+            if (lbl != null) {
+                lbl.getStyleClass().add("var-changed");
+                lbl.setStyle("-fx-text-fill: red; -fx-font-weight: bold;");
+            }
+        }
+    }
+
 
     public List<String> getVariableLines() {
         if (linesBox == null) return null;

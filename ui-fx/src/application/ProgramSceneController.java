@@ -195,10 +195,15 @@ public class ProgramSceneController {
         }
 
         if (display == null || inputsController == null) return;
+
         if (debugMode) {
-            debugStep();
+            ensureDebugInit();
+            if (lastDebugState != null) {
+                selectAndScrollProgramRow(lastDebugState.getPc());
+            }
             return;
         }
+
 
         String csv = inputsController.collectValuesCsvPadded();
         if (outputsController != null) {
@@ -295,6 +300,7 @@ public class ProgramSceneController {
         if (!debugMode) return;
 
         ensureDebugInit();
+
         if (debugApi == null) return;
 
         DebugStepDTO step = debugApi.step();
@@ -427,16 +433,18 @@ public class ProgramSceneController {
         int n = tv.getItems().size();
         if (n == 0) return;
 
-        if (pc <= 0) {
+        if (pc < 0 || pc >= n) {
+            // אם סיימנו (pc == n) או ערך חריג – לא מסמנים כלום
             tv.getSelectionModel().clearSelection();
             return;
         }
 
-        int row = Math.min(pc, n) - 1;
-        tv.getSelectionModel().clearAndSelect(row);
-        tv.getFocusModel().focus(row);
-        tv.scrollTo(row);
+        // מסמנים את השורה הבאה להרצה בדיוק
+        tv.getSelectionModel().clearAndSelect(pc);
+        tv.getFocusModel().focus(pc);
+        tv.scrollTo(pc);
     }
+
 
     public void setDisplay(DisplayAPI display) {
         this.display = display;

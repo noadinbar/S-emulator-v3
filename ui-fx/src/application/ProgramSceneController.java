@@ -60,7 +60,7 @@ public class ProgramSceneController {
     private int currentDegree = 0;
 
     private final Map<Integer, ExecutionDTO> runSnapshots = new HashMap<>();
-    private final Map<Integer, DebugStateDTO> debugSnapshots = new HashMap<>();
+    private final Map<Integer, List<String>> debugSnapshots = new HashMap<>();
 
     private DebugAPI debugApi = null;
     private boolean debugMode = false;
@@ -306,7 +306,6 @@ public class ProgramSceneController {
             debugToHistory();
             runOptionsController.setDebugBtnsDisabled(true);
         }
-
     }
 
     public void debugResume() {
@@ -368,7 +367,7 @@ public class ProgramSceneController {
                 : Collections.emptyList();
         int degree = (headerController != null) ? headerController.getCurrentDegree() : 0;
         int entryIndex = historyController.getTableSize() + 1;
-        debugSnapshots.put(entryIndex, lastDebugState);
+        debugSnapshots.put(entryIndex, outputsController.getVariableLines());
         historyController.addEntry(lastDebugState, degree, inputs);
     }
 
@@ -433,7 +432,7 @@ public class ProgramSceneController {
             return;
         }
 
-        int row = Math.min(pc, n) - 1;  // clamp(pc,1..n) - 1
+        int row = Math.min(pc, n) - 1;
         tv.getSelectionModel().clearAndSelect(row);
         tv.getFocusModel().focus(row);
         tv.scrollTo(row);
@@ -464,7 +463,7 @@ public class ProgramSceneController {
         Platform.runLater(inputsController::focusFirstField);
     }
 
-    private void onHistoryRerun(execution.RunHistoryEntryDTO row) {
+    private void onHistoryRerun(RunHistoryEntryDTO row) {
         if (row == null || display == null || programTableController == null || headerController == null) return;
 
         currentDegree = row.getDegree();
@@ -487,7 +486,7 @@ public class ProgramSceneController {
             openTextPopup("Run #" + row.getRunNumber() + " ", text);
         }
         else {
-            DebugStateDTO snap = debugSnapshots.get(row.getRunNumber());
+            List<String> snap = debugSnapshots.get(row.getRunNumber());
             String text = buildRunText(row, snap);
             openTextPopup("Run #" + row.getRunNumber() + " ", text);
         }
@@ -507,16 +506,16 @@ public class ProgramSceneController {
         return str.toString();
     }
 
-    private String buildRunText(RunHistoryEntryDTO row, DebugStateDTO snap) {
+    private String buildRunText(RunHistoryEntryDTO row, List<String> snap) {
         StringBuilder str = new StringBuilder();
 
         str.append("Run #").append(row.getRunNumber())
                 .append(" | Degree: ").append(row.getDegree())
                 .append("\n");
 
-        str.append("y = ").append(row.getYValue());
-        if (snap != null && !snap.getVars().isEmpty()) {
-            str.append("\n").append(ExecutionFormatter.formatAllVars(snap.getVars())).append("\n");
+        for (String s : snap) {
+            str.append(s);
+            str.append("\n");
         }
         return str.toString();
     }

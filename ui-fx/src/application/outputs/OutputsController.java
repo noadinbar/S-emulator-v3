@@ -38,6 +38,14 @@ public class OutputsController {
         }
     }
 
+    public List<String> getVariableLines() {
+        if (linesBox == null) return null;
+        return linesBox.getChildren().stream()
+                .filter(n -> n instanceof Label)
+                .map(n -> ((Label) n).getText())
+                .collect(Collectors.toList());
+    }
+
 
     public void setVariables(Map<String, Long> vars) {
         if (linesBox == null) return;

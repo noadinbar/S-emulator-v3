@@ -19,14 +19,39 @@ import structure.variable.Variable;
 import structure.variable.VariableImpl;
 import structure.variable.VariableType;
 
+import java.util.Collections;
+import java.util.Map;
+
 public class XMLToStructure {
 
-    public ProgramImpl toProgram(SProgram sProgram) {
-        ProgramImpl program = new ProgramImpl(sProgram.getName());
+    private Map<String, String> functionDisplayMap = Collections.emptyMap();
 
-        sProgram.getSInstructions()
-                .getSInstruction()
-                .forEach(sInstr -> program.addInstruction(toInstruction(sInstr)));
+    public void buildFunctionDisplayMap(SProgram sProgram) {
+        if (sProgram == null) {
+            this.functionDisplayMap = java.util.Collections.emptyMap();
+            return;
+        }
+        SFunctions sFunctions = sProgram.getSFunctions();
+        if (sFunctions == null || sFunctions.getSFunction() == null) {
+            this.functionDisplayMap = java.util.Collections.emptyMap();
+            return;
+        }
+        java.util.Map<String, String> map = new java.util.LinkedHashMap<>();
+        for (SFunction f : sFunctions.getSFunction()) {
+            String name = f.getName();
+            if (name == null || name.isBlank()) continue;
+            String us = f.getUserString();
+            // אם user-string ריק/חסר – ניפול חזרה לשם הפורמלי
+            map.put(name, (us == null || us.isBlank()) ? name : us.trim());
+        }
+        this.functionDisplayMap = java.util.Collections.unmodifiableMap(map);
+    }
+
+
+
+    public ProgramImpl toProgram(SProgram sProgram) {
+        buildFunctionDisplayMap(sProgram);
+        ProgramImpl program = new ProgramImpl(sProgram.getName());
 
         final SFunctions sFunctions = sProgram.getSFunctions();
         if (sFunctions != null && sFunctions.getSFunction() != null)
@@ -36,6 +61,10 @@ public class XMLToStructure {
                 program.addFunction(f);
             }
         }
+
+        sProgram.getSInstructions()
+                .getSInstruction()
+                .forEach(sInstr -> program.addInstruction(toInstruction(sInstr)));
 
         return program;
     }
@@ -114,19 +143,21 @@ public class XMLToStructure {
             case QUOTE: {
                 String fName = getArgumentValue(sInstruction, "functionName");
                 String fArgs = getArgumentValue(sInstruction, "functionArguments");
+                String userString=functionDisplayMap.get(fName);
                 return label != null
-                        ? new QuotationInstruction(variable, fName, fArgs, label)
-                        : new QuotationInstruction(variable, fName, fArgs);
+                        ? new QuotationInstruction(variable, fName, userString, fArgs, label)
+                        : new QuotationInstruction(variable, fName, userString, fArgs);
             }
 
             case JUMP_EQUAL_FUNCTION: {
                 String fName = getArgumentValue(sInstruction, "functionName");
                 String fArgs = getArgumentValue(sInstruction, "functionArguments");
+                String userString=functionDisplayMap.get(fName);
                 String jefText = getArgumentValue(sInstruction, "JEFunctionLabel");
                 Label jefLabel = jefText != null ? new LabelImpl(jefText) : null;
                 return label != null
-                        ? new JumpEqualFunctionInstruction(variable, jefLabel, fName, fArgs, label)
-                        : new JumpEqualFunctionInstruction(variable, jefLabel, fName, fArgs);
+                        ? new JumpEqualFunctionInstruction(variable, jefLabel, fName, userString, fArgs, label)
+                        : new JumpEqualFunctionInstruction(variable, jefLabel, fName, userString, fArgs);
 
             }
                 default: throw new IllegalArgumentException("Unknown instruction type: " + type); //never going to happen

@@ -8,7 +8,7 @@
 <?import javafx.scene.layout.StackPane?>
 <?import javafx.scene.layout.VBox?>
 
-<ScrollPane fx:id="rootScroll" prefHeight="620.0" prefWidth="801.0" styleClass="theme-default" xmlns="http://javafx.com/javafx/24.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="application.ProgramSceneController">
+<ScrollPane fx:id="rootScroll" prefHeight="620.0" prefWidth="800.0" styleClass="theme-default" xmlns="http://javafx.com/javafx/24.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="application.ProgramSceneController">
 
    <stylesheets>
       <URL value="@app.css" />
@@ -53,12 +53,12 @@
                         <fx:include fx:id="runOptions" source="run/options/run_options.fxml" />
 
 
-                        <HBox fillHeight="true" prefHeight="193.0" prefWidth="281.0" spacing="8.0">
+                        <HBox fillHeight="true" prefHeight="193.0" prefWidth="270.0" spacing="8.0">
                            <children>
                               <StackPane prefHeight="203.0" prefWidth="145.0" HBox.hgrow="ALWAYS">
                                  <fx:include fx:id="outputs" source="outputs/outputs.fxml" />
                               </StackPane>
-                              <StackPane prefHeight="185.0" prefWidth="99.0" HBox.hgrow="ALWAYS">
+                              <StackPane prefHeight="185.0" prefWidth="80.0" HBox.hgrow="NEVER">
                                  <fx:include fx:id="inputs" source="inputs/inputs.fxml" />
                               </StackPane>
                            </children>

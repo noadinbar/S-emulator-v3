@@ -51,6 +51,8 @@ import jakarta.xml.bind.annotation.XmlType;
  *             <enumeration value="JUMP_ZERO"/>
  *             <enumeration value="JUMP_EQUAL_CONSTANT"/>
  *             <enumeration value="JUMP_EQUAL_VARIABLE"/>
+ *             <enumeration value="QUOTE"/>
+ *             <enumeration value="JUMP_EQUAL_FUNCTION"/>
  *           </restriction>
  *         </simpleType>
  *       </attribute>

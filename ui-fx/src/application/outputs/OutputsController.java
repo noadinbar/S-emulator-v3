@@ -12,8 +12,10 @@ import java.util.stream.Collectors;
 
 public class OutputsController {
 
-    @FXML private VBox linesBox;
-    @FXML private TextField txtCycles;
+    @FXML
+    private VBox linesBox;
+    @FXML
+    private TextField txtCycles;
 
     private final Map<String, javafx.scene.control.Label> varLabels = new HashMap<>();
 
@@ -25,7 +27,9 @@ public class OutputsController {
         }
     }
 
-    /**lines as non-editable labels.*/
+    /**
+     * lines as non-editable labels.
+     */
     public void setVariableLines(List<String> lines) {
         if (linesBox == null) return;
         linesBox.getChildren().clear();
@@ -65,7 +69,6 @@ public class OutputsController {
         }
     }
 
-
     public List<String> getVariableLines() {
         if (linesBox == null) return null;
         return linesBox.getChildren().stream()
@@ -74,20 +77,9 @@ public class OutputsController {
                 .collect(Collectors.toList());
     }
 
-
-    public void setVariables(Map<String, Long> vars) {
-        if (linesBox == null) return;
-        linesBox.getChildren().clear();
-        if (vars == null || vars.isEmpty()) return;
-
-        List<String> lines = vars.entrySet().stream()
-                .sorted(Map.Entry.comparingByKey())
-                .map(e -> e.getKey() + " = " + e.getValue())
-                .collect(Collectors.toList());
-        setVariableLines(lines);
-    }
-
-    /** Update the cycle count text. */
+    /**
+     * Update the cycle count text.
+     */
     public void setCycles(long cycles) {
         if (txtCycles != null) {
             txtCycles.setText(Long.toString(cycles));
@@ -142,15 +134,11 @@ public class OutputsController {
         }
     }
 
-    /** Clear all output. */
+    /**
+     * Clear all output.
+     */
     public void clear() {
         if (linesBox != null) linesBox.getChildren().clear();
         if (txtCycles != null) txtCycles.clear();
-    }
-
-    /** Enable/disable the whole outputs panel. */
-    public void setDisabled(boolean disabled) {
-        if (linesBox != null) linesBox.setDisable(disabled);
-        if (txtCycles != null) txtCycles.setDisable(disabled);
     }
 }

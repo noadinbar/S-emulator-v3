@@ -11,6 +11,8 @@ import javax.xml.namespace.QName;
 import jakarta.xml.bind.JAXBElement;
 import jakarta.xml.bind.annotation.XmlElementDecl;
 import jakarta.xml.bind.annotation.XmlRegistry;
+import structure.function.SFunction;
+import structure.function.SFunctions;
 import structure.instruction.SInstruction;
 import structure.instruction.SInstructionArgument;
 import structure.instruction.SInstructionArguments;
@@ -19,18 +21,18 @@ import structure.program.SProgram;
 
 
 /**
- * This object contains factory methods for each 
- * Java content interface and Java element interface 
- * generated in the engine.xmlmodel package. 
- * <p>An ObjectFactory allows you to programmatically 
- * construct new instances of the Java representation 
- * for XML content. The Java representation of XML 
- * content can consist of schema derived interfaces 
- * and classes representing the binding of schema 
- * type definitions, element declarations and model 
- * groups.  Factory methods for each of these are 
+ * This object contains factory methods for each
+ * Java content interface and Java element interface
+ * generated in the v2 package.
+ * <p>An ObjectFactory allows you to programmatically
+ * construct new instances of the Java representation
+ * for XML content. The Java representation of XML
+ * content can consist of schema derived interfaces
+ * and classes representing the binding of schema
+ * type definitions, element declarations and model
+ * groups.  Factory methods for each of these are
  * provided in this class.
- * 
+ *
  */
 @XmlRegistry
 public class ObjectFactory {
@@ -39,25 +41,35 @@ public class ObjectFactory {
     private static final QName _SLabel_QNAME = new QName("", "S-Label");
 
     /**
-     * Create a new ObjectFactory that can be used to create new instances of schema derived classes for package: engine.xmlmodel
-     * 
+     * Create a new ObjectFactory that can be used to create new instances of schema derived classes for package: v2
+     *
      */
     public ObjectFactory() {
     }
 
     /**
-     * Create an instance of {@link SProgram }
-     * 
+     * Create an instance of {@link SFunctions }
+     *
      * @return
-     *     the new instance of {@link SProgram }
+     *     the new instance of {@link SFunctions }
      */
-    public SProgram createSProgram() {
-        return new SProgram();
+    public SFunctions createSFunctions() {
+        return new SFunctions();
+    }
+
+    /**
+     * Create an instance of {@link SFunction }
+     *
+     * @return
+     *     the new instance of {@link SFunction }
+     */
+    public SFunction createSFunction() {
+        return new SFunction();
     }
 
     /**
      * Create an instance of {@link SInstructions }
-     * 
+     *
      * @return
      *     the new instance of {@link SInstructions }
      */
@@ -67,7 +79,7 @@ public class ObjectFactory {
 
     /**
      * Create an instance of {@link SInstruction }
-     * 
+     *
      * @return
      *     the new instance of {@link SInstruction }
      */
@@ -77,7 +89,7 @@ public class ObjectFactory {
 
     /**
      * Create an instance of {@link SInstructionArguments }
-     * 
+     *
      * @return
      *     the new instance of {@link SInstructionArguments }
      */
@@ -87,7 +99,7 @@ public class ObjectFactory {
 
     /**
      * Create an instance of {@link SInstructionArgument }
-     * 
+     *
      * @return
      *     the new instance of {@link SInstructionArgument }
      */
@@ -96,8 +108,18 @@ public class ObjectFactory {
     }
 
     /**
+     * Create an instance of {@link SProgram }
+     *
+     * @return
+     *     the new instance of {@link SProgram }
+     */
+    public SProgram createSProgram() {
+        return new SProgram();
+    }
+
+    /**
      * Create an instance of {@link JAXBElement }{@code <}{@link String }{@code >}
-     * 
+     *
      * @param value
      *     Java instance representing xml element's value.
      * @return
@@ -110,7 +132,7 @@ public class ObjectFactory {
 
     /**
      * Create an instance of {@link JAXBElement }{@code <}{@link String }{@code >}
-     * 
+     *
      * @param value
      *     Java instance representing xml element's value.
      * @return

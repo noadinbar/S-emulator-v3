@@ -666,7 +666,6 @@ public class ProgramSceneController {
             historyController.getTableView().getSelectionModel().clearSelection();
         }
 
-
         if (themeClass != null && !themeClass.isBlank() && !classes.contains(themeClass)) {
             classes.add(themeClass);
         }

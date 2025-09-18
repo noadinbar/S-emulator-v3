@@ -234,7 +234,6 @@ public class ProgramSceneController {
             historyController.addEntry(last);
             runSnapshots.put(last.getRunNumber(), result);
         }
-
     }
 
     private void changeDegreeAndShow(int i) {
@@ -671,7 +670,6 @@ public class ProgramSceneController {
         if (themeClass != null && !themeClass.isBlank() && !classes.contains(themeClass)) {
             classes.add(themeClass);
         }
-
         rootScroll.applyCss();
     }
 }

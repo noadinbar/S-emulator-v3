@@ -1,5 +1,6 @@
 package structure.program;
 
+import structure.function.Function;
 import structure.instruction.Instruction;
 import utils.ParseResult;
 
@@ -13,4 +14,8 @@ public interface Program {
 
     ParseResult validate();
     int calculateMaxDegree();
+
+    List<Function> getFunctions();
+    Function getFunction(String name);
+    void addFunction(Function function);
 }

@@ -1,5 +1,6 @@
 package structure.program;
 
+import structure.function.Function;
 import structure.instruction.Instruction;
 import structure.instruction.basic.JumpNotZeroInstruction;
 import structure.instruction.synthetic.*;
@@ -21,6 +22,8 @@ public class ProgramImpl implements Program, Serializable {
     private final String name;
     private final List<Instruction> instructions;
     private final List<RunHistory> runHistory = new ArrayList<>();
+    private final List<Function> functions;
+    private final Map<String, Function> stringFunctionMap = new LinkedHashMap<>();
     private int currentRunDegree = 0;
     private static final Pattern LBL_PATTERN = Pattern.compile("^L(\\d+)$");
     private static final long serialVersionUID = 1L;
@@ -28,6 +31,7 @@ public class ProgramImpl implements Program, Serializable {
     public ProgramImpl(String name) {
         this.name = name;
         instructions = new ArrayList<>();
+        functions = new ArrayList<>();
     }
 
     @Override
@@ -43,6 +47,28 @@ public class ProgramImpl implements Program, Serializable {
     @Override
     public List<Instruction> getInstructions() {
         return instructions;
+    }
+
+    @Override
+    public List<Function> getFunctions() {
+        return Collections.unmodifiableList(functions);
+    }
+
+    @Override
+    public Function getFunction(String name) {
+        Function func = stringFunctionMap.get(name);
+        if (func == null) {
+            throw new IllegalArgumentException("Function '" + name + "' not found");
+        }
+        return func;
+    }
+
+    @Override
+    public void addFunction(Function function) {
+        if (function == null) return;
+        String name = function.getName();
+        functions.add(function);
+        stringFunctionMap.put(name, function);
     }
 
     @Override
@@ -174,7 +200,5 @@ public class ProgramImpl implements Program, Serializable {
         String rep = l.getLabelRepresentation();
         return "EXIT".equals(rep);
     }
-
-
 
 }

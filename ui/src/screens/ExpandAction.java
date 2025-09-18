@@ -3,7 +3,7 @@ package screens;
 import api.DisplayAPI;
 import api.ExecutionAPI;
 
-import display.Command3DTO;
+import display.ExpandDTO;
 import display.ExpandedInstructionDTO;
 
 import exceptions.InvalidDegreeException;
@@ -29,7 +29,7 @@ public class ExpandAction {
             int maxDeg = exec.getMaxDegree();
             System.out.println(ExecutionFormatter.formatMaxDegree(maxDeg));
 
-            Command3DTO dto;
+            ExpandDTO dto;
 
             while (true) {
                 System.out.print("Enter degree to expand (0 for no expansion): ");

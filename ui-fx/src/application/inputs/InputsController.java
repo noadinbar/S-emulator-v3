@@ -10,7 +10,7 @@ import javafx.scene.control.TextFormatter;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.application.Platform;
-import display.Command2DTO;
+import display.DisplayDTO;
 import types.VarRefDTO;
 import types.VarOptionsDTO;
 
@@ -32,7 +32,7 @@ public class InputsController implements Initializable {
         clear();
     }
 
-    public void show(Command2DTO dto) {
+    public void show(DisplayDTO dto) {
         clear();
 
         List<Integer> indices = new ArrayList<>();

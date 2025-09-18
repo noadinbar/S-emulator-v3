@@ -1,11 +1,10 @@
 package exportToDTO;
 
-import api.DebugAPI;
 import api.DisplayAPI;
 import api.ExecutionAPI;
-import display.Command2DTO;
+import display.DisplayDTO;
 
-import display.Command3DTO;
+import display.ExpandDTO;
 import exceptions.InvalidDegreeException;
 import exceptions.StatePersistenceException;
 import execution.HistoryDTO;
@@ -27,10 +26,10 @@ public class DisplayAPIImpl implements DisplayAPI {
     public DisplayAPIImpl(Program program) { this.program = program; }
 
     @Override
-    public Command2DTO getCommand2() { return DisplayMapper.toCommand2(program); }
+    public DisplayDTO getCommand2() { return DisplayMapper.toCommand2(program); }
 
     @Override
-    public Command3DTO expand(int degree) {
+    public ExpandDTO expand(int degree) {
         int max = ((ProgramImpl) program).calculateMaxDegree();
         if (degree < 0 || degree > max) {
             throw new InvalidDegreeException(

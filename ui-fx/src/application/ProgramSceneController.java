@@ -22,8 +22,8 @@ import application.inputs.InputsController;
 import api.DisplayAPI;
 import api.ExecutionAPI;
 
-import display.Command2DTO;
-import display.Command3DTO;
+import display.DisplayDTO;
+import display.ExpandDTO;
 import display.InstructionDTO;
 
 import javafx.scene.Scene;
@@ -136,7 +136,7 @@ public class ProgramSceneController {
                     .getItems()
                     .addListener((ListChangeListener<InstructionDTO>) change -> {
                         if (display != null) {
-                            Command2DTO cmd2 = display.getCommand2();
+                            DisplayDTO cmd2 = display.getCommand2();
                             headerController.populateHighlight(cmd2.getInstructions());
                         }
                     });
@@ -171,7 +171,7 @@ public class ProgramSceneController {
         headerController.setCurrentDegree(currentDegree);
 
         if (programTableController != null) {
-            Command3DTO expanded = this.display.expand(currentDegree);
+            ExpandDTO expanded = this.display.expand(currentDegree);
             programTableController.showExpanded(expanded);
             if (headerController != null && programTableController != null && programTableController.getTableView() != null) {
                 headerController.populateHighlight(programTableController.getTableView().getItems(), true); // ← לאפס ל-NONE
@@ -240,7 +240,7 @@ public class ProgramSceneController {
         if (display == null || programTableController == null) return;
         int target = currentDegree + i;
 
-        Command3DTO expanded = display.expand(target);
+        ExpandDTO expanded = display.expand(target);
         programTableController.showExpanded(expanded);
 
         if (headerController != null && programTableController.getTableView() != null) {
@@ -489,7 +489,7 @@ public class ProgramSceneController {
         this.execute = null;
     }
 
-    public void showCommand2(Command2DTO dto) {
+    public void showCommand2(DisplayDTO dto) {
         if (programTableController != null) {
             programTableController.show(dto);
             updateChain(null);
@@ -504,7 +504,7 @@ public class ProgramSceneController {
 
     public void showInputsForEditing() {
         if (display == null || inputsController == null) return;
-        Command2DTO dto = display.getCommand2();
+        DisplayDTO dto = display.getCommand2();
         inputsController.show(dto);
         Platform.runLater(inputsController::focusFirstField);
     }
@@ -514,7 +514,7 @@ public class ProgramSceneController {
 
         currentDegree = row.getDegree();
         headerController.setCurrentDegree(currentDegree);
-        display.Command3DTO expanded = display.expand(currentDegree);
+        ExpandDTO expanded = display.expand(currentDegree);
         programTableController.showExpanded(expanded);
         updateChain(programTableController.getSelectedItem());
         inputsController.fillInputs(row.getInputs());

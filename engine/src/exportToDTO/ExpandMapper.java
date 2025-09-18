@@ -1,7 +1,7 @@
 package exportToDTO;
 
-import display.Command2DTO;
-import display.Command3DTO;
+import display.DisplayDTO;
+import display.ExpandDTO;
 import display.ExpandedInstructionDTO;
 import display.InstructionDTO;
 import structure.expand.ExpandResult;
@@ -19,7 +19,7 @@ import java.util.Map;
 public final class ExpandMapper {
     private ExpandMapper(){}
 
-    public static Command3DTO toCommand3(Program program, int degree) {
+    public static ExpandDTO toCommand3(Program program, int degree) {
         ExpandResult res = ProgramExpander.expandTo(program, degree);
 
         Program finalProg = res.getExpandedProgram();
@@ -30,7 +30,7 @@ public final class ExpandMapper {
         for (int lvl = 0; lvl <= lastLevel; lvl++) {
             ProgramImpl progL = new ProgramImpl(finalProg.getName());
             for (Instruction ins : levels.get(lvl)) progL.addInstruction(ins);
-            Command2DTO c2 = DisplayMapper.toCommand2(progL);
+            DisplayDTO c2 = DisplayMapper.toCommand2(progL);
 
             List<Instruction> insL = levels.get(lvl);
             List<InstructionDTO> dtoL = c2.getInstructions();
@@ -40,7 +40,7 @@ public final class ExpandMapper {
             dtoAtLevel.add(map);
         }
 
-        Command2DTO finalC2 = DisplayMapper.toCommand2(finalProg);
+        DisplayDTO finalC2 = DisplayMapper.toCommand2(finalProg);
         List<InstructionDTO> finalDtos = finalC2.getInstructions();
         List<Instruction>     finalIns  = levels.get(lastLevel);
 
@@ -65,7 +65,7 @@ public final class ExpandMapper {
             out.add(new ExpandedInstructionDTO(left, chain));
         }
 
-        return new Command3DTO(
+        return new ExpandDTO(
                 finalC2.getProgramName(),
                 finalC2.getInputsInUse(),
                 finalC2.getLabelsInUse(),

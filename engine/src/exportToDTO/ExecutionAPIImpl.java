@@ -7,7 +7,6 @@ import exceptions.InvalidInputException;
 import execution.ExecutionDTO;
 import execution.ExecutionRequestDTO;
 import execution.VarValueDTO;
-import execution.debug.DebugStateDTO;
 import structure.execution.ProgramExecutorImpl;
 import structure.program.Program;
 import structure.program.ProgramImpl;
@@ -42,7 +41,7 @@ public class ExecutionAPIImpl implements ExecutionAPI {
 
     @Override
     public ExecutionDTO execute(ExecutionRequestDTO request) {
-        Command2DTO executed = DisplayMapper.toCommand2(program);
+        DisplayDTO executed = DisplayMapper.toCommand2(program);
 
         SortedSet<Integer> xsInProgram = new TreeSet<>();
         SortedSet<Integer> zsInProgram = new TreeSet<>();
@@ -95,14 +94,14 @@ public class ExecutionAPIImpl implements ExecutionAPI {
     }
 
 
-    private static void collectXFromInputs(Command2DTO dto, SortedSet<Integer> xs) {
+    private static void collectXFromInputs(DisplayDTO dto, SortedSet<Integer> xs) {
         if (dto.getInputsInUse() == null) return;
         for (VarRefDTO v : dto.getInputsInUse()) {
             if (v != null && v.getVariable() == VarOptionsDTO.x) xs.add(v.getIndex());
         }
     }
 
-    private static void collectXZFromBody(Command2DTO dto, SortedSet<Integer> xs, SortedSet<Integer> zs) {
+    private static void collectXZFromBody(DisplayDTO dto, SortedSet<Integer> xs, SortedSet<Integer> zs) {
         if (dto.getInstructions() == null) return;
         for (InstructionDTO ins : dto.getInstructions()) {
             InstructionBodyDTO b = ins.getBody();

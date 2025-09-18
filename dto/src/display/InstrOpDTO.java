@@ -11,6 +11,8 @@ public enum InstrOpDTO {
         CONSTANT_ASSIGNMENT,
         JUMP_EQUAL_CONSTANT,
         JUMP_EQUAL_VARIABLE,
-        JUMP_ZERO
+        JUMP_ZERO,
+        QUOTE,
+        JUMP_EQUAL_FUNCTION
 
 }

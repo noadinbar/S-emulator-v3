@@ -1,7 +1,7 @@
 package screens;
 
 import api.DisplayAPI;
-import display.Command2DTO;
+import display.DisplayDTO;
 import display.InstructionDTO;
 import exceptions.ProgramNotLoadedException;
 import format.InstructionFormatter;
@@ -15,7 +15,7 @@ public class DisplayProgramAction {
 
     public void run() {
         try {
-            Command2DTO dto = api.getCommand2();
+            DisplayDTO dto = api.getCommand2();
 
             System.out.println(String.format("Program: %s", dto.getProgramName()));
             System.out.println(String.format("Inputs in use: %s",

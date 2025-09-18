@@ -10,3 +10,4 @@ public interface Function {
     void setUserString(String userString);
     void addInstruction(Instruction instruction);
     List<Instruction> getInstructions();
+}

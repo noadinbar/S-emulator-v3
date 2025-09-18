@@ -1,5 +1,9 @@
 package utils;
 
+import structure.function.Function;
+import structure.function.FunctionImpl;
+import structure.function.SFunction;
+import structure.function.SFunctions;
 import structure.instruction.basic.DecreaseInstruction;
 import structure.instruction.basic.IncreaseInstruction;
 import structure.instruction.basic.JumpNotZeroInstruction;
@@ -23,6 +27,15 @@ public class XMLToStructure {
         sProgram.getSInstructions()
                 .getSInstruction()
                 .forEach(sInstr -> program.addInstruction(toInstruction(sInstr)));
+
+        final SFunctions sFunctions = sProgram.getSFunctions();
+        if (sFunctions != null && sFunctions.getSFunction() != null)
+        {
+            for (SFunction sFunc : sFunctions.getSFunction()) {
+                Function f = toFunction(sFunc);
+                program.addFunction(f);
+            }
+        }
 
         return program;
     }
@@ -90,12 +103,32 @@ public class XMLToStructure {
                 String jevText = getArgumentValue(sInstruction, "JEVariableLabel");
                 Label jevLabel = null;
                 if (jevText != null && !jevText.isBlank()) {
-                    String normalizedLabel = jevText.trim();
+                    String normalizedLabel = jevText.trim(); // TODO: see if we can change it like the other jumps
                     jevLabel = "EXIT".equalsIgnoreCase(normalizedLabel) ? FixedLabel.EXIT : new LabelImpl(normalizedLabel);
                 }
+
                 return (label != null)
                         ? new JumpEqualVariableInstruction(variable, jevLabel, toCompare, label)
                         : new JumpEqualVariableInstruction(variable, jevLabel, toCompare);
+
+            case QUOTE: {
+                String fName = getArgumentValue(sInstruction, "functionName");
+                String fArgs = getArgumentValue(sInstruction, "functionArguments");
+                return label != null
+                        ? new QuotationInstruction(variable, fName, fArgs, label)
+                        : new QuotationInstruction(variable, fName, fArgs);
+            }
+
+            case JUMP_EQUAL_FUNCTION: {
+                String fName = getArgumentValue(sInstruction, "functionName");
+                String fArgs = getArgumentValue(sInstruction, "functionArguments");
+                String jefText = getArgumentValue(sInstruction, "JEFunctionLabel");
+                Label jefLabel = jefText != null ? new LabelImpl(jefText) : null;
+                return label != null
+                        ? new JumpEqualFunctionInstruction(variable, jefLabel, fName, fArgs, label)
+                        : new JumpEqualFunctionInstruction(variable, jefLabel, fName, fArgs);
+
+            }
                 default: throw new IllegalArgumentException("Unknown instruction type: " + type); //never going to happen
     }
 }
@@ -143,6 +176,18 @@ private String getArgumentValue(SInstruction sInstruction, String argName) {
                 index = Integer.parseInt(digits);
         }
         return new VariableImpl(type, index);
+    }
+
+    private Function toFunction(SFunction sFunction) {
+        String name = sFunction.getName();
+        String userString = sFunction.getUserString();
+        FunctionImpl function = new FunctionImpl(name, userString);
+
+        sFunction.getSInstructions()
+                .getSInstruction()
+                .forEach(sInstr -> function.addInstruction(toInstruction(sInstr)));
+
+        return function;
     }
 
 }

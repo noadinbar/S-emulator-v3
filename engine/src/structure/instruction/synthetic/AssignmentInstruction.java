@@ -30,6 +30,7 @@ public class AssignmentInstruction extends AbstractInstruction {
         super(InstructionKind.SYNTHETIC, InstructionType.ASSIGNMENT, dest, myLabel,2);
         this.toAssign = source;
     }
+
     public Variable getToAssign() {
         return toAssign;
     }

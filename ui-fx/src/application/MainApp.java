@@ -8,21 +8,8 @@ import javafx.scene.Scene;
 import javafx.stage.Stage;
 import javafx.stage.StageStyle;
 
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.Collections;
-import java.util.List;
-
 // ממשקי המנוע וה-DTO לבדיקה ידנית
-import api.LoadAPI;
-import api.DisplayAPI;
-import api.ExecutionAPI;
-import exportToDTO.LoadAPIImpl;
-import display.Command2DTO;
-import execution.ExecutionDTO;
-import execution.ExecutionRequestDTO;
-import types.VarRefDTO;
-import types.VarOptionsDTO;
+
 
 public class MainApp extends Application {
     @Override

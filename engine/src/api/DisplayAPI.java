@@ -1,14 +1,14 @@
 package api;
 
-import display.Command2DTO;
-import display.Command3DTO;
+import display.DisplayDTO;
+import display.ExpandDTO;
 import execution.HistoryDTO;
 
 import java.nio.file.Path;
 
 public interface DisplayAPI {
-    Command2DTO getCommand2();
-    Command3DTO expand(int degree);
+    DisplayDTO getCommand2();
+    ExpandDTO expand(int degree);
     ExecutionAPI execution();
     ExecutionAPI executionForDegree(int degree);
     HistoryDTO getHistory();

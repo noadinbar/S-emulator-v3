@@ -3,8 +3,8 @@ package screens;
 import api.DisplayAPI;
 import api.ExecutionAPI;
 
-import display.Command2DTO;
-import display.Command3DTO;
+import display.DisplayDTO;
+import display.ExpandDTO;
 import display.ExpandedInstructionDTO;
 import display.InstructionDTO;
 
@@ -39,7 +39,7 @@ public class ExecuteAction {
             System.out.println(ExecutionFormatter.formatMaxDegree(maxDeg));
 
             Integer degree = null;
-            Command3DTO expandedDto = null;
+            ExpandDTO expandedDto = null;
 
 
             while (true) {
@@ -48,7 +48,7 @@ public class ExecuteAction {
                 System.out.println(ExecutionFormatter.confirmDegree(d));
                 try {
 
-                    Command3DTO probe = displayAPI.expand(d);
+                    ExpandDTO probe = displayAPI.expand(d);
                     if (d > 0) {
                         expandedDto = probe;
                     } else {
@@ -63,7 +63,7 @@ public class ExecuteAction {
             }
 
 
-            Command2DTO c2 = displayAPI.getCommand2();
+            DisplayDTO c2 = displayAPI.getCommand2();
             System.out.println(ExecutionFormatter.formatInputsInUse(c2.getInputsInUse()));
 
             List<Long> inputs;
@@ -142,7 +142,7 @@ public class ExecuteAction {
         return list;
     }
 
-    private static void printExecutedProgram(Command2DTO dto) {
+    private static void printExecutedProgram(DisplayDTO dto) {
         System.out.println();
         System.out.println(String.format("Program: %s", dto.getProgramName()));
         System.out.println(String.format("Inputs in use: %s",

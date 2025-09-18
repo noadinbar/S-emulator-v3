@@ -9,8 +9,8 @@ import javafx.fxml.FXML;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 
-import display.Command2DTO;
-import display.Command3DTO;
+import display.DisplayDTO;
+import display.ExpandDTO;
 import display.ExpandedInstructionDTO;
 import display.InstrKindDTO;
 import display.InstrOpDTO;
@@ -87,7 +87,7 @@ public class InstructionsController {
         return tblInstructions;
     }
 
-    public void show(Command2DTO dto) {
+    public void show(DisplayDTO dto) {
         if (dto == null || dto.getInstructions() == null) {
             clear();
             return;
@@ -96,7 +96,7 @@ public class InstructionsController {
         show(dto.getInstructions());
     }
 
-    public void showExpanded(Command3DTO dto) {
+    public void showExpanded(ExpandDTO dto) {
         if (dto == null) {
             clear();
             return;
@@ -245,6 +245,12 @@ public class InstructionsController {
 
             case GOTO_LABEL:
                 return String.format("GOTO %s", formatLabel(b.getJumpTo()));
+
+            case QUOTE:
+                return String.format("%s <- (%s,%s)", formatVar(b.getVariable()), b.getUserString(), b.getFunctionArgs());
+
+            case JUMP_EQUAL_FUNCTION:
+                return String.format("IF %s = (%s,%s) GOTO %s", formatVar(b.getVariable()), b.getUserString(), b.getFunctionArgs(), formatLabel(b.getJumpTo()));
 
             default:
                 return "?";

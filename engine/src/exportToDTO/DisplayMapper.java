@@ -1,10 +1,8 @@
 package exportToDTO;
 
-import display.Command2DTO;
-import display.InstrKindDTO;
-import display.InstrOpDTO;
-import display.InstructionBodyDTO;
-import display.InstructionDTO;
+import display.*;
+import structure.function.Function;
+import structure.instruction.synthetic.*;
 import types.LabelDTO;
 import types.VarRefDTO;
 import types.VarOptionsDTO;
@@ -20,13 +18,6 @@ import structure.instruction.basic.DecreaseInstruction;
 import structure.instruction.basic.IncreaseInstruction;
 import structure.instruction.basic.JumpNotZeroInstruction;
 import structure.instruction.basic.NeutralInstruction;
-import structure.instruction.synthetic.AssignmentInstruction;
-import structure.instruction.synthetic.ConstantAssignmentInstruction;
-import structure.instruction.synthetic.GoToInstruction;
-import structure.instruction.synthetic.JumpEqualConstantInstruction;
-import structure.instruction.synthetic.JumpEqualVariableInstruction;
-import structure.instruction.synthetic.JumpZeroInstruction;
-import structure.instruction.synthetic.ZeroVariableInstruction;
 import structure.label.Label;
 import structure.program.Program;
 import structure.variable.Variable;
@@ -35,7 +26,7 @@ import structure.variable.VariableType;
 
 class DisplayMapper {
 
-    static Command2DTO toCommand2(Program program) {
+    static DisplayDTO toCommand2(Program program) {
         String programName = program.getName();
         List<Instruction> instructions = program.getInstructions();
 
@@ -46,7 +37,19 @@ class DisplayMapper {
         for (int i = 0; i < instructions.size(); i++) {
             dtoList.add(toInstructionDTO(i + 1, instructions.get(i)));
         }
-        return new Command2DTO(programName, inputsInUse, labelsInUse, dtoList);
+
+        List<FunctionDTO> functionDTOs = new ArrayList<>();
+        for (Function func : program.getFunctions()) {
+            List<Instruction> fInstructions = func.getInstructions();
+            List<InstructionDTO> fdtoList = new ArrayList<>();
+            for (int i = 0; i < fInstructions.size(); i++) {
+                fdtoList.add(toInstructionDTO(i + 1, fInstructions.get(i)));
+            }
+            functionDTOs.add(new FunctionDTO(func.getName(), func.getUserString(), fdtoList));
+        }
+
+
+        return new DisplayDTO(programName, inputsInUse, labelsInUse, dtoList,functionDTOs);
     }
 
     private static InstructionDTO toInstructionDTO(int number, Instruction ins) {
@@ -139,6 +142,20 @@ class DisplayMapper {
                 return new InstructionBodyDTO(InstrOpDTO.GOTO_LABEL,
                         null, null, null, null, null, 0L,
                         labelDTO(g.getTarget()));
+            }
+
+            case "QUOTE": {
+                QuotationInstruction q= (QuotationInstruction) ins;
+                return new InstructionBodyDTO(InstrOpDTO.QUOTE,
+                        toVarRef(q.getVariable()), null, null, null, null, 0L,
+                        null, q.getFunctionName(), q.getUserString(), q.getFunctionArguments());
+            }
+
+            case "JUMP_EQUAL_FUNCTION": {
+                JumpEqualFunctionInstruction f= (JumpEqualFunctionInstruction) ins;
+                return new InstructionBodyDTO(InstrOpDTO.JUMP_EQUAL_CONSTANT,
+                        toVarRef(f.getVariable()), null, null, null, null, 0L,
+                        labelDTO(f.getTargetLabel()), f.getFunctionName(), f.getUserString(), f.getFunctionArguments());
             }
             default:
                 throw new IllegalStateException("Unknown instruction name: " + ins.getName());

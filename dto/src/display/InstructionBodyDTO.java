@@ -11,9 +11,11 @@ public class InstructionBodyDTO {
     private final VarRefDTO source;
     private final VarRefDTO compare;
     private final VarRefDTO compareWith;
-
     private final long constant;
     private final LabelDTO jumpTo;
+    private final String functionName;
+    private final String userString;
+    private final String functionArgs;
 
     public InstructionBodyDTO(InstrOpDTO op,
                               VarRefDTO variable,
@@ -23,6 +25,20 @@ public class InstructionBodyDTO {
                               VarRefDTO compareWith,
                               long constant,
                               LabelDTO jumpTo) {
+        this(op, variable, dest, source, compare, compareWith, constant, jumpTo, null, null, null);
+    }
+
+    public InstructionBodyDTO(InstrOpDTO op,
+                              VarRefDTO variable,
+                              VarRefDTO dest,
+                              VarRefDTO source,
+                              VarRefDTO compare,
+                              VarRefDTO compareWith,
+                              long constant,
+                              LabelDTO jumpTo,
+                              String functionName,
+                              String userString,
+                              String functionArgs) {
         this.op = op;
         this.variable = variable;
         this.dest = dest;
@@ -31,6 +47,9 @@ public class InstructionBodyDTO {
         this.compareWith = compareWith;
         this.constant = constant;
         this.jumpTo = jumpTo;
+        this.functionName = functionName;
+        this.userString = userString;
+        this.functionArgs=functionArgs;
     }
 
     public InstrOpDTO getOp() { return op; }
@@ -41,4 +60,7 @@ public class InstructionBodyDTO {
     public VarRefDTO getCompareWith() { return compareWith; }
     public long getConstant() { return constant; }
     public LabelDTO getJumpTo() { return jumpTo; }
+    public String getFunctionName() { return functionName; }
+    public String getUserString() { return userString; }
+    public String getFunctionArgs() { return functionArgs; }
 }

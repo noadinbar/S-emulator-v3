@@ -3,8 +3,8 @@ package exportToDTO;
 import api.DebugAPI;
 import api.DisplayAPI;
 import api.ExecutionAPI;
-import display.Command2DTO;
-import display.Command3DTO;
+import display.DisplayDTO;
+import display.ExpandDTO;
 import execution.HistoryDTO;
 import exceptions.ProgramNotLoadedException;
 
@@ -19,12 +19,12 @@ public class UninitializedDisplayAPI implements DisplayAPI {
     }
 
     @Override
-    public Command2DTO getCommand2() {
+    public DisplayDTO getCommand2() {
         throw notLoaded();
     }
 
     @Override
-    public Command3DTO expand(int degree) {
+    public ExpandDTO expand(int degree) {
         throw notLoaded();
     }
 

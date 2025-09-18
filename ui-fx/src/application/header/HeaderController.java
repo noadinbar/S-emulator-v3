@@ -2,7 +2,6 @@ package application.header;
 
 import api.DisplayAPI;
 import api.LoadAPI;
-import display.Command2DTO;
 import display.InstructionDTO;
 import exportToDTO.LoadAPIImpl;
 import javafx.application.Platform;
@@ -19,7 +18,6 @@ import javafx.stage.FileChooser;
 import javafx.scene.control.TextArea;
 import javafx.stage.Window;
 import types.LabelDTO;
-import types.VarOptionsDTO;
 import types.VarRefDTO;
 
 import java.io.File;
@@ -303,7 +301,7 @@ public class HeaderController {
         }
 
         List<String> list = new ArrayList<>();
-        list.add("NONE");                 // תמיד ראשון
+        list.add("Highlight selection");
         if (hasY) list.add("y");
         for (int i : xs) list.add("x" + i);
         for (int i : zs) list.add("z" + i);
@@ -315,7 +313,7 @@ public class HeaderController {
         if (prev != null && list.contains(prev)) {
             cmbHighlight.setValue(prev);
         } else {
-            cmbHighlight.setValue("NONE"); // ← אפס לברירת המחדל
+            cmbHighlight.setValue("Highlight selection");
         }
     }
 

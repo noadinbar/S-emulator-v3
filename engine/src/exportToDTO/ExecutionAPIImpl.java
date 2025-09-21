@@ -10,6 +10,7 @@ import execution.VarValueDTO;
 import structure.execution.ProgramExecutorImpl;
 import structure.program.Program;
 import structure.program.ProgramImpl;
+import structure.variable.Variable;
 import types.VarOptionsDTO;
 import types.VarRefDTO;
 
@@ -67,7 +68,7 @@ public class ExecutionAPIImpl implements ExecutionAPI {
         ProgramExecutorImpl runner = new ProgramExecutorImpl(program, originalProgram);
         long y = runner.run(inputs);
 
-        Map<structure.variable.Variable, Long> state = runner.variableState();
+        Map<Variable, Long> state = runner.variableState();
 
         List<VarValueDTO> finals = new ArrayList<>();
         finals.add(new VarValueDTO(new VarRefDTO(VarOptionsDTO.y, 0), y));

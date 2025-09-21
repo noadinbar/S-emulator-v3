@@ -23,6 +23,8 @@ import structure.program.Program;
 import structure.variable.Variable;
 import structure.variable.VariableType;
 
+import static java.lang.Integer.parseInt;
+
 
 class DisplayMapper {
 
@@ -191,6 +193,19 @@ class DisplayMapper {
                     }
                     break;
                 }
+                case "QUOTE": {
+                    QuotationInstruction q = (QuotationInstruction) ins;
+                    addInputsFromFunctionArguments(seen, out, q.getFunctionArguments());
+                    break;
+                }
+
+                // <<< אופציונלי: אם יש לך גם JUMP_EQUAL_FUNCTION עם functionArguments >>>
+                case "JUMP_EQUAL_FUNCTION": {
+                    JumpEqualFunctionInstruction f = (JumpEqualFunctionInstruction) ins;
+                    addInputsFromFunctionArguments(seen, out, f.getFunctionArguments());
+                    break;
+                }
+
                 default: break;
             }
         }
@@ -202,9 +217,26 @@ class DisplayMapper {
         if (rep == null || rep.isEmpty()) return 0;
         char c = rep.charAt(0);
         if ((c == 'x' || c == 'z') && rep.length() > 1) {
-            try { return Integer.parseInt(rep.substring(1)); } catch (Exception ignore) {}
+            try { return parseInt(rep.substring(1)); } catch (Exception ignore) {}
         }
         return 0;
+    }
+
+    private static void addInputsFromFunctionArguments(Set<Integer> seen, List<VarRefDTO> out, String args) {
+        if (args == null || args.isBlank()) return;
+        String[] parts = args.split(",");
+        for (String raw : parts) {
+            String variable = raw.trim();
+            if (variable.length() < 2) continue;
+
+            char c0 = variable.charAt(0);
+            if (c0 == 'x') {
+                int idx = parseInt(variable.substring(1));
+                if (idx >= 0 && seen.add(idx)) {
+                    out.add(new VarRefDTO(VarOptionsDTO.x, idx));
+                }
+            }
+        }
     }
 
     private static List<LabelDTO> computeLabelsInUse(List<Instruction> all) {
@@ -255,7 +287,7 @@ class DisplayMapper {
             default:
                 if (rep.charAt(0) == 'L') {
                     try {
-                        int num = Integer.parseInt(rep.substring(1));
+                        int num = parseInt(rep.substring(1));
                         regular.add(num);
                     } catch (Exception ignore) {}
                 }

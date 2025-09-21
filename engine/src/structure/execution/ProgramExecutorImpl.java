@@ -2,6 +2,7 @@ package structure.execution;
 
 
 import structure.instruction.Instruction;
+import structure.instruction.synthetic.QuotationInstruction;
 import structure.label.FixedLabel;
 import structure.label.Label;
 import structure.program.Program;
@@ -81,13 +82,19 @@ public class ProgramExecutorImpl implements ProgramExecutor{
         return y;
     }
 
+    @Override
     public int singleExecute(List<Instruction> instructions,
                               Map<String, Integer> labelToIndex,
                               ExecutionContext context,
                               int pc) {
 
         Instruction current = instructions.get(pc);
-        Label next = current.execute(context);
+        Label next;
+        if (current instanceof QuotationInstruction quotationInstruction) {
+            next = quotationInstruction.execute(context, this.program);
+        } else {
+            next = current.execute(context);
+        }
         cycles += current.cycles();
         if (next == FixedLabel.EXIT) {
             return -1;

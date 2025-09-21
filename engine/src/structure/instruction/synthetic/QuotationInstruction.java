@@ -3,10 +3,16 @@ package structure.instruction.synthetic;
 import structure.execution.ExecutionContext;
 import structure.execution.FunctionExecutor;
 import structure.execution.FunctionExecutorImpl;
+import structure.expand.ExpansionManager;
 import structure.function.Function;
 import structure.instruction.AbstractInstruction;
+import structure.instruction.Instruction;
 import structure.instruction.InstructionKind;
 import structure.instruction.InstructionType;
+import structure.instruction.basic.DecreaseInstruction;
+import structure.instruction.basic.IncreaseInstruction;
+import structure.instruction.basic.JumpNotZeroInstruction;
+import structure.instruction.basic.NeutralInstruction;
 import structure.label.FixedLabel;
 import structure.label.Label;
 import structure.program.Program;
@@ -14,9 +20,7 @@ import structure.variable.Variable;
 import structure.variable.VariableImpl;
 import structure.variable.VariableType;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 
 import static java.lang.Integer.parseInt;
 
@@ -31,7 +35,7 @@ public class QuotationInstruction extends AbstractInstruction {
                                 String functionName,
                                 String userString,
                                 String functionArguments) {
-        super(InstructionKind.SYNTHETIC, InstructionType.QUOTE, dest, -1);
+        super(InstructionKind.SYNTHETIC, InstructionType.QUOTE, dest, 1);
         this.functionName = functionName;
         this.userString = userString;
         this.functionArguments = functionArguments;
@@ -42,7 +46,7 @@ public class QuotationInstruction extends AbstractInstruction {
                                 String userString,
                                 String functionArguments,
                                 Label myLabel) {
-        super(InstructionKind.SYNTHETIC, InstructionType.QUOTE, dest, myLabel, -1);
+        super(InstructionKind.SYNTHETIC, InstructionType.QUOTE, dest, myLabel, 1);
         this.functionName = functionName;
         this.userString = userString;
         this.functionArguments = functionArguments;
@@ -53,9 +57,17 @@ public class QuotationInstruction extends AbstractInstruction {
         return InstructionType.QUOTE.getCycles() + Math.max(0, lastFunctionCycles);
     }
 
-    public String getFunctionName() { return functionName; }
-    public String getFunctionArguments() { return functionArguments; }
-    public String getUserString() { return userString; }
+    public String getFunctionName() {
+        return functionName;
+    }
+
+    public String getFunctionArguments() {
+        return functionArguments;
+    }
+
+    public String getUserString() {
+        return userString;
+    }
 
     public Label execute(ExecutionContext context, Program program) {
         if (program == null) {
@@ -77,7 +89,7 @@ public class QuotationInstruction extends AbstractInstruction {
         Long[] inputs = inputsList.toArray(new Long[0]);
 
         FunctionExecutor functionRunner = new FunctionExecutorImpl();
-        long result = functionRunner.run(function,program, inputs);
+        long result = functionRunner.run(function, program, inputs);
         context.updateVariable(getVariable(), result);
         lastFunctionCycles = functionRunner.getLastRunCycles();
 
@@ -87,6 +99,136 @@ public class QuotationInstruction extends AbstractInstruction {
     @Override
     public Label execute(ExecutionContext context) {
         return FixedLabel.EMPTY;
+    }
+
+    public List<Instruction> expand(ExpansionManager prog, Program program) {
+        List<Instruction> newInstructions = new ArrayList<>();
+        List<Instruction> functionInstructions = program.getFunction(functionName).getInstructions();
+
+        Map<Variable, Variable> newVarMap = new LinkedHashMap<>();
+        Map<Label, Label>       newLabelMap = new LinkedHashMap<>();
+
+        java.util.function.Function<Variable, Variable> remapVar = (Variable v) -> {
+            if (v == null) return null;
+            return newVarMap.computeIfAbsent(v, k -> prog.newWorkVar());
+        };
+        java.util.function.Function<Label, Label> remapLabel = (Label l) -> {
+            if (l == null || l == FixedLabel.EMPTY) return FixedLabel.EMPTY;
+            return newLabelMap.computeIfAbsent(l, k -> prog.newLabel());
+        };
+
+        for (Instruction ins : functionInstructions) {
+            InstructionType type = InstructionType.valueOf(ins.getName().toUpperCase());
+
+            switch (type) {
+                case INCREASE: {
+                    Variable nv = remapVar.apply(ins.getVariable());
+                    Label nl   = remapLabel.apply(ins.getMyLabel());
+                    if (nl == FixedLabel.EMPTY) newInstructions.add(new IncreaseInstruction(nv));
+                    else                        newInstructions.add(new IncreaseInstruction(nv, nl));
+                    break;
+                }
+
+                case DECREASE: {
+                    Variable nv = remapVar.apply(ins.getVariable());
+                    Label nl   = remapLabel.apply(ins.getMyLabel());
+                    if (nl == FixedLabel.EMPTY) newInstructions.add(new DecreaseInstruction(nv));
+                    else                        newInstructions.add(new DecreaseInstruction(nv, nl));
+                    break;
+                }
+
+                case NEUTRAL: {
+                    Variable nv = remapVar.apply(ins.getVariable());
+                    Label nl   = remapLabel.apply(ins.getMyLabel());
+                    if (nl == FixedLabel.EMPTY) newInstructions.add(new NeutralInstruction(nv));
+                    else                        newInstructions.add(new NeutralInstruction(nv, nl));
+                    break;
+                }
+
+                case ZERO_VARIABLE: {
+                    Variable nv = remapVar.apply(ins.getVariable());
+                    Label nl   = remapLabel.apply(ins.getMyLabel());
+                    if (nl == FixedLabel.EMPTY) newInstructions.add(new ZeroVariableInstruction(nv));
+                    else                        newInstructions.add(new ZeroVariableInstruction(nv, nl));
+                    break;
+                }
+
+                case ASSIGNMENT: {
+                    AssignmentInstruction a = (AssignmentInstruction) ins;
+                    Variable dst = remapVar.apply(a.getVariable());
+                    Variable src = remapVar.apply(a.getToAssign());
+                    Label nl     = remapLabel.apply(a.getMyLabel());
+                    newInstructions.add(new AssignmentInstruction(dst, src, nl));
+                    break;
+                }
+
+                case CONSTANT_ASSIGNMENT: {
+                    ConstantAssignmentInstruction c = (ConstantAssignmentInstruction) ins;
+                    Variable dst = remapVar.apply(c.getVariable());
+                    Label nl     = remapLabel.apply(c.getMyLabel());
+                    newInstructions.add(new ConstantAssignmentInstruction(dst, c.getConstant(), nl));
+                    break;
+                }
+
+                case JUMP_NOT_ZERO: {
+                    JumpNotZeroInstruction j = (JumpNotZeroInstruction) ins;
+                    Variable nv = remapVar.apply(j.getVariable());
+                    Label nl    = remapLabel.apply(j.getMyLabel());
+                    Label tgt   = remapLabel.apply(j.getTargetLabel());
+                    newInstructions.add(new JumpNotZeroInstruction(nv, tgt, nl));
+                    break;
+                }
+
+                case JUMP_ZERO: {
+                    JumpZeroInstruction j = (JumpZeroInstruction) ins;
+                    Variable nv = remapVar.apply(j.getVariable());
+                    Label nl    = remapLabel.apply(j.getMyLabel());
+                    Label tgt   = remapLabel.apply(j.getTargetLabel());
+                    newInstructions.add(new JumpZeroInstruction(nv, tgt, nl));
+                    break;
+                }
+
+                case JUMP_EQUAL_CONSTANT: {
+                    JumpEqualConstantInstruction j = (JumpEqualConstantInstruction) ins;
+                    Variable nv = remapVar.apply(j.getVariable());
+                    Label nl    = remapLabel.apply(j.getMyLabel());
+                    Label tgt   = remapLabel.apply(j.getTargetLabel());
+                    newInstructions.add(new JumpEqualConstantInstruction(nv, tgt, j.getConstant(), nl));
+                    break;
+                }
+
+                case JUMP_EQUAL_VARIABLE: {
+                    JumpEqualVariableInstruction j = (JumpEqualVariableInstruction) ins;
+                    Variable nv   = remapVar.apply(j.getVariable());
+                    Variable comp = remapVar.apply(j.getToCompare());
+                    Label nl      = remapLabel.apply(j.getMyLabel());
+                    Label tgt     = remapLabel.apply(j.getTargetLabel());
+                    newInstructions.add(new JumpEqualVariableInstruction(nv, tgt, comp, nl));
+                    break;
+                }
+
+                case GOTO_LABEL: {
+                    GoToInstruction g = (GoToInstruction) ins;
+                    Variable nv = remapVar.apply(g.getVariable());
+                    Label nl    = remapLabel.apply(g.getMyLabel());
+                    Label tgt   = remapLabel.apply(g.getTarget());
+                    newInstructions.add(new GoToInstruction(nv, tgt, nl));
+                    break;
+                }
+
+                case QUOTE: {
+                    QuotationInstruction q = (QuotationInstruction) ins;
+                    Variable nv = remapVar.apply(q.getVariable());
+                    Label nl    = remapLabel.apply(q.getMyLabel());
+                    newInstructions.add(new QuotationInstruction(nv, q.getFunctionName(), q.getUserString(), q.getFunctionArguments(), nl));
+                    break;
+                }
+                //TODO: Jumpfunction
+                default:
+                    break;
+            }
+        }
+        return newInstructions;
     }
 
     private static List<Long> parseFunctionInputs(String argsString, ExecutionContext ctx) {
@@ -119,4 +261,6 @@ public class QuotationInstruction extends AbstractInstruction {
         }
         return csvInputs;
     }
+
+
 }

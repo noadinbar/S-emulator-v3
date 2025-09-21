@@ -2,6 +2,7 @@ package structure.expand;
 
 import structure.instruction.Instruction;
 import structure.instruction.AbstractInstruction;
+import structure.instruction.synthetic.QuotationInstruction;
 import structure.program.Program;
 import structure.program.ProgramImpl;
 
@@ -18,9 +19,7 @@ public final class ProgramExpander {
             levels0.add(new ArrayList<>(baseProgram.getInstructions())); // level 0
             return new ExpandResult(baseProgram, levels0);
         }
-
         ProgramImpl current = (ProgramImpl) baseProgram;
-
         int nextLabel = current.findMaxLabelIndex() + 1;
         int nextWork  = current.findMaxWorkIndex() + 1;
         ExpansionManager mgr = new ExpansionManagerImpl(nextLabel, nextWork);
@@ -32,7 +31,15 @@ public final class ProgramExpander {
             List<Instruction> nextInstructions = new ArrayList<>();
 
             for (Instruction ins : current.getInstructions()) {
-                List<Instruction> children = ins.expand(mgr);
+                List<Instruction> children;
+                if (ins instanceof QuotationInstruction qi)
+                {
+                    children = qi.expand(mgr, current);
+                }
+                else {
+                    children = ins.expand(mgr);
+
+                }
                 final List<Instruction> parentChain = ((AbstractInstruction) ins).getFamilyTree();
 
                 for (Instruction child : children) {
@@ -45,7 +52,6 @@ public final class ProgramExpander {
                     chain.addAll(parentChain);
                     currentInstruction.setFamilyTree(chain);
                 }
-
                 nextInstructions.addAll(children);
             }
 
@@ -54,10 +60,8 @@ public final class ProgramExpander {
                 nextProgram.addInstruction(inputInstruction);
             }
             current = nextProgram;
-
             levels.add(new ArrayList<>(current.getInstructions()));
         }
-
         return new ExpandResult(current, levels);
     }
 }

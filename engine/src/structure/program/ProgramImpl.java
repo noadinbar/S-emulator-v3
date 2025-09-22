@@ -1,5 +1,7 @@
 package structure.program;
 
+import structure.expand.ExpandResult;
+import structure.expand.ProgramExpander;
 import structure.function.Function;
 import structure.instruction.Instruction;
 import structure.instruction.basic.JumpNotZeroInstruction;
@@ -187,12 +189,27 @@ public class ProgramImpl implements Program, Serializable {
 
     @Override
     public int calculateMaxDegree() {
-        return instructions.stream()
-                .mapToInt(Instruction::getDegree)
-                .max()
-                .orElse(0);
-    }
+        int degree = 0;
+        while (true) {
+            ExpandResult res = ProgramExpander.expandTo(this, degree);
+            List<List<Instruction>> levels = res.getLevels();
+            List<Instruction> lastLevel = levels.isEmpty()
+                    ? List.of()
+                    : levels.getLast();
 
+            boolean hasSynthetic = false;
+            for (Instruction ins : lastLevel) {
+                if (Character.toUpperCase(ins.kind()) == 'S') {
+                    hasSynthetic = true;
+                    break;
+                }
+            }
+            if (!hasSynthetic) {
+                return degree;
+            }
+            degree++;
+        }
+    }
 
     private static boolean isExit(Label l) {
         if (l == null) return false;

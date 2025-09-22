@@ -107,6 +107,8 @@ public class RunOptionsController {
         } else if ( chkDebug.isSelected()) {
             onDebugAction();
         }
+        startEnabled(true);
+        setButtonsEnabled(false);
     }
 
     public void setResumeBusy(boolean busy) {

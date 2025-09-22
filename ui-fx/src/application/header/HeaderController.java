@@ -46,7 +46,6 @@ public class HeaderController {
     @FXML private Button helpButton;
 
     private Consumer<String> onThemeChanged;
-    // UI state properties
     private final BooleanProperty busy   = new SimpleBooleanProperty(false); // בזמן טעינה
     private final BooleanProperty loaded = new SimpleBooleanProperty(false); // האם נטען תוכנית
     private final IntegerProperty currentDegree = new SimpleIntegerProperty(0);
@@ -54,8 +53,6 @@ public class HeaderController {
     private final ObjectProperty<Runnable> onExpand   = new SimpleObjectProperty<>();
     private final ObjectProperty<Runnable> onCollapse = new SimpleObjectProperty<>();
     private final ObjectProperty<Consumer<DisplayAPI>> onLoaded = new SimpleObjectProperty<>();
-
-
     private Consumer<String> onHighlightChangedCb;
 
 
@@ -120,7 +117,6 @@ public class HeaderController {
         FileChooser chooser = new FileChooser();
         chooser.setTitle("Choose S-Emulator XML");
 
-
         FileChooser.ExtensionFilter xmlFilter =
                 new FileChooser.ExtensionFilter("XML files (*.xml)", "*.xml", "*.XML");
         chooser.getExtensionFilters().setAll(xmlFilter);
@@ -139,39 +135,28 @@ public class HeaderController {
         } catch (SecurityException ignore) {
 
         }
-
-
         File file = chooser.showOpenDialog(btnLoad.getScene().getWindow());
         if (file == null) return;
-
         lastDir = file.getParentFile();
-
-
         if (!file.getName().toLowerCase().endsWith(".xml")) {
             showError("Invalid file", "Please choose an .xml file.");
             return;
         }
         final Path chosenXml = file.toPath();
-
-
-
         Task<DisplayAPI> task = new Task<>() {
             @Override
             protected DisplayAPI call() throws Exception {
                 updateProgress(0, 1);
                 Thread.sleep(300);
                 updateProgress(0.3, 1);
-
                 LoadAPI loader = new LoadAPIImpl();
                 DisplayAPI display = loader.loadFromXml(chosenXml);
-
                 updateProgress(0.9, 1);
                 Thread.sleep(300);
                 updateProgress(1, 1);
                 return display;
             }
         };
-
 
         busy.set(true);
         progressBar.setVisible(true);

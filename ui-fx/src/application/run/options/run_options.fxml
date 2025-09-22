@@ -30,8 +30,8 @@
       <Button fx:id="btnExecute" mnemonicParsing="false" onAction="#onExecuteAction" text="Execute" GridPane.columnIndex="3" />
       <VBox prefHeight="200.0" prefWidth="100.0" GridPane.columnIndex="3" GridPane.rowIndex="1">
          <children>
-            <CheckBox fx:id="chkRun" mnemonicParsing="false" text="run" />
-            <CheckBox fx:id="chkDebug" mnemonicParsing="false" text="debug" />
+            <CheckBox fx:id="chkRun" mnemonicParsing="false" text="Run" />
+            <CheckBox fx:id="chkDebug" mnemonicParsing="false" text="Debug" />
          </children>
       </VBox>
    </children>

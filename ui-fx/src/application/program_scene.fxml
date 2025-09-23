@@ -55,11 +55,14 @@
 
                         <HBox fillHeight="true" prefHeight="193.0" prefWidth="270.0" spacing="8.0">
                            <children>
-                              <StackPane prefHeight="203.0" prefWidth="145.0" HBox.hgrow="ALWAYS">
+                              <StackPane prefHeight="193.0" prefWidth="191.0" HBox.hgrow="ALWAYS">
                                  <fx:include fx:id="outputs" source="outputs/outputs.fxml" />
                               </StackPane>
-                              <StackPane prefHeight="185.0" prefWidth="80.0" HBox.hgrow="NEVER">
+                              <StackPane prefHeight="193.0" prefWidth="109.0" HBox.hgrow="NEVER">
                                  <fx:include fx:id="inputs" source="inputs/inputs.fxml" />
+                                 <padding>
+                                    <Insets right="10.0" />
+                                 </padding>
                               </StackPane>
                            </children>
                         </HBox>
@@ -70,7 +73,7 @@
                         </StackPane>
                      </children>
                      <padding>
-                        <Insets bottom="8" left="8" right="8" top="8" />
+                        <Insets bottom="8.0" top="8.0" />
                      </padding>
                   </VBox>
 

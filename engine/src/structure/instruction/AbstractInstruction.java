@@ -15,20 +15,18 @@ public abstract class AbstractInstruction implements Instruction, Serializable {
     private final InstructionType instType;
     private final Label myLabel;
     private final Variable variable;
-    private final int degree;
     private List<Instruction> familyTree = Collections.emptyList();
     private static final long serialVersionUID = 1L;
 
-    public AbstractInstruction(InstructionKind instKind ,InstructionType type, Variable variable, int degree) {
-        this(instKind, type, variable, FixedLabel.EMPTY, degree);
+    public AbstractInstruction(InstructionKind instKind ,InstructionType type, Variable variable) {
+        this(instKind, type, variable, FixedLabel.EMPTY);
     }
 
-    public AbstractInstruction(InstructionKind instKind, InstructionType type, Variable variable, Label label, int degree) {
+    public AbstractInstruction(InstructionKind instKind, InstructionType type, Variable variable, Label label) {
         this.kind=instKind;
         this.instType = type;
         this.myLabel = label;
         this.variable = variable;
-        this.degree=degree;
     }
 
     @Override
@@ -52,11 +50,6 @@ public abstract class AbstractInstruction implements Instruction, Serializable {
     @Override
     public Variable getVariable() {
         return variable;
-    }
-
-    @Override
-    public int getDegree() {
-        return degree;
     }
 
     @Override

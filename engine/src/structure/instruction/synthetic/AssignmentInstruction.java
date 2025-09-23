@@ -22,12 +22,12 @@ public class AssignmentInstruction extends AbstractInstruction {
     private final Variable toAssign;
 
     public AssignmentInstruction(Variable dest, Variable source) {
-        super(InstructionKind.SYNTHETIC, InstructionType.ASSIGNMENT, dest,2);
+        super(InstructionKind.SYNTHETIC, InstructionType.ASSIGNMENT, dest);
         this.toAssign = source;
     }
 
     public AssignmentInstruction(Variable dest, Variable source, Label myLabel) {
-        super(InstructionKind.SYNTHETIC, InstructionType.ASSIGNMENT, dest, myLabel,2);
+        super(InstructionKind.SYNTHETIC, InstructionType.ASSIGNMENT, dest, myLabel);
         this.toAssign = source;
     }
 

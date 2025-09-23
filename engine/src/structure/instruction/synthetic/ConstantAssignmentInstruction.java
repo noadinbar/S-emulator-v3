@@ -19,12 +19,12 @@ public class ConstantAssignmentInstruction extends AbstractInstruction {
     private final int constant;
 
     public ConstantAssignmentInstruction(Variable variable, int source) {
-        super(InstructionKind.SYNTHETIC, InstructionType.CONSTANT_ASSIGNMENT, variable,2);
+        super(InstructionKind.SYNTHETIC, InstructionType.CONSTANT_ASSIGNMENT, variable);
         this.constant = source;
     }
 
     public ConstantAssignmentInstruction(Variable variable, int source, Label myLabel) {
-        super(InstructionKind.SYNTHETIC, InstructionType.CONSTANT_ASSIGNMENT, variable, myLabel,2);
+        super(InstructionKind.SYNTHETIC, InstructionType.CONSTANT_ASSIGNMENT, variable, myLabel);
         this.constant = source;
     }
     public int getConstant() {

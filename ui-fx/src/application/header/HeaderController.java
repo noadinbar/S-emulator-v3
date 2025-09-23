@@ -2,6 +2,8 @@ package application.header;
 
 import api.DisplayAPI;
 import api.LoadAPI;
+import display.DisplayDTO;
+import display.FunctionDTO;
 import display.InstructionDTO;
 import exportToDTO.LoadAPIImpl;
 import javafx.application.Platform;
@@ -37,7 +39,7 @@ public class HeaderController {
     private Path lastValidXmlPath;
     private File lastDir;
     // lower
-    @FXML private ComboBox<String> cmbProgram;
+    @FXML private ComboBox<String> cmbProgramFunction;
     @FXML private Button btnCollapse;
     @FXML private TextField txtDegree;
     @FXML private Button btnExpand;
@@ -45,7 +47,7 @@ public class HeaderController {
     @FXML private ComboBox<String> cmbTheme;
     @FXML private Button helpButton;
 
-    private Consumer<String> onThemeChanged;
+
     private final BooleanProperty busy   = new SimpleBooleanProperty(false); // בזמן טעינה
     private final BooleanProperty loaded = new SimpleBooleanProperty(false); // האם נטען תוכנית
     private final IntegerProperty currentDegree = new SimpleIntegerProperty(0);
@@ -53,7 +55,10 @@ public class HeaderController {
     private final ObjectProperty<Runnable> onExpand   = new SimpleObjectProperty<>();
     private final ObjectProperty<Runnable> onCollapse = new SimpleObjectProperty<>();
     private final ObjectProperty<Consumer<DisplayAPI>> onLoaded = new SimpleObjectProperty<>();
+
+    private Consumer<String> onThemeChanged;
     private Consumer<String> onHighlightChangedCb;
+    private Consumer<String> onProgramSelectedCb;
 
 
     @FXML
@@ -63,7 +68,7 @@ public class HeaderController {
         txtDegree.setFocusTraversable(false);
 
         txtDegree.disableProperty().bind(busy.or(loaded.not()));
-        cmbProgram.disableProperty().bind(busy.or(loaded.not()));
+        cmbProgramFunction.disableProperty().bind(busy.or(loaded.not()));
         cmbHighlight.disableProperty().bind(busy.or(loaded.not()));
 
 
@@ -110,6 +115,8 @@ public class HeaderController {
     }
 
     public void setOnThemeChanged(Consumer<String> cb) { this.onThemeChanged = cb; }
+
+    public void setOnProgramSelected(Consumer<String> cb) { this.onProgramSelectedCb = cb; }
 
     // === Handlers ===
     @FXML
@@ -231,7 +238,11 @@ public class HeaderController {
         alert.showAndWait();
     }
 
-    @FXML private void onProgramChanged()   { /* בהמשך */ }
+    @FXML private void onProgramChanged()   {
+        if (onProgramSelectedCb != null && cmbProgramFunction != null) {
+            onProgramSelectedCb.accept(cmbProgramFunction.getValue());
+        }
+    }
 
     @FXML private void onHighlightChanged() {
         if (onHighlightChangedCb != null && cmbHighlight != null) {
@@ -301,6 +312,32 @@ public class HeaderController {
             cmbHighlight.setValue("Highlight selection");
         }
     }
+
+    public void populateProgramFunction(DisplayAPI display) {
+        if (cmbProgramFunction == null) return;
+        String prev = cmbProgramFunction.getValue();
+        List<String> items = new ArrayList<>();
+        items.add("Program/Function selection");
+
+        DisplayDTO cmd2 = display != null ? display.getCommand2() : null;
+        String programName = cmd2.getProgramName();
+
+        items.add("P- " + programName);
+        if (cmd2.getFunctions() != null) {
+            for (FunctionDTO f : cmd2.getFunctions()) {
+                    items.add("F- " + f.getUserString());
+            }
+        }
+
+        cmbProgramFunction.getItems().setAll(items);
+
+        if (prev != null && items.contains(prev)) {
+            cmbProgramFunction.setValue(prev);
+        } else if (!items.isEmpty()) {
+            cmbProgramFunction.getSelectionModel().selectFirst();
+        }
+    }
+
 
     // === Utils ===
     private void showError(String title, String msg) {

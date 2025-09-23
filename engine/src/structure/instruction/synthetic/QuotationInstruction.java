@@ -35,7 +35,7 @@ public class QuotationInstruction extends AbstractInstruction {
                                 String functionName,
                                 String userString,
                                 String functionArguments) {
-        super(InstructionKind.SYNTHETIC, InstructionType.QUOTE, dest, 1);
+        super(InstructionKind.SYNTHETIC, InstructionType.QUOTE, dest);
         this.functionName = functionName;
         this.userString = userString;
         this.functionArguments = functionArguments;
@@ -46,7 +46,7 @@ public class QuotationInstruction extends AbstractInstruction {
                                 String userString,
                                 String functionArguments,
                                 Label myLabel) {
-        super(InstructionKind.SYNTHETIC, InstructionType.QUOTE, dest, myLabel, 1);
+        super(InstructionKind.SYNTHETIC, InstructionType.QUOTE, dest, myLabel);
         this.functionName = functionName;
         this.userString = userString;
         this.functionArguments = functionArguments;
@@ -54,7 +54,7 @@ public class QuotationInstruction extends AbstractInstruction {
 
     @Override
     public int cycles() {
-        return InstructionType.QUOTE.getCycles() + Math.max(0, lastFunctionCycles);
+        return InstructionType.QUOTE.getCycles() + lastFunctionCycles;
     }
 
     public String getFunctionName() {
@@ -102,132 +102,265 @@ public class QuotationInstruction extends AbstractInstruction {
     }
 
     public List<Instruction> expand(ExpansionManager prog, Program program) {
+        Function function = program.getFunction(functionName);
         List<Instruction> newInstructions = new ArrayList<>();
-        List<Instruction> functionInstructions = program.getFunction(functionName).getInstructions();
 
-        Map<Variable, Variable> newVarMap = new LinkedHashMap<>();
-        Map<Label, Label>       newLabelMap = new LinkedHashMap<>();
+        SortedSet<Integer> xs = new TreeSet<>();
+        SortedSet<Integer> zs = new TreeSet<>();
+        Set<Label> labelSet = new LinkedHashSet<>();
+        Variable y = Variable.RESULT;
 
-        java.util.function.Function<Variable, Variable> remapVar = (Variable v) -> {
-            if (v == null) return null;
-            return newVarMap.computeIfAbsent(v, k -> prog.newWorkVar());
-        };
-        java.util.function.Function<Label, Label> remapLabel = (Label l) -> {
-            if (l == null || l == FixedLabel.EMPTY) return FixedLabel.EMPTY;
-            return newLabelMap.computeIfAbsent(l, k -> prog.newLabel());
-        };
+        Map<String, Variable> argToX = buildArgToXMap(functionArguments);
+        Map<Variable, Variable> convertToZ = new LinkedHashMap<>();
+        Map<Label, Label> newLabelMap = new LinkedHashMap<>();
 
-        for (Instruction ins : functionInstructions) {
+        boolean isExit=false;
+
+        for (Variable xVar : argToX.values()) {
+            if(!convertToZ.containsKey(xVar))
+            {
+                convertToZ.put(xVar, prog.newWorkVar());
+            }
+        }
+
+        for (Instruction ins : function.getInstructions()) {
+            addLabel(ins.getMyLabel(), labelSet);
+
+            switch (ins.getName()) {
+                case "INCREASE":
+                case "DECREASE":
+                case "NEUTRAL":
+                    addVar(ins.getVariable(), xs, zs);
+                    break;
+
+                case "ASSIGNMENT": {
+                    AssignmentInstruction a = (AssignmentInstruction) ins;
+                    addVar(a.getVariable(), xs, zs);
+                    addVar(a.getToAssign(), xs, zs);
+                    break;
+                }
+
+                case "CONSTANT_ASSIGNMENT": {
+                    ConstantAssignmentInstruction c = (ConstantAssignmentInstruction) ins;
+                    addVar(c.getVariable(), xs, zs);
+                    break;
+                }
+
+                case "JUMP_NOT_ZERO": {
+                    JumpNotZeroInstruction j = (JumpNotZeroInstruction) ins;
+                    addVar(j.getVariable(), xs, zs);
+                    addLabel(j.getTargetLabel(), labelSet);
+                    break;
+                }
+
+                case "JUMP_ZERO": {
+                    JumpZeroInstruction jz = (JumpZeroInstruction) ins;
+                    addVar(jz.getVariable(), xs, zs);
+                    addLabel(jz.getTargetLabel(), labelSet);
+                    break;
+                }
+
+                case "JUMP_EQUAL_CONSTANT": {
+                    JumpEqualConstantInstruction jec = (JumpEqualConstantInstruction) ins;
+                    addVar(jec.getVariable(), xs, zs);
+                    addLabel(jec.getTargetLabel(), labelSet);
+                    break;
+                }
+
+                case "JUMP_EQUAL_VARIABLE": {
+                    JumpEqualVariableInstruction jev = (JumpEqualVariableInstruction) ins;
+                    addVar(jev.getVariable(), xs, zs);
+                    addVar(jev.getToCompare(), xs, zs);
+                    addLabel(jev.getTargetLabel(), labelSet);
+                    break;
+                }
+
+                case "GOTO_LABEL": {
+                    GoToInstruction go = (GoToInstruction) ins;
+                    addVar(go.getVariable(), xs, zs);
+                    addLabel(go.getTarget(), labelSet);
+                    break;
+                }
+
+                case "JUMP_EQUAL_FUNCTION": { //TODO: check after implement that arguments maybe need to be changed?
+                    JumpEqualFunctionInstruction jef = (JumpEqualFunctionInstruction) ins;
+                    addVar(jef.getVariable(), xs, zs);
+                    addLabel(jef.getTargetLabel(), labelSet);
+                    break;
+                }
+
+                case "QUOTE":
+                    // ציטוט מקונן – כרגע לא מוסיפים עוד משתנים/תוויות מעבר ל-myLabel שכבר נאסף
+                    break;
+
+                default:
+            }
+        }
+
+        for (int index : xs) {
+            if(!convertToZ.containsKey(new VariableImpl(VariableType.INPUT, index))) {
+                convertToZ.put(new VariableImpl(VariableType.INPUT, index), prog.newWorkVar());
+            }
+        }
+
+        for (int index : zs) {
+            if(!convertToZ.containsKey(new VariableImpl(VariableType.WORK, index))) {
+                convertToZ.put(new VariableImpl(VariableType.WORK, index), prog.newWorkVar());
+            }
+        }
+
+        for (Label lbl : labelSet) {
+            if(!Objects.equals(lbl.getLabelRepresentation(), "EXIT")) {
+                newLabelMap.put(lbl, prog.newLabel());
+            }
+            else isExit=true;
+        }
+
+        if (isExit) {newLabelMap.put(FixedLabel.EXIT,prog.newLabel());}
+
+        if (function.getInstructions().getFirst().getMyLabel()!=FixedLabel.EMPTY &&
+                getMyLabel()!=FixedLabel.EMPTY){
+            newInstructions.add(new NeutralInstruction(getVariable(),getMyLabel()));
+        }
+
+        for (Map.Entry<String, Variable> e : argToX.entrySet()) {
+            String str = e.getKey();
+            Variable xVar = e.getValue();
+            Variable dest = convertToZ.get(xVar);
+            String t = str.trim();
+
+            Integer constant = tryParseInt(t);
+            if (constant != null) {
+                newInstructions.add(new ConstantAssignmentInstruction(dest, constant));
+                continue;
+            }
+
+            Variable src = parseVariableToken(t);
+            if (src != null) {
+                newInstructions.add(new AssignmentInstruction(dest, src));
+            }
+        }
+
+        convertToZ.put(y, prog.newWorkVar());
+
+        for (Instruction ins : function.getInstructions()) {
+           Label myLabel=FixedLabel.EMPTY;
+            if (ins.getMyLabel() != FixedLabel.EMPTY) myLabel = newLabelMap.get(ins.getMyLabel());
             InstructionType type = InstructionType.valueOf(ins.getName().toUpperCase());
 
             switch (type) {
                 case INCREASE: {
-                    Variable nv = remapVar.apply(ins.getVariable());
-                    Label nl   = remapLabel.apply(ins.getMyLabel());
-                    if (nl == FixedLabel.EMPTY) newInstructions.add(new IncreaseInstruction(nv));
-                    else                        newInstructions.add(new IncreaseInstruction(nv, nl));
+                    Variable v = convertToZ.get(ins.getVariable());
+                    newInstructions.add(new IncreaseInstruction(v, myLabel));
                     break;
                 }
 
                 case DECREASE: {
-                    Variable nv = remapVar.apply(ins.getVariable());
-                    Label nl   = remapLabel.apply(ins.getMyLabel());
-                    if (nl == FixedLabel.EMPTY) newInstructions.add(new DecreaseInstruction(nv));
-                    else                        newInstructions.add(new DecreaseInstruction(nv, nl));
+                    Variable v = convertToZ.get(ins.getVariable());
+                    newInstructions.add(new DecreaseInstruction(v, myLabel));
                     break;
                 }
 
                 case NEUTRAL: {
-                    Variable nv = remapVar.apply(ins.getVariable());
-                    Label nl   = remapLabel.apply(ins.getMyLabel());
-                    if (nl == FixedLabel.EMPTY) newInstructions.add(new NeutralInstruction(nv));
-                    else                        newInstructions.add(new NeutralInstruction(nv, nl));
+                    Variable v = convertToZ.get(ins.getVariable());
+                    newInstructions.add(new NeutralInstruction(v, myLabel));
                     break;
                 }
 
                 case ZERO_VARIABLE: {
-                    Variable nv = remapVar.apply(ins.getVariable());
-                    Label nl   = remapLabel.apply(ins.getMyLabel());
-                    if (nl == FixedLabel.EMPTY) newInstructions.add(new ZeroVariableInstruction(nv));
-                    else                        newInstructions.add(new ZeroVariableInstruction(nv, nl));
+                    Variable v = convertToZ.get(ins.getVariable());
+                    newInstructions.add(new ZeroVariableInstruction(v, myLabel));
                     break;
                 }
 
                 case ASSIGNMENT: {
                     AssignmentInstruction a = (AssignmentInstruction) ins;
-                    Variable dst = remapVar.apply(a.getVariable());
-                    Variable src = remapVar.apply(a.getToAssign());
-                    Label nl     = remapLabel.apply(a.getMyLabel());
-                    newInstructions.add(new AssignmentInstruction(dst, src, nl));
+                    Variable dest = convertToZ.get(a.getVariable());
+                    Variable src  = convertToZ.get(a.getToAssign());
+                    newInstructions.add(new AssignmentInstruction(dest, src, myLabel));
                     break;
                 }
 
                 case CONSTANT_ASSIGNMENT: {
                     ConstantAssignmentInstruction c = (ConstantAssignmentInstruction) ins;
-                    Variable dst = remapVar.apply(c.getVariable());
-                    Label nl     = remapLabel.apply(c.getMyLabel());
-                    newInstructions.add(new ConstantAssignmentInstruction(dst, c.getConstant(), nl));
+                    Variable dest = convertToZ.get(c.getVariable());
+                    int k = c.getConstant(); // אם אצלך זה getNumber() - החליפי בהתאם
+                    newInstructions.add(new ConstantAssignmentInstruction(dest, k, myLabel));
                     break;
                 }
 
-                case JUMP_NOT_ZERO: {
-                    JumpNotZeroInstruction j = (JumpNotZeroInstruction) ins;
-                    Variable nv = remapVar.apply(j.getVariable());
-                    Label nl    = remapLabel.apply(j.getMyLabel());
-                    Label tgt   = remapLabel.apply(j.getTargetLabel());
-                    newInstructions.add(new JumpNotZeroInstruction(nv, tgt, nl));
+                case JUMP_NOT_ZERO: { // הדוגמה שנתת
+                    JumpNotZeroInstruction jnz = (JumpNotZeroInstruction) ins;
+                    Variable v = convertToZ.get(jnz.getVariable());
+                    Label target = newLabelMap.get(jnz.getTargetLabel());
+                    newInstructions.add(new JumpNotZeroInstruction(v, target, myLabel));
                     break;
                 }
 
                 case JUMP_ZERO: {
-                    JumpZeroInstruction j = (JumpZeroInstruction) ins;
-                    Variable nv = remapVar.apply(j.getVariable());
-                    Label nl    = remapLabel.apply(j.getMyLabel());
-                    Label tgt   = remapLabel.apply(j.getTargetLabel());
-                    newInstructions.add(new JumpZeroInstruction(nv, tgt, nl));
+                    JumpZeroInstruction jz = (JumpZeroInstruction) ins;
+                    Variable v = convertToZ.get(jz.getVariable());
+                    Label target = newLabelMap.get(jz.getTargetLabel());
+                    newInstructions.add(new JumpZeroInstruction(v, target, myLabel));
                     break;
                 }
 
                 case JUMP_EQUAL_CONSTANT: {
-                    JumpEqualConstantInstruction j = (JumpEqualConstantInstruction) ins;
-                    Variable nv = remapVar.apply(j.getVariable());
-                    Label nl    = remapLabel.apply(j.getMyLabel());
-                    Label tgt   = remapLabel.apply(j.getTargetLabel());
-                    newInstructions.add(new JumpEqualConstantInstruction(nv, tgt, j.getConstant(), nl));
+                    JumpEqualConstantInstruction jec = (JumpEqualConstantInstruction) ins;
+                    Variable v = convertToZ.get(jec.getVariable());
+                    Label target = newLabelMap.get(jec.getTargetLabel());
+                    int k = jec.getConstant(); // או getNumber() אם כך אצלך
+                    newInstructions.add(new JumpEqualConstantInstruction(v, target, k, myLabel));
                     break;
                 }
 
                 case JUMP_EQUAL_VARIABLE: {
-                    JumpEqualVariableInstruction j = (JumpEqualVariableInstruction) ins;
-                    Variable nv   = remapVar.apply(j.getVariable());
-                    Variable comp = remapVar.apply(j.getToCompare());
-                    Label nl      = remapLabel.apply(j.getMyLabel());
-                    Label tgt     = remapLabel.apply(j.getTargetLabel());
-                    newInstructions.add(new JumpEqualVariableInstruction(nv, tgt, comp, nl));
+                    JumpEqualVariableInstruction jev = (JumpEqualVariableInstruction) ins;
+                    Variable v1 = convertToZ.get(jev.getVariable());
+                    Variable v2 = convertToZ.get(jev.getToCompare());
+                    Label target = newLabelMap.get(jev.getTargetLabel());
+                    newInstructions.add(new JumpEqualVariableInstruction(v1, target, v2, myLabel));
                     break;
                 }
 
                 case GOTO_LABEL: {
-                    GoToInstruction g = (GoToInstruction) ins;
-                    Variable nv = remapVar.apply(g.getVariable());
-                    Label nl    = remapLabel.apply(g.getMyLabel());
-                    Label tgt   = remapLabel.apply(g.getTarget());
-                    newInstructions.add(new GoToInstruction(nv, tgt, nl));
+                    GoToInstruction go = (GoToInstruction) ins;
+                    Variable v = convertToZ.get(go.getVariable());
+                    Label target = newLabelMap.get(go.getTarget());
+                    newInstructions.add(new GoToInstruction(v, target, myLabel));
+                    break;
+                }
+
+                case JUMP_EQUAL_FUNCTION: {
+                    JumpEqualFunctionInstruction jef = (JumpEqualFunctionInstruction) ins;
+                    Variable v = convertToZ.get(jef.getVariable());
+                    Label target = newLabelMap.get(jef.getTargetLabel());
+                    String fname = jef.getFunctionName();
+                    String ustr  = jef.getUserString();
+                    String fargs = jef.getFunctionArguments();
+                    newInstructions.add(new JumpEqualFunctionInstruction(v, target, fname, ustr, fargs, myLabel));
                     break;
                 }
 
                 case QUOTE: {
                     QuotationInstruction q = (QuotationInstruction) ins;
-                    Variable nv = remapVar.apply(q.getVariable());
-                    Label nl    = remapLabel.apply(q.getMyLabel());
-                    newInstructions.add(new QuotationInstruction(nv, q.getFunctionName(), q.getUserString(), q.getFunctionArguments(), nl));
+                    Variable dest = convertToZ.get(q.getVariable());
+                    String fname = q.getFunctionName();
+                    String ustr  = q.getUserString();
+                    String fargs = q.getFunctionArguments();
+                    newInstructions.add(new QuotationInstruction(dest, fname, ustr, fargs, myLabel));
                     break;
                 }
-                //TODO: Jumpfunction
+
                 default:
-                    break;
             }
         }
+
+        if(newLabelMap.containsKey(FixedLabel.EXIT) ) {
+            newInstructions.add(new AssignmentInstruction(convertToZ.get(Variable.RESULT), getVariable(), newLabelMap.get(FixedLabel.EXIT)));
+        }
+        else newInstructions.add(new AssignmentInstruction(convertToZ.get(Variable.RESULT), getVariable()));
+
         return newInstructions;
     }
 
@@ -262,5 +395,57 @@ public class QuotationInstruction extends AbstractInstruction {
         return csvInputs;
     }
 
+    private void addVar(Variable v, SortedSet<Integer> xs, SortedSet<Integer> zs) {
+        if (v == null || v == Variable.RESULT) return;
+        VariableType t = v.getType();
+        if (t == VariableType.INPUT) {
+            xs.add(v.getNumber());
+        } else if (t == VariableType.WORK) {
+            zs.add(v.getNumber());
+        }
+    }
+
+    private void addLabel(Label lbl, Set<Label> labels) {
+        if (lbl == null) return;
+        if (lbl == FixedLabel.EMPTY) return;
+        labels.add(lbl);
+    }
+
+    private Map<String, Variable> buildArgToXMap(String functionArguments) {
+        Map<String, Variable> map = new LinkedHashMap<>();
+        if (functionArguments == null || functionArguments.isBlank()) return map;
+
+        String[] parts = functionArguments.split(",");
+        int idx = 1;
+        for (String raw : parts) {
+            String key = raw.trim();
+            if (key.isEmpty()) {
+                idx++;
+                continue;
+            }
+            map.putIfAbsent(key, new VariableImpl(VariableType.INPUT, idx));
+            idx++;
+        }
+        return map;
+    }
+
+    private Integer tryParseInt(String s) {
+        try { return Integer.valueOf(s); }
+        catch (NumberFormatException ignore) { return null; }
+    }
+
+    private Variable parseVariableToken(String t) {
+        if ("y".equals(t)) return Variable.RESULT;
+        if (t.length() >= 2) {
+            char kind = t.charAt(0);
+            if (kind == 'x' || kind == 'z') {
+                int idx = Integer.parseInt(t.substring(1));
+                return (kind == 'x')
+                        ? new VariableImpl(VariableType.INPUT, idx)
+                        : new VariableImpl(VariableType.WORK, idx);
+            }
+        }
+        return null;
+    }
 
 }

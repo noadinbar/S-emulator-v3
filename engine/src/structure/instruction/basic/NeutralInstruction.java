@@ -12,11 +12,11 @@ import structure.variable.Variable;
 public class NeutralInstruction extends AbstractInstruction {
 
     public NeutralInstruction(Variable variable) {
-        super(InstructionKind.BASIC, InstructionType.NEUTRAL, variable, 0);
+        super(InstructionKind.BASIC, InstructionType.NEUTRAL, variable);
     }
 
     public NeutralInstruction(Variable variable, Label label) {
-        super(InstructionKind.BASIC, InstructionType.NEUTRAL, variable, label, 0);
+        super(InstructionKind.BASIC, InstructionType.NEUTRAL, variable, label);
     }
 
     @Override

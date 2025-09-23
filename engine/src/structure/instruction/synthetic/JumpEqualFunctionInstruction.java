@@ -15,7 +15,7 @@ public class JumpEqualFunctionInstruction extends AbstractInstruction {
     private final String functionArguments;
 
     public JumpEqualFunctionInstruction(Variable variable, Label targetLabel, String functionName,String userString, String functionArguments) {
-        super(InstructionKind.SYNTHETIC, InstructionType.JUMP_EQUAL_FUNCTION, variable, -1);
+        super(InstructionKind.SYNTHETIC, InstructionType.JUMP_EQUAL_FUNCTION, variable);
         this.targetLabel = targetLabel;
         this.functionName = functionName;
         this.userString = userString;
@@ -23,7 +23,7 @@ public class JumpEqualFunctionInstruction extends AbstractInstruction {
     }
 
     public JumpEqualFunctionInstruction(Variable variable, Label targetLabel, String functionName,String userString, String functionArguments, Label myLabel) {
-        super(InstructionKind.SYNTHETIC, InstructionType.JUMP_EQUAL_FUNCTION, variable, myLabel, -1);
+        super(InstructionKind.SYNTHETIC, InstructionType.JUMP_EQUAL_FUNCTION, variable, myLabel);
         this.targetLabel = targetLabel;
         this.functionName = functionName;
         this.userString = userString;

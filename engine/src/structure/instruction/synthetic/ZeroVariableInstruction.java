@@ -8,6 +8,7 @@ import structure.instruction.InstructionKind;
 import structure.instruction.InstructionType;
 import structure.instruction.basic.DecreaseInstruction;
 import structure.instruction.basic.JumpNotZeroInstruction;
+import structure.instruction.basic.NeutralInstruction;
 import structure.label.FixedLabel;
 import structure.label.Label;
 import structure.variable.Variable;
@@ -18,11 +19,11 @@ import java.util.List;
 public class ZeroVariableInstruction extends AbstractInstruction {
 
     public ZeroVariableInstruction(Variable variable) {
-        super(InstructionKind.SYNTHETIC, InstructionType.ZERO_VARIABLE, variable,1);
+        super(InstructionKind.SYNTHETIC, InstructionType.ZERO_VARIABLE, variable);
     }
 
     public ZeroVariableInstruction(Variable variable, Label label) {
-        super(InstructionKind.SYNTHETIC, InstructionType.ZERO_VARIABLE, variable, label,1);
+        super(InstructionKind.SYNTHETIC, InstructionType.ZERO_VARIABLE, variable, label);
     }
 
     @Override
@@ -37,7 +38,9 @@ public class ZeroVariableInstruction extends AbstractInstruction {
         List<Instruction> instructions = new ArrayList<>();
 
         Label myLabel   = getMyLabel();
-        Label currLabel = (myLabel == FixedLabel.EMPTY) ? prog.newLabel() : myLabel;
+        Label currLabel =  prog.newLabel();
+
+        instructions.add(new NeutralInstruction(getVariable(), myLabel));
 
         // 1) Lloop: DEC v
         instructions.add(new DecreaseInstruction(getVariable(), currLabel));

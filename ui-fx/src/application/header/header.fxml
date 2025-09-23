@@ -32,7 +32,7 @@
          </children></AnchorPane>
     <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="71.0" prefWidth="777.0">
          <children>
-            <ComboBox fx:id="cmbProgram" layoutY="5.0" prefHeight="25.0" prefWidth="191.0" promptText="Program\Function selection" />
+            <ComboBox fx:id="cmbProgramFunction" layoutY="5.0" onAction="#onProgramChanged" prefHeight="25.0" prefWidth="191.0" promptText="Program\Function selection" />
             <Button fx:id="btnCollapse" layoutX="206.0" layoutY="5.0" mnemonicParsing="false" onAction="#onCollapseClicked" text="Collapse" />
             <Label layoutX="280.0" layoutY="-5.0" prefHeight="45.0" prefWidth="119.0" text="Current/Max Degree:" />
             <TextField fx:id="txtDegree" layoutX="399.0" layoutY="8.0" prefHeight="25.0" prefWidth="43.0" />

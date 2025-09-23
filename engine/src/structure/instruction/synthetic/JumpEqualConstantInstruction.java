@@ -26,7 +26,7 @@ public class JumpEqualConstantInstruction extends AbstractInstruction {
     }
 
     public JumpEqualConstantInstruction(Variable variable, Label jecLabel, int source, Label label) {
-        super(InstructionKind.SYNTHETIC, InstructionType.JUMP_EQUAL_CONSTANT, variable, label, 3);
+        super(InstructionKind.SYNTHETIC, InstructionType.JUMP_EQUAL_CONSTANT, variable, label);
         this.targetLabel = jecLabel;
         this.constant = source;
     }

@@ -25,10 +25,11 @@ public class JumpEqualVariableInstruction extends AbstractInstruction {
     }
 
     public JumpEqualVariableInstruction(Variable variable, Label jevLabel, Variable toCompare, Label label) {
-        super(InstructionKind.SYNTHETIC, InstructionType.JUMP_EQUAL_VARIABLE, variable, label, 3);
+        super(InstructionKind.SYNTHETIC, InstructionType.JUMP_EQUAL_VARIABLE, variable, label);
         this.targetLabel = jevLabel;
         this.toCompare = toCompare;
     }
+
     public Variable getToCompare() {
         return toCompare;
     }

@@ -23,7 +23,7 @@ public class JumpZeroInstruction extends AbstractInstruction {
     }
 
     public JumpZeroInstruction(Variable variable, Label jnzLabel, Label label) {
-        super(InstructionKind.SYNTHETIC, InstructionType.JUMP_ZERO, variable, label, 2);
+        super(InstructionKind.SYNTHETIC, InstructionType.JUMP_ZERO, variable, label);
         this.targetLabel = jnzLabel;
     }
 

@@ -16,5 +16,4 @@ public interface Instruction {
     char kind();
     Label getMyLabel();
     Variable getVariable();
-    int getDegree();
 }

@@ -61,7 +61,7 @@ public class InputsController implements Initializable {
                 chg.getControlNewText().matches("\\d*") ? chg : null
         ));
         tf.setPrefColumnCount(3);
-        HBox row = new HBox(8, lbl, tf);
+        HBox row = new HBox(3, lbl, tf);
         row.setAlignment(Pos.CENTER_LEFT);
         HBox.setHgrow(tf, Priority.NEVER);
 

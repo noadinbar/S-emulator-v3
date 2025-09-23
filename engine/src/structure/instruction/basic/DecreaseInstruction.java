@@ -11,11 +11,11 @@ import structure.variable.Variable;
 public class DecreaseInstruction extends AbstractInstruction {
 
     public DecreaseInstruction(Variable variable) {
-        super(InstructionKind.BASIC, InstructionType.DECREASE, variable, 0);
+        super(InstructionKind.BASIC, InstructionType.DECREASE, variable);
     }
 
     public DecreaseInstruction(Variable variable, Label label) {
-        super(InstructionKind.BASIC, InstructionType.DECREASE, variable, label, 0);
+        super(InstructionKind.BASIC, InstructionType.DECREASE, variable, label);
     }
 
     @Override

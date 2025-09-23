@@ -24,7 +24,7 @@ public class GoToInstruction extends AbstractInstruction {
     }
 
     public GoToInstruction(Variable variable, Label targetLabel, Label label) {
-        super(InstructionKind.SYNTHETIC, InstructionType.GOTO_LABEL, variable, label,1);
+        super(InstructionKind.SYNTHETIC, InstructionType.GOTO_LABEL, variable, label);
         this.target = targetLabel;
     }
     public Label getTarget() {

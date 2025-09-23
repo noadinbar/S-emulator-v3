@@ -3,6 +3,7 @@ package exportToDTO;
 import api.DisplayAPI;
 import api.ExecutionAPI;
 import display.DisplayDTO;
+import api.DebugAPI;
 
 import display.ExpandDTO;
 import exceptions.InvalidDegreeException;
@@ -10,6 +11,8 @@ import exceptions.StatePersistenceException;
 import execution.HistoryDTO;
 import structure.expand.ExpandResult;
 import structure.expand.ProgramExpander;
+import structure.function.Function;
+import structure.instruction.Instruction;
 import structure.program.Program;
 import structure.program.ProgramImpl;
 
@@ -17,11 +20,14 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Collections;
+import java.util.LinkedHashMap;
+import java.util.Map;
 
 
 public class DisplayAPIImpl implements DisplayAPI {
     private Program program;
-
+    private Map<String, DisplayAPI> functionToDisplayAPI;
 
     public DisplayAPIImpl(Program program) { this.program = program; }
 
@@ -30,7 +36,7 @@ public class DisplayAPIImpl implements DisplayAPI {
 
     @Override
     public ExpandDTO expand(int degree) {
-        int max = ((ProgramImpl) program).calculateMaxDegree();
+        int max = program.calculateMaxDegree();
         if (degree < 0 || degree > max) {
             throw new InvalidDegreeException(
                     "Degree must be between 0 and " + max
@@ -86,8 +92,7 @@ public class DisplayAPIImpl implements DisplayAPI {
     @Override
     public DisplayAPI loadState(Path path) {
         try (ObjectInputStream in = new ObjectInputStream(Files.newInputStream(path))) {
-            ProgramImpl loaded = (ProgramImpl) in.readObject();
-            this.program = loaded;
+            this.program = (ProgramImpl) in.readObject();
             return this;
         } catch (Exception e) {
             throw new StatePersistenceException("Failed to load state from: " + path, e);
@@ -95,13 +100,13 @@ public class DisplayAPIImpl implements DisplayAPI {
     }
 
     @Override
-    public api.DebugAPI debugForDegree(int degree) {
+    public DebugAPI debugForDegree(int degree) {
         if (degree == 0) {
             ((ProgramImpl) program).setCurrentRunDegree(0);
             // expanded=original כשה-degree 0
             return new DebugAPIImpl(((ProgramImpl) program), ((ProgramImpl) program), 0);
         }
-        int max = ((ProgramImpl) program).calculateMaxDegree();
+        int max = program.calculateMaxDegree();
         if (degree < 0 || degree > max) {
             throw new InvalidDegreeException("Degree must be between 0 and " + max);
         }
@@ -110,4 +115,26 @@ public class DisplayAPIImpl implements DisplayAPI {
         return new DebugAPIImpl(((ProgramImpl) expanded), ((ProgramImpl) program), degree);
     }
 
+    @Override
+    public Map<String, DisplayAPI> functionDisplaysByUserString() {
+        if (functionToDisplayAPI != null) return functionToDisplayAPI;
+
+        Map<String, DisplayAPI> map = new LinkedHashMap<>();
+        if (program != null && program.getFunctions() != null) {
+            for (Function function : program.getFunctions()) {
+                if (function == null) continue;
+                String userString = function.getUserString();
+                ProgramImpl fnProgram = new ProgramImpl(" F: " + userString);
+                for (Instruction ins : function.getInstructions()) {
+                    fnProgram.addInstruction(ins);
+                }
+                for (Function fn : program.getFunctions()) {
+                        fnProgram.addFunction(fn);
+                }
+                map.put(userString, new DisplayAPIImpl(fnProgram));
+            }
+        }
+        functionToDisplayAPI = Collections.unmodifiableMap(map);
+        return functionToDisplayAPI;
+    }
 }

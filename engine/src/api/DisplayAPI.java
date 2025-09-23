@@ -5,6 +5,8 @@ import display.ExpandDTO;
 import execution.HistoryDTO;
 
 import java.nio.file.Path;
+import java.util.Collections;
+import java.util.Map;
 
 public interface DisplayAPI {
     DisplayDTO getCommand2();
@@ -15,4 +17,7 @@ public interface DisplayAPI {
     void saveState(Path path);
     DisplayAPI loadState(Path path);
     DebugAPI debugForDegree(int degree);
+    default Map<String, DisplayAPI> functionDisplaysByUserString() {
+        return Collections.emptyMap();
+    }
 }

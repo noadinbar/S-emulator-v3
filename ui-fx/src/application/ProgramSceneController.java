@@ -1,6 +1,7 @@
 package application;
 
 import api.DebugAPI;
+import display.FunctionDTO;
 import execution.*;
 import execution.debug.DebugStateDTO;
 import execution.debug.DebugStepDTO;
@@ -56,6 +57,7 @@ public class ProgramSceneController {
     @FXML private ScrollPane rootScroll;
     @FXML private VBox contentRoot;
     private DisplayAPI display;
+    private Map<String, DisplayAPI> functionDisplays = Collections.emptyMap();
     private ExecutionAPI execute;
     private int currentDegree = 0;
 
@@ -80,6 +82,7 @@ public class ProgramSceneController {
 
         if (headerController != null) {
             headerController.setOnLoaded(this::onProgramLoaded);
+            headerController.setOnProgramSelected(this::onProgramComboChanged);
             headerController.setOnExpand(()  -> changeDegreeAndShow(+1));
             headerController.setOnCollapse(() -> changeDegreeAndShow(-1));
             headerController.setOnThemeChanged(this::applyTheme);
@@ -147,6 +150,7 @@ public class ProgramSceneController {
 
     private void onProgramLoaded(DisplayAPI display) {
         this.display = display;
+        this.functionDisplays = display.functionDisplaysByUserString();
         this.execute = display.execution();
         debugApi = null;
         debugMode = false;
@@ -179,6 +183,11 @@ public class ProgramSceneController {
                 currentHighlight = headerController.getSelectedHighlight();
                 programTableController.getTableView().refresh();
             }
+        }
+
+        if (headerController != null) {
+            headerController.populateProgramFunction(display);
+            headerController.setOnProgramSelected(this::onProgramComboChanged);
         }
 
         if (runOptionsController != null) {
@@ -508,6 +517,77 @@ public class ProgramSceneController {
         inputsController.show(dto);
         Platform.runLater(inputsController::focusFirstField);
     }
+
+    private void onProgramComboChanged(String sel) {
+        if (programTableController == null || headerController == null) return;
+
+        // Program מלא או ברירת מחדל
+        if (sel == null || !sel.startsWith("FUNCTION: ")) {
+            this.execute = display.execution();
+
+            // להציג את התוכנית לפי הדרגה הנוכחית
+            headerController.setMaxDegree(execute.getMaxDegree());
+            ExpandDTO expanded = display.expand(currentDegree);
+            programTableController.showExpanded(expanded);
+
+            // עדכון inputs/outputs
+            if (inputsController != null)  inputsController.show(display.getCommand2());
+            if (outputsController != null) outputsController.clear();
+
+            // עדכון היילייטים
+            if (programTableController.getTableView() != null) {
+                headerController.populateHighlight(programTableController.getTableView().getItems(), true);
+                wireHighlight(programTableController);
+                currentHighlight = headerController.getSelectedHighlight();
+                programTableController.getTableView().refresh();
+            }
+
+            // שרשרת "נוצר מ..." רגילה
+            updateChain(programTableController.getSelectedItem());
+            return;
+        }
+
+        // Function — בוחרים DisplayAPI קבוע של הפונקציה (userString)
+        String userStr = sel.substring("FUNCTION: ".length()).trim();
+        DisplayAPI fnDisplay = functionDisplays.get(userStr);
+        if (fnDisplay == null) {
+            // fallback ל-program מלא
+            onProgramComboChanged(null);
+            return;
+        }
+
+        this.display = fnDisplay;
+        this.execute = display.execution();
+
+        // פונקציה מוצגת כ"תוכנית" — מתחילים מדרגה 0
+        currentDegree = 0;
+        headerController.setCurrentDegree(currentDegree);
+        headerController.setMaxDegree(execute.getMaxDegree());
+
+        ExpandDTO expanded = display.expand(currentDegree);
+        programTableController.showExpanded(expanded);
+
+        // פונקציה: אין "שרשרת נוצר מ..."
+        if (chainTableController != null) {
+            chainTableController.clear();
+            if (chainTableController.getTableView() != null) {
+                chainTableController.getTableView().setDisable(true);
+            }
+        }
+
+        // עדכון inputs/outputs
+        if (inputsController != null)  inputsController.show(display.getCommand2());
+        if (outputsController != null) outputsController.clear();
+
+        // היילייטים לפי ההוראות המוצגות כרגע
+        if (programTableController.getTableView() != null) {
+            headerController.populateHighlight(programTableController.getTableView().getItems(), true);
+            wireHighlight(programTableController);
+            currentHighlight = headerController.getSelectedHighlight();
+            programTableController.getTableView().refresh();
+        }
+    }
+
 
     private void onHistoryRerun(RunHistoryEntryDTO row) {
         if (row == null || display == null || programTableController == null || headerController == null) return;

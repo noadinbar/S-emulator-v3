@@ -24,10 +24,7 @@ import types.VarRefDTO;
 
 import java.io.File;
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.SortedSet;
-import java.util.TreeSet;
+import java.util.*;
 import java.util.function.Consumer;
 
 public class HeaderController {
@@ -317,26 +314,21 @@ public class HeaderController {
         if (cmbProgramFunction == null) return;
         String prev = cmbProgramFunction.getValue();
         List<String> items = new ArrayList<>();
-        items.add("Program/Function selection");
 
-        DisplayDTO cmd2 = display != null ? display.getCommand2() : null;
+        var cmd2 = (display != null) ? display.getCommand2() : null;
         String programName = cmd2.getProgramName();
 
-        items.add("P- " + programName);
-        if (cmd2.getFunctions() != null) {
-            for (FunctionDTO f : cmd2.getFunctions()) {
-                    items.add("F- " + f.getUserString());
-            }
-        }
+        items.add("PROGRAM: " + programName);
+
+        Map<String, DisplayAPI> fnMap =
+                (display != null) ? display.functionDisplaysByUserString() : Collections.emptyMap();
+        for (String userStr : fnMap.keySet()) items.add("FUNCTION: " + userStr);
 
         cmbProgramFunction.getItems().setAll(items);
-
-        if (prev != null && items.contains(prev)) {
-            cmbProgramFunction.setValue(prev);
-        } else if (!items.isEmpty()) {
-            cmbProgramFunction.getSelectionModel().selectFirst();
-        }
+        if (prev != null && items.contains(prev)) cmbProgramFunction.setValue(prev);
+        else if (!items.isEmpty()) cmbProgramFunction.getSelectionModel().selectFirst();
     }
+
 
 
     // === Utils ===

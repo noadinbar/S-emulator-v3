@@ -218,10 +218,8 @@ public class QuotationInstruction extends AbstractInstruction {
 
         if (isExit) {newLabelMap.put(FixedLabel.EXIT,prog.newLabel());}
 
-        if (function.getInstructions().getFirst().getMyLabel()!=FixedLabel.EMPTY &&
-                getMyLabel()!=FixedLabel.EMPTY){
-            newInstructions.add(new NeutralInstruction(getVariable(),getMyLabel()));
-        }
+
+        newInstructions.add(new NeutralInstruction(getVariable(),getMyLabel()));
 
         for (Map.Entry<String, Variable> e : argToX.entrySet()) {
             String str = e.getKey();

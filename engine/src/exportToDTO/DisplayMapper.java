@@ -155,7 +155,7 @@ class DisplayMapper {
 
             case "JUMP_EQUAL_FUNCTION": {
                 JumpEqualFunctionInstruction f= (JumpEqualFunctionInstruction) ins;
-                return new InstructionBodyDTO(InstrOpDTO.JUMP_EQUAL_CONSTANT,
+                return new InstructionBodyDTO(InstrOpDTO.JUMP_EQUAL_FUNCTION,
                         toVarRef(f.getVariable()), null, null, null, null, 0L,
                         labelDTO(f.getTargetLabel()), f.getFunctionName(), f.getUserString(), f.getFunctionArguments());
             }
@@ -199,7 +199,6 @@ class DisplayMapper {
                     break;
                 }
 
-                // <<< אופציונלי: אם יש לך גם JUMP_EQUAL_FUNCTION עם functionArguments >>>
                 case "JUMP_EQUAL_FUNCTION": {
                     JumpEqualFunctionInstruction f = (JumpEqualFunctionInstruction) ins;
                     addInputsFromFunctionArguments(seen, out, f.getFunctionArguments());

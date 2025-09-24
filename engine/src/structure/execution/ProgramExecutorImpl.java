@@ -2,6 +2,7 @@ package structure.execution;
 
 
 import structure.instruction.Instruction;
+import structure.instruction.synthetic.JumpEqualFunctionInstruction;
 import structure.instruction.synthetic.QuotationInstruction;
 import structure.label.FixedLabel;
 import structure.label.Label;
@@ -92,7 +93,11 @@ public class ProgramExecutorImpl implements ProgramExecutor{
         Label next;
         if (current instanceof QuotationInstruction quotationInstruction) {
             next = quotationInstruction.execute(context, this.program);
-        } else {
+        }
+        else if(current instanceof JumpEqualFunctionInstruction jumpEqualFunctionInstruction) {
+            next = jumpEqualFunctionInstruction.execute(context, this.program);
+        }
+        else {
             next = current.execute(context);
         }
         cycles += current.cycles();

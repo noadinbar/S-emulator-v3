@@ -163,7 +163,6 @@ public class HistoryController {
         addEntry(row);
     }
 
-
     public void clear() {
         items.clear();
     }

@@ -524,34 +524,26 @@ public class ProgramSceneController {
         // Program מלא או ברירת מחדל
         if (sel == null || !sel.startsWith("FUNCTION: ")) {
             this.execute = display.execution();
-
-            // להציג את התוכנית לפי הדרגה הנוכחית
             headerController.setMaxDegree(execute.getMaxDegree());
             ExpandDTO expanded = display.expand(currentDegree);
             programTableController.showExpanded(expanded);
 
-            // עדכון inputs/outputs
             if (inputsController != null)  inputsController.show(display.getCommand2());
             if (outputsController != null) outputsController.clear();
 
-            // עדכון היילייטים
             if (programTableController.getTableView() != null) {
                 headerController.populateHighlight(programTableController.getTableView().getItems(), true);
                 wireHighlight(programTableController);
                 currentHighlight = headerController.getSelectedHighlight();
                 programTableController.getTableView().refresh();
             }
-
-            // שרשרת "נוצר מ..." רגילה
             updateChain(programTableController.getSelectedItem());
             return;
         }
 
-        // Function — בוחרים DisplayAPI קבוע של הפונקציה (userString)
         String userStr = sel.substring("FUNCTION: ".length()).trim();
         DisplayAPI fnDisplay = functionDisplays.get(userStr);
         if (fnDisplay == null) {
-            // fallback ל-program מלא
             onProgramComboChanged(null);
             return;
         }
@@ -559,7 +551,6 @@ public class ProgramSceneController {
         this.display = fnDisplay;
         this.execute = display.execution();
 
-        // פונקציה מוצגת כ"תוכנית" — מתחילים מדרגה 0
         currentDegree = 0;
         headerController.setCurrentDegree(currentDegree);
         headerController.setMaxDegree(execute.getMaxDegree());
@@ -567,7 +558,6 @@ public class ProgramSceneController {
         ExpandDTO expanded = display.expand(currentDegree);
         programTableController.showExpanded(expanded);
 
-        // פונקציה: אין "שרשרת נוצר מ..."
         if (chainTableController != null) {
             chainTableController.clear();
             if (chainTableController.getTableView() != null) {
@@ -575,11 +565,9 @@ public class ProgramSceneController {
             }
         }
 
-        // עדכון inputs/outputs
         if (inputsController != null)  inputsController.show(display.getCommand2());
         if (outputsController != null) outputsController.clear();
 
-        // היילייטים לפי ההוראות המוצגות כרגע
         if (programTableController.getTableView() != null) {
             headerController.populateHighlight(programTableController.getTableView().getItems(), true);
             wireHighlight(programTableController);

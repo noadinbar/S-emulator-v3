@@ -203,58 +203,33 @@ public class InstructionsController {
         }
         InstrOpDTO op = b.getOp();
 
-        switch (op) {
-            case INCREASE:
-                return String.format("%s <- %s + 1",
-                        formatVar(b.getVariable()), formatVar(b.getVariable()));
-
-            case DECREASE:
-                return String.format("%s <- %s - 1",
-                        formatVar(b.getVariable()), formatVar(b.getVariable()));
-
-            case NEUTRAL:
-                return String.format("%s <- %s",
-                        formatVar(b.getVariable()), formatVar(b.getVariable()));
-
-            case ASSIGNMENT:
-                return String.format("%s <- %s",
-                        formatVar(b.getDest()), formatVar(b.getSource()));
-
-            case CONSTANT_ASSIGNMENT:
-                return String.format("%s <- %d",
-                        formatVar(b.getDest()), b.getConstant());
-
-            case ZERO_VARIABLE:
-                return String.format("%s <- 0", formatVar(b.getDest()));
-
-            case JUMP_NOT_ZERO:
-                return String.format("IF %s != 0 GOTO %s",
-                        formatVar(b.getVariable()), formatLabel(b.getJumpTo()));
-
-            case JUMP_ZERO:
-                return String.format("IF %s = 0 GOTO %s",
-                        formatVar(b.getVariable()), formatLabel(b.getJumpTo()));
-
-            case JUMP_EQUAL_CONSTANT:
-                return String.format("IF %s = %d GOTO %s",
-                        formatVar(b.getVariable()), b.getConstant(), formatLabel(b.getJumpTo()));
-
-            case JUMP_EQUAL_VARIABLE:
-                return String.format("IF %s = %s GOTO %s",
-                        formatVar(b.getCompare()), formatVar(b.getCompareWith()), formatLabel(b.getJumpTo()));
-
-            case GOTO_LABEL:
-                return String.format("GOTO %s", formatLabel(b.getJumpTo()));
-
-            case QUOTE:
-                return String.format("%s <- (%s,%s)", formatVar(b.getVariable()), b.getUserString(), b.getFunctionArgs());
-
-            case JUMP_EQUAL_FUNCTION:
-                return String.format("IF %s = (%s,%s) GOTO %s", formatVar(b.getVariable()), b.getUserString(), b.getFunctionArgs(), formatLabel(b.getJumpTo()));
-
-            default:
-                return "?";
-        }
+        return switch (op) {
+            case INCREASE -> String.format("%s <- %s + 1",
+                    formatVar(b.getVariable()), formatVar(b.getVariable()));
+            case DECREASE -> String.format("%s <- %s - 1",
+                    formatVar(b.getVariable()), formatVar(b.getVariable()));
+            case NEUTRAL -> String.format("%s <- %s",
+                    formatVar(b.getVariable()), formatVar(b.getVariable()));
+            case ASSIGNMENT -> String.format("%s <- %s",
+                    formatVar(b.getDest()), formatVar(b.getSource()));
+            case CONSTANT_ASSIGNMENT -> String.format("%s <- %d",
+                    formatVar(b.getDest()), b.getConstant());
+            case ZERO_VARIABLE -> String.format("%s <- 0", formatVar(b.getDest()));
+            case JUMP_NOT_ZERO -> String.format("IF %s != 0 GOTO %s",
+                    formatVar(b.getVariable()), formatLabel(b.getJumpTo()));
+            case JUMP_ZERO -> String.format("IF %s = 0 GOTO %s",
+                    formatVar(b.getVariable()), formatLabel(b.getJumpTo()));
+            case JUMP_EQUAL_CONSTANT -> String.format("IF %s = %d GOTO %s",
+                    formatVar(b.getVariable()), b.getConstant(), formatLabel(b.getJumpTo()));
+            case JUMP_EQUAL_VARIABLE -> String.format("IF %s = %s GOTO %s",
+                    formatVar(b.getCompare()), formatVar(b.getCompareWith()), formatLabel(b.getJumpTo()));
+            case GOTO_LABEL -> String.format("GOTO %s", formatLabel(b.getJumpTo()));
+            case QUOTE ->
+                    String.format("%s <- (%s,%s)", formatVar(b.getVariable()), b.getUserString(), b.getFunctionArgs());
+            case JUMP_EQUAL_FUNCTION ->
+                    String.format("IF %s = (%s,%s) GOTO %s", formatVar(b.getVariable()), b.getUserString(), b.getFunctionArgs(), formatLabel(b.getJumpTo()));
+            default -> "?";
+        };
     }
 
     private String formatVar(VarRefDTO v) {

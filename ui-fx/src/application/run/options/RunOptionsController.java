@@ -104,11 +104,11 @@ public class RunOptionsController {
     private void onExecuteAction() {
         if (chkRun.isSelected()) {
             onRunAction();
+            startEnabled(true);
+            setButtonsEnabled(false);
         } else if ( chkDebug.isSelected()) {
             onDebugAction();
         }
-        startEnabled(true);
-        setButtonsEnabled(false);
     }
 
     public void setResumeBusy(boolean busy) {

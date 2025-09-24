@@ -101,6 +101,8 @@ public class ProgramImpl implements Program, Serializable {
                 case "GOTO_LABEL":
                     targetLabel = ((GoToInstruction) instr).getTarget();
                     break;
+                    case "JUMP_EQUAL_FUNCTION":
+                        targetLabel= ((JumpEqualFunctionInstruction) instr).getTargetLabel();
                 default:
                     break;
             }

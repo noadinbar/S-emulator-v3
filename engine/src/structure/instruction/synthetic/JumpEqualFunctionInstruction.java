@@ -73,8 +73,21 @@ public class JumpEqualFunctionInstruction extends AbstractInstruction {
         return (v == qResult) ? targetLabel : FixedLabel.EMPTY;
     }
 
-    public List<Instruction> expand(ExpansionManager prog/*, Program program*/) {
-        return new ArrayList<>();
+    public List<Instruction> expand(ExpansionManager prog) {
+        List <Instruction> newInstructions = new ArrayList<>();
+        Variable z= prog.newWorkVar();
+        Label myLabel=getMyLabel();
+        if (myLabel==FixedLabel.EMPTY)
+        {
+            newInstructions.add(new QuotationInstruction(z, functionName, userString, functionArguments));
+        }
+        else {
+            newInstructions.add(new QuotationInstruction(z, functionName, userString, functionArguments, myLabel));
+        }
+
+        newInstructions.add(new JumpEqualVariableInstruction(getVariable(), targetLabel, z));
+
+        return newInstructions;
     }
 
     private List<Long> parseFunctionInputs(String argsString, ExecutionContext ctx) {

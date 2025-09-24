@@ -190,7 +190,7 @@ public class QuotationInstruction extends AbstractInstruction {
                 }
 
                 case "QUOTE":
-                    // ציטוט מקונן – כרגע לא מוסיפים עוד משתנים/תוויות מעבר ל-myLabel שכבר נאסף
+                    // ציטוט מקונן – כרגע לא מוסיפים עוד משתנים/תוויות מעבר ל-myLabel שכבר נאסףTODO:
                     break;
 
                 default:

@@ -1,7 +1,9 @@
 package structure.expand;
 
+import structure.function.Function;
 import structure.instruction.Instruction;
 import structure.instruction.AbstractInstruction;
+import structure.instruction.synthetic.JumpEqualFunctionInstruction;
 import structure.instruction.synthetic.QuotationInstruction;
 import structure.program.Program;
 import structure.program.ProgramImpl;
@@ -58,6 +60,9 @@ public final class ProgramExpander {
             ProgramImpl nextProgram = new ProgramImpl(current.getName());
             for (Instruction inputInstruction : nextInstructions) {
                 nextProgram.addInstruction(inputInstruction);
+            }
+            for (Function function : current.getFunctions()) {
+                nextProgram.addFunction(function);
             }
             current = nextProgram;
             levels.add(new ArrayList<>(current.getInstructions()));

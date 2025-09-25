@@ -38,6 +38,11 @@ public class QuotationInstruction extends AbstractInstruction {
         super(InstructionKind.SYNTHETIC, InstructionType.QUOTE, dest);
         this.functionName = functionName;
         this.userString = userString;
+        if(functionArguments.startsWith("(") && functionArguments.endsWith(")"))
+        {
+
+        }
+
         this.functionArguments = functionArguments;
     }
 
@@ -77,22 +82,21 @@ public class QuotationInstruction extends AbstractInstruction {
         }
 
         Function function;
-        try {
-            function = program.getFunction(functionName);
-        } catch (IllegalArgumentException e) {
-            context.updateVariable(getVariable(), 0L);
-            lastFunctionCycles = 0;
-            return FixedLabel.EMPTY;
-        }
+        function = program.getFunction(functionName);
+        final int[] nestedCycles = new int[]{0};
 
-        List<Long> inputsList = parseFunctionInputs(functionArguments, context);
-        Long[] inputs = inputsList.toArray(new Long[0]);
+
+        List<ArgVal> inputsList = parseFunctionInputs(functionArguments, context);
+        Long[] inputs = new Long[inputsList.size()];
+        for (int i = 0; i < inputsList.size(); i++) {
+            inputs[i] = evalArgVal(inputsList.get(i), context, program);  // חדש
+        }
 
         FunctionExecutor functionRunner = new FunctionExecutorImpl();
         long result = functionRunner.run(function, program, inputs);
+        nestedCycles[0] += functionRunner.getLastRunCycles();
         context.updateVariable(getVariable(), result);
-        lastFunctionCycles = functionRunner.getLastRunCycles();
-
+        lastFunctionCycles = nestedCycles[0] + functionRunner.getLastRunCycles();
         return FixedLabel.EMPTY;
     }
 
@@ -236,7 +240,28 @@ public class QuotationInstruction extends AbstractInstruction {
             Variable src = parseVariableToken(t);
             if (src != null) {
                 newInstructions.add(new AssignmentInstruction(dest, src));
+                continue;
             }
+
+            String s=t;
+            if (s.startsWith("(") && s.endsWith(")")) {
+                s = s.substring(1, s.length() - 1).trim();
+            }
+
+            int depth = 0, cut = -1;
+            for (int i = 0; i < s.length(); i++) {
+                char c = s.charAt(i);
+                if (c == '(') depth++;
+                else if (c == ')') depth--;
+                else if (c == ',' && depth == 0) { cut = i; break; }
+            }
+
+            String funcName = (cut == -1) ? s.trim() : s.substring(0, cut).trim();
+            String funcArgs = (cut == -1) ? ""      : s.substring(cut + 1).trim();
+            String funcUserString = program.getFunction(funcName).getUserString();
+
+            newInstructions.add(new QuotationInstruction(dest, funcName, funcUserString, funcArgs));
+
         }
 
         convertToZ.put(y, prog.newWorkVar());
@@ -362,35 +387,90 @@ public class QuotationInstruction extends AbstractInstruction {
         return newInstructions;
     }
 
-    private static List<Long> parseFunctionInputs(String argsString, ExecutionContext ctx) {
-        List<Long> csvInputs = new ArrayList<>();
-        if (argsString == null || argsString.isBlank()) return csvInputs;
+    private List<ArgVal> parseFunctionInputs(String argsString, ExecutionContext ctx) {
+        List<ArgVal> out = new ArrayList<>();
+        if (argsString == null) return out;
 
-        String[] parts = argsString.split(",");
-        for (String raw : parts) {
-            String variable = raw.trim();
-            if (variable.isEmpty()) { csvInputs.add(0L); continue; }
+        List<String> tokens = new ArrayList<>();
+        StringBuilder cur = new StringBuilder();
+        int depth = 0;
+        for (int i = 0; i < argsString.length(); i++) {
+            char c = argsString.charAt(i);
+            if (c == '(') { depth++; cur.append(c); continue; }
+            if (c == ')') { depth--; cur.append(c); continue; }
+            if (c == ',' && depth == 0) { tokens.add(cur.toString().trim()); cur.setLength(0); continue; }
+            cur.append(c);
+        }
+        tokens.add(cur.toString().trim());
 
-            // מספר קבוע?
+        for (String raw : tokens) {
+            String t = raw.trim();
+            if (t.isEmpty()) { out.add(ArgVal.ofLong(0L)); continue; }
+
+            if (t.startsWith("(") && t.endsWith(")")) {
+                out.add(ArgVal.ofString(t));
+                continue;
+            }
+
             try {
-                csvInputs.add(Long.parseLong(variable));
+                out.add(ArgVal.ofLong(Long.parseLong(t)));
                 continue;
             } catch (NumberFormatException ignore) {}
-            if ("y".equals(variable)) {
-                csvInputs.add(ctx.getVariableValue(Variable.RESULT));
-            } else if (variable.startsWith("x")) {
-                csvInputs.add(ctx.getVariableValue(
-                        new VariableImpl(VariableType.INPUT, parseInt(variable.substring(1)))
-                ));
-            } else if (variable.startsWith("z")) {
-                csvInputs.add(ctx.getVariableValue(
-                        new VariableImpl(VariableType.WORK, parseInt(variable.substring(1)))
-                ));
+
+            if ("y".equals(t)) {
+                out.add(ArgVal.ofLong(ctx.getVariableValue(Variable.RESULT)));
+            } else if (t.length() >= 2 && (t.charAt(0) == 'x' || t.charAt(0) == 'z')) {
+                try {
+                    int idx = Integer.parseInt(t.substring(1));
+                    VariableType vt = (t.charAt(0) == 'x') ? VariableType.INPUT : VariableType.WORK;
+                    out.add(ArgVal.ofLong(ctx.getVariableValue(new VariableImpl(vt, idx))));
+                } catch (Exception e) {
+                    out.add(ArgVal.ofLong(0L));
+                }
             } else {
-                csvInputs.add(0L);
+                out.add(ArgVal.ofString(t));
             }
         }
-        return csvInputs;
+        return out;
+    }
+
+    private Long evalArgVal(ArgVal a, ExecutionContext ctx, Program program) {
+        if (a.getKind() == ArgKind.LONG) {
+            return a.getLongValue();
+        }
+        String t = a.getText();
+
+        if (t.startsWith("(") && t.endsWith(")")) {
+            String inner = t.substring(1, t.length() - 1).trim();
+            int depth = 0, cut = -1;
+            for (int i = 0; i < inner.length(); i++) {
+                char c = inner.charAt(i);
+                if (c == '(') depth++;
+                else if (c == ')') depth--;
+                else if (c == ',' && depth == 0) { cut = i; break; }
+            }
+            String fname = (cut == -1) ? inner.trim() : inner.substring(0, cut).trim();
+            String fargs = (cut == -1) ? "" : inner.substring(cut + 1).trim();
+
+            try {
+                Function f = program.getFunction(fname);
+                List<ArgVal> nested = parseFunctionInputs(fargs, ctx);
+
+                Long[] nestedInputs = new Long[nested.size()];
+                for (int i = 0; i < nested.size(); i++) {
+                    nestedInputs[i] = evalArgVal(nested.get(i), ctx, program);
+                }
+
+                FunctionExecutor runner = new FunctionExecutorImpl();
+                long val = runner.run(f, program, nestedInputs);
+                lastFunctionCycles += runner.getLastRunCycles();
+
+                return val;
+            } catch (Exception ignore) {
+                return 0L;
+            }
+        }
+        return 0L;
     }
 
     private void addVar(Variable v, SortedSet<Integer> xs, SortedSet<Integer> zs) {
@@ -413,17 +493,27 @@ public class QuotationInstruction extends AbstractInstruction {
         Map<String, Variable> map = new LinkedHashMap<>();
         if (functionArguments == null || functionArguments.isBlank()) return map;
 
-        String[] parts = functionArguments.split(",");
         int idx = 1;
-        for (String raw : parts) {
-            String key = raw.trim();
-            if (key.isEmpty()) {
+        StringBuilder cur = new StringBuilder();
+        int depth = 0;
+
+        for (int i = 0; i < functionArguments.length(); i++) {
+            char c = functionArguments.charAt(i);
+            if (c == '(') { depth++; cur.append(c); continue; }
+            if (c == ')') { depth--; cur.append(c); continue; }
+            if (c == ',' && depth == 0) {
+                String key = cur.toString().trim();
+                if (!key.isEmpty()) map.putIfAbsent(key, new VariableImpl(VariableType.INPUT, idx));
                 idx++;
+                cur.setLength(0);
                 continue;
             }
-            map.putIfAbsent(key, new VariableImpl(VariableType.INPUT, idx));
-            idx++;
+            cur.append(c);
         }
+
+        String last = cur.toString().trim();
+        if (!last.isEmpty()) map.putIfAbsent(last, new VariableImpl(VariableType.INPUT, idx));
+
         return map;
     }
 

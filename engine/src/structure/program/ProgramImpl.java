@@ -127,7 +127,6 @@ public class ProgramImpl implements Program, Serializable {
                     break;
             }
 
-
             if (!isExit(targetLabel)&&targetLabel != null &&
                     targetLabel != FixedLabel.EMPTY &&
                     !definedLabels.contains(targetLabel.getLabelRepresentation())) {
@@ -135,8 +134,6 @@ public class ProgramImpl implements Program, Serializable {
                         "Label '" + targetLabel.getLabelRepresentation() + "' is referenced but not defined."
                 );
             }
-
-
 
             if (hasFunction && functionName != null) {
                 String fnameToFind = functionName.trim();

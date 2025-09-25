@@ -7,11 +7,7 @@ import types.LabelDTO;
 import types.VarRefDTO;
 import types.VarOptionsDTO;
 
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 import structure.instruction.Instruction;
 import structure.instruction.basic.DecreaseInstruction;
@@ -28,9 +24,17 @@ import static java.lang.Integer.parseInt;
 
 class DisplayMapper {
 
+    private static Map<String, String> nameToUserString = Collections.emptyMap();
+
     static DisplayDTO toCommand2(Program program) {
         String programName = program.getName();
         List<Instruction> instructions = program.getInstructions();
+
+        Map<String, String> map = new HashMap<>();
+        for (Function func : program.getFunctions()) {
+            map.put(func.getName(), func.getUserString());
+        }
+        nameToUserString = map;
 
         List<VarRefDTO> inputsInUse = computeInputsInUse(instructions);
         List<LabelDTO> labelsInUse  = computeLabelsInUse(instructions);
@@ -88,8 +92,8 @@ class DisplayMapper {
                 AssignmentInstruction a = (AssignmentInstruction) ins;
                 return new InstructionBodyDTO(InstrOpDTO.ASSIGNMENT,
                         null,
-                        toVarRef(a.getVariable()),     // dest
-                        toVarRef(a.getToAssign()),     // source
+                        toVarRef(a.getVariable()),
+                        toVarRef(a.getToAssign()),
                         null, null, 0L, null);
             }
             case "CONSTANT_ASSIGNMENT": {
@@ -145,20 +149,36 @@ class DisplayMapper {
                         null, null, null, null, null, 0L,
                         labelDTO(g.getTarget()));
             }
-
             case "QUOTE": {
-                QuotationInstruction q= (QuotationInstruction) ins;
-                return new InstructionBodyDTO(InstrOpDTO.QUOTE,
-                        toVarRef(q.getVariable()), null, null, null, null, 0L,
-                        null, q.getFunctionName(), q.getUserString(), q.getFunctionArguments());
+                QuotationInstruction q = (QuotationInstruction) ins;
+                String shownArgs = ArgsWithComposition(q.getFunctionArguments()); // תצוגה בלבד
+                return new InstructionBodyDTO(
+                        InstrOpDTO.QUOTE,
+                        toVarRef(q.getVariable()),
+                        null, null, null, null, 0L,
+                        null,
+                        q.getFunctionName(),
+                        q.getUserString(),
+                        shownArgs
+                );
             }
 
             case "JUMP_EQUAL_FUNCTION": {
-                JumpEqualFunctionInstruction f= (JumpEqualFunctionInstruction) ins;
-                return new InstructionBodyDTO(InstrOpDTO.JUMP_EQUAL_FUNCTION,
-                        toVarRef(f.getVariable()), null, null, null, null, 0L,
-                        labelDTO(f.getTargetLabel()), f.getFunctionName(), f.getUserString(), f.getFunctionArguments());
+                JumpEqualFunctionInstruction f = (JumpEqualFunctionInstruction) ins;
+                String shownArgs = ArgsWithComposition(f.getFunctionArguments());
+                return new InstructionBodyDTO(
+                        InstrOpDTO.JUMP_EQUAL_FUNCTION,
+                        null, null, null,
+                        toVarRef(f.getVariable()),
+                        null,
+                        0L,
+                        labelDTO(f.getTargetLabel()),
+                        f.getFunctionName(),
+                        f.getUserString(),
+                        shownArgs
+                );
             }
+
             default:
                 throw new IllegalStateException("Unknown instruction name: " + ins.getName());
         }
@@ -223,17 +243,28 @@ class DisplayMapper {
 
     private static void addInputsFromFunctionArguments(Set<Integer> seen, List<VarRefDTO> out, String args) {
         if (args == null || args.isBlank()) return;
-        String[] parts = args.split(",");
-        for (String raw : parts) {
-            String variable = raw.trim();
-            if (variable.length() < 2) continue;
+        int n = args.length();
+        for (int i = 0; i < n; i++) {
+            char c = args.charAt(i);
+            if (c == 'x') {
+                int j = i + 1;
+                int val = 0;
+                boolean hasDigit = false;
 
-            char c0 = variable.charAt(0);
-            if (c0 == 'x') {
-                int idx = parseInt(variable.substring(1));
-                if (idx >= 0 && seen.add(idx)) {
-                    out.add(new VarRefDTO(VarOptionsDTO.x, idx));
+                while (j < n) {
+                    char d = args.charAt(j);
+                    if (d >= '0' && d <= '9') {
+                        hasDigit = true;
+                        val = val * 10 + (d - '0');
+                        j++;
+                    } else {
+                        break;
+                    }
                 }
+                if (hasDigit && val >= 0 && seen.add(val)) {
+                    out.add(new VarRefDTO(VarOptionsDTO.x, val));
+                }
+                i = j - 1;
             }
         }
     }
@@ -309,10 +340,41 @@ class DisplayMapper {
         if (label == null) return new LabelDTO("EMPTY", false);
         String rep = label.getLabelRepresentation();
         if (rep == null || rep.isEmpty()) return new LabelDTO("EMPTY", false);
-        switch (rep) {
-            case "EMPTY": return new LabelDTO("EMPTY", false);
-            case "EXIT":  return new LabelDTO("EXIT", true);
-            default:      return new LabelDTO(rep, false);
+        return switch (rep) {
+            case "EMPTY" -> new LabelDTO("EMPTY", false);
+            case "EXIT" -> new LabelDTO("EXIT", true);
+            default -> new LabelDTO(rep, false);
+        };
+    }
+
+    private static String ArgsWithComposition(String args) {
+        if (args == null || args.isBlank() || nameToUserString == null || nameToUserString.isEmpty()) return args;
+        StringBuilder out = new StringBuilder(args.length());
+        int n = args.length();
+
+        for (int i = 0; i < n; i++) {
+            char c = args.charAt(i);
+            out.append(c);
+            if (c == '(') {
+                int j = i + 1;
+                while (j < n && Character.isWhitespace(args.charAt(j))) {
+                    out.append(args.charAt(j));
+                    j++;
+                }
+                int nameStart = j;
+                while (j < n) {
+                    char d = args.charAt(j);
+                    if (d == ',' || d == ')') break;
+                    j++;
+                }
+                String rawName = args.substring(nameStart, j).trim();
+                if (!rawName.isEmpty()) {
+                    String pretty = nameToUserString.getOrDefault(rawName, rawName);
+                    out.append(pretty); // מוסיפים רק את ה-userString, בלי למחוק כלום
+                }
+                i = j - 1;
+            }
         }
+        return out.toString();
     }
 }

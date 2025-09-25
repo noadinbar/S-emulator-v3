@@ -34,11 +34,13 @@
          <children>
             <ComboBox fx:id="cmbProgramFunction" layoutY="5.0" onAction="#onProgramChanged" prefHeight="25.0" prefWidth="191.0" promptText="Program\Function selection" />
             <Button fx:id="btnCollapse" layoutX="206.0" layoutY="5.0" mnemonicParsing="false" onAction="#onCollapseClicked" text="Collapse" />
-            <Label layoutX="280.0" layoutY="-5.0" prefHeight="45.0" prefWidth="119.0" text="Current/Max Degree:" />
-            <TextField fx:id="txtDegree" layoutX="399.0" layoutY="8.0" prefHeight="25.0" prefWidth="43.0" />
-            <Button fx:id="btnExpand" layoutX="451.0" layoutY="8.0" mnemonicParsing="false" onAction="#onExpandClicked" text="Expand" />
-            <ComboBox fx:id="cmbHighlight" layoutX="517.0" layoutY="8.0" onAction="#onHighlightChanged" prefHeight="25.0" prefWidth="142.0" promptText="Highlight selection" />
-            <ComboBox fx:id="cmbTheme" layoutX="671.0" layoutY="8.0" prefHeight="25.0" prefWidth="98.0" promptText="Theme" />
+            <Label layoutX="279.0" layoutY="-5.0" prefHeight="45.0" prefWidth="119.0" text="Current/Max Degree:" />
+            <TextField fx:id="txtDegree" layoutX="411.0" layoutY="7.0" prefHeight="25.0" prefWidth="30.0" />
+            <Label layoutX="447.0" layoutY="9.0" text="/" />
+             <TextField fx:id="txtMaxDegree" layoutX="460.0" layoutY="7.0" prefHeight="25.0" prefWidth="32.0" editable="false" focusTraversable="false"/>
+            <Button fx:id="btnExpand" layoutX="501.0" layoutY="7.0" mnemonicParsing="false" onAction="#onExpandClicked" text="Expand" />
+            <ComboBox fx:id="cmbHighlight" layoutX="562.0" layoutY="7.0" onAction="#onHighlightChanged" prefHeight="25.0" prefWidth="109.0" promptText="Highlight selection" />
+            <ComboBox fx:id="cmbTheme" layoutX="682.0" layoutY="8.0" prefHeight="25.0" prefWidth="87.0" promptText="Theme" />
          </children></AnchorPane>
   </items>
 </SplitPane>

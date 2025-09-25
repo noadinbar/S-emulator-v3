@@ -11,14 +11,10 @@ import javafx.beans.binding.Bindings;
 import javafx.beans.property.*;
 import javafx.concurrent.Task;
 import javafx.fxml.FXML;
-import javafx.scene.control.Alert;
-import javafx.scene.control.Button;
-import javafx.scene.control.ComboBox;
-import javafx.scene.control.ProgressBar;
-import javafx.scene.control.TextField;
+import javafx.scene.control.*;
 import javafx.stage.FileChooser;
-import javafx.scene.control.TextArea;
 import javafx.stage.Window;
+import javafx.util.converter.IntegerStringConverter;
 import types.LabelDTO;
 import types.VarRefDTO;
 
@@ -26,6 +22,7 @@ import java.io.File;
 import java.nio.file.Path;
 import java.util.*;
 import java.util.function.Consumer;
+import java.util.function.UnaryOperator;
 
 public class HeaderController {
 
@@ -39,6 +36,7 @@ public class HeaderController {
     @FXML private ComboBox<String> cmbProgramFunction;
     @FXML private Button btnCollapse;
     @FXML private TextField txtDegree;
+    @FXML private TextField txtMaxDegree;
     @FXML private Button btnExpand;
     @FXML private ComboBox<String> cmbHighlight;
     @FXML private ComboBox<String> cmbTheme;
@@ -52,30 +50,57 @@ public class HeaderController {
     private final ObjectProperty<Runnable> onExpand   = new SimpleObjectProperty<>();
     private final ObjectProperty<Runnable> onCollapse = new SimpleObjectProperty<>();
     private final ObjectProperty<Consumer<DisplayAPI>> onLoaded = new SimpleObjectProperty<>();
+    private final ObjectProperty<Runnable> onApplyDegree = new SimpleObjectProperty<>();
+    private TextFormatter<Integer> degreeFormatter;
 
     private Consumer<String> onThemeChanged;
     private Consumer<String> onHighlightChangedCb;
     private Consumer<String> onProgramSelectedCb;
 
-
     @FXML
     private void initialize() {
+        // שדה הנתיב לא עריך
         txtPath.setEditable(false);
-        txtDegree.setEditable(false);
-        txtDegree.setFocusTraversable(false);
 
+        // נטרול רכיבים כשעסוקים / טרם נטען קובץ
         txtDegree.disableProperty().bind(busy.or(loaded.not()));
         cmbProgramFunction.disableProperty().bind(busy.or(loaded.not()));
         cmbHighlight.disableProperty().bind(busy.or(loaded.not()));
 
+        // פורמטער לשדה הדרגה: רק ספרות (עד 3), ריק מותר
+        UnaryOperator<TextFormatter.Change> filter = c -> {
+            String nt = c.getControlNewText();
+            if (nt.isEmpty()) return c;
+            return nt.matches("\\d{1,10}") ? c : null;
+        };
+        degreeFormatter = new TextFormatter<>(new IntegerStringConverter(), 0, filter);
+        txtDegree.setTextFormatter(degreeFormatter);
 
+        // קישור דו-כיווני נכון בין הערך לבין ה-Property
+        degreeFormatter.valueProperty().bindBidirectional(currentDegree.asObject());
 
-        txtDegree.textProperty().bind(
-                Bindings.createStringBinding(
-                        () -> currentDegree.get() + " / " + maxDegree.get(),
-                        currentDegree, maxDegree
-                )
-        );
+        // Enter על השדה מפעיל ולידציה+החלה
+        txtDegree.setOnAction(e -> onDegreeEnter());
+
+        // שדה המקסימום מציג תמיד את הערך המחושב (לא עריך)
+        if (txtMaxDegree != null) {
+            txtMaxDegree.textProperty().bind(maxDegree.asString());
+            txtMaxDegree.disableProperty().bind(busy.or(loaded.not()));
+        }
+
+        // כש-max מתעדכן: לשמור על תחום [0..max]
+        maxDegree.addListener((obs, ov, nv) -> {
+            int max = (nv == null ? 0 : nv.intValue());
+            if (currentDegree.get() > max) currentDegree.set(max);
+            if (currentDegree.get() < 0)   currentDegree.set(0);
+        });
+
+        // אם המשתמש מחק את התוכן (null) – נחשב כ-0
+        degreeFormatter.valueProperty().addListener((o, ov, nv) -> {
+            if (nv == null) currentDegree.set(0);
+        });
+
+        // מצב כפתורי הרחבה/כיווץ
         btnCollapse.disableProperty().bind(
                 busy.or(loaded.not()).or(currentDegree.lessThanOrEqualTo(0))
         );
@@ -83,16 +108,23 @@ public class HeaderController {
                 busy.or(loaded.not()).or(currentDegree.greaterThanOrEqualTo(maxDegree))
         );
 
+        // ProgressBar מוסתר כברירת מחדל
         progressBar.setVisible(false);
 
+        // Theme combobox
         if (cmbTheme != null) {
             cmbTheme.getItems().setAll("Default", "Rose", "Sky");
             cmbTheme.getSelectionModel().select("Default");
             cmbTheme.getSelectionModel().selectedItemProperty().addListener((obs, o, v) -> {
                 if (onThemeChanged == null) return;
-                String theme = "Rose".equals(v) ? "theme-rose" : "Sky".equals(v)  ? "theme-sky"  : "theme-default"; onThemeChanged.accept(theme);});
+                String theme = "Rose".equals(v) ? "theme-rose"
+                        : "Sky".equals(v)     ? "theme-sky"
+                        : "theme-default";
+                onThemeChanged.accept(theme);
+            });
         }
 
+        // Highlight combobox
         if (cmbHighlight != null) {
             cmbHighlight.valueProperty().addListener((obs, oldV, newV) -> {
                 if (onHighlightChangedCb != null) {
@@ -110,10 +142,17 @@ public class HeaderController {
     public void setOnLoaded(Consumer<DisplayAPI> consumer) {
         onLoaded.set(consumer);
     }
-
     public void setOnThemeChanged(Consumer<String> cb) { this.onThemeChanged = cb; }
-
     public void setOnProgramSelected(Consumer<String> cb) { this.onProgramSelectedCb = cb; }
+    public void setOnApplyDegree(Runnable r) { onApplyDegree.set(r); }
+    public void setOnExpand(Runnable r)   { onExpand.set(r); }
+    public void setOnCollapse(Runnable r) { onCollapse.set(r); }
+    public void setCurrentDegree(int current) {
+        currentDegree.set(current);
+        syncDegreeField();
+    }
+    public void setMaxDegree(int max)         { maxDegree.set(max); }
+    public int getCurrentDegree() { return currentDegree.get(); }
 
     // === Handlers ===
     @FXML
@@ -199,15 +238,67 @@ public class HeaderController {
 
         new Thread(task, "xml-loader").start();
     }
-    @FXML private void onExpandClicked()   { var r = onExpand.get();   if (r != null) r.run(); }
-    @FXML private void onCollapseClicked() { var r = onCollapse.get(); if (r != null) r.run(); }
+    @FXML private void onExpandClicked() {
+        int next = Math.min(currentDegree.get() + 1, maxDegree.get());
+        if (next != currentDegree.get()) currentDegree.set(next);
+        syncDegreeField();
+        Runnable r = onExpand.get();      if (r != null) r.run();
+        Runnable a = onApplyDegree.get(); if (a != null) a.run();
+    }
 
-    public void setOnExpand(Runnable r)   { onExpand.set(r); }
-    public void setOnCollapse(Runnable r) { onCollapse.set(r); }
+    @FXML
+    private void onCollapseClicked() {
+        int next = Math.max(currentDegree.get() - 1, 0);
+        if (next != currentDegree.get()) currentDegree.set(next);
+        syncDegreeField();
+        Runnable r = onCollapse.get();    if (r != null) r.run();
+        Runnable a = onApplyDegree.get(); if (a != null) a.run();
+    }
 
-    public void setCurrentDegree(int current) { currentDegree.set(current); }
-    public void setMaxDegree(int max)         { maxDegree.set(max); }
-    public int getCurrentDegree() { return currentDegree.get(); }
+    @FXML
+    private void onDegreeEnter() {
+        String raw = txtDegree.getText();
+        int max = maxDegree.get();
+
+        // לא מספר שלם?
+        if (raw == null || raw.isBlank() || !raw.matches("\\d+")) {
+            showError("Invalid degree", "Please enter an integer between 0 and " + max + ".");
+            Platform.runLater(() -> { txtDegree.requestFocus(); txtDegree.selectAll(); });
+            return;
+        }
+
+        int d;
+        try {
+            d = Integer.parseInt(raw);
+        } catch (NumberFormatException ex) {
+            showError("Invalid degree", "Please enter an integer between 0 and " + max + ".");
+            Platform.runLater(() -> { txtDegree.requestFocus(); txtDegree.selectAll(); });
+            return;
+        }
+
+        // אכיפת טווח [0..max] + הודעה
+        if (d < 0 || d > max) {
+            showError("Out of range", "Degree must be between 0 and " + max + ". Setting to the nearest allowed value.");
+            d = Math.max(0, Math.min(d, max));
+        }
+
+        // עדכון הערך (יעדכן גם את הטקסט דרך ה-bind)
+        if (d != currentDegree.get()) currentDegree.set(d);
+
+        // “החלה” חיצונית (אם חיברתם callback)
+        Runnable apply = onApplyDegree.get();
+        if (apply != null) apply.run();
+    }
+
+    private void syncDegreeField() {
+        int v = currentDegree.get();
+        if (degreeFormatter != null && !Objects.equals(degreeFormatter.getValue(), v)) {
+            degreeFormatter.setValue(v); // דוחף את הערך גם לטקסט בפועל
+        } else if (txtDegree != null && (txtDegree.getText() == null || !txtDegree.getText().equals(Integer.toString(v)))) {
+            txtDegree.setText(Integer.toString(v));
+        }
+    }
+
 
     @FXML
     private void onHelp() {
@@ -315,7 +406,7 @@ public class HeaderController {
         String prev = cmbProgramFunction.getValue();
         List<String> items = new ArrayList<>();
 
-        var cmd2 = (display != null) ? display.getCommand2() : null;
+        DisplayDTO cmd2 = (display != null) ? display.getCommand2() : null;
         String programName = cmd2.getProgramName();
 
         items.add("PROGRAM: " + programName);
@@ -328,8 +419,6 @@ public class HeaderController {
         if (prev != null && items.contains(prev)) cmbProgramFunction.setValue(prev);
         else if (!items.isEmpty()) cmbProgramFunction.getSelectionModel().selectFirst();
     }
-
-
 
     // === Utils ===
     private void showError(String title, String msg) {

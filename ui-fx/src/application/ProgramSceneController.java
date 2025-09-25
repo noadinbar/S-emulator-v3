@@ -86,6 +86,7 @@ public class ProgramSceneController {
             headerController.setOnExpand(()  -> changeDegreeAndShow(+1));
             headerController.setOnCollapse(() -> changeDegreeAndShow(-1));
             headerController.setOnThemeChanged(this::applyTheme);
+            headerController.setOnApplyDegree(() -> doApply(headerController.getCurrentDegree()));
 
             headerController.setOnHighlightChanged(sel -> {
                 currentHighlight = ("NONE".equals(sel) ? null : sel);
@@ -246,12 +247,24 @@ public class ProgramSceneController {
     }
 
     private void changeDegreeAndShow(int i) {
-        if (display == null || programTableController == null) return;
-        int target = currentDegree + i;
+        doApply(currentDegree + i);
+    }
 
+    private void doApply(int requestedDegree) {
+        if (display == null || programTableController == null) return;
+
+        // לוודא שיש ExecutionAPI עדכני עבור החישוב של המקסימום
+        if (execute == null) {
+            execute = display.execution();
+        }
+        int max = (execute != null) ? execute.getMaxDegree() : 0;
+        int target = Math.max(0, Math.min(requestedDegree, max));
+
+        // להציג את התוכנית הדרושה בדרגה המבוקשת
         ExpandDTO expanded = display.expand(target);
         programTableController.showExpanded(expanded);
 
+        // לעדכן אפשרויות Highlight ולרענן הטבלה העליונה
         if (headerController != null && programTableController.getTableView() != null) {
             headerController.populateHighlight(programTableController.getTableView().getItems());
             wireHighlight(programTableController);
@@ -259,14 +272,15 @@ public class ProgramSceneController {
             programTableController.getTableView().refresh();
         }
 
+        // ניקוי בחירה/תוצאות ריצה
         if (programTableController.getTableView() != null) {
             programTableController.getTableView().getSelectionModel().clearSelection();
         }
-
         if (outputsController != null) {
             outputsController.clear();
         }
 
+        // אפס מצב דיבוג אם היה פעיל
         debugStarted = false;
         debugApi = null;
         debugStopRequested = false;
@@ -274,10 +288,17 @@ public class ProgramSceneController {
             debugResumeTask.cancel();
             debugResumeTask = null;
         }
+
+        // לעדכן state פנימי וה-Header
         currentDegree = target;
-        headerController.setCurrentDegree(currentDegree);
+        if (headerController != null) {
+            headerController.setCurrentDegree(currentDegree);
+        }
+
+        // לעדכן טבלת ה-Chain (תחתונה) לפי בחירה נוכחית
         updateChain(programTableController.getSelectedItem());
     }
+
 
 
     public void setDebugMode(boolean on) {

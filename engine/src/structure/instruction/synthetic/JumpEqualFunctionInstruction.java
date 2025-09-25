@@ -73,8 +73,10 @@ public class JumpEqualFunctionInstruction extends AbstractInstruction {
         return (v == qResult) ? targetLabel : FixedLabel.EMPTY;
     }
 
-    public List<Instruction> expand(ExpansionManager prog) {
+    public List<Instruction> expand(ExpansionManager prog, Program program) {
         List <Instruction> newInstructions = new ArrayList<>();
+        final Function function;
+        function = program.getFunction(functionName);
         Variable z= prog.newWorkVar();
         Label myLabel=getMyLabel();
         if (myLabel==FixedLabel.EMPTY)

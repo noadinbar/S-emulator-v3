@@ -282,12 +282,12 @@ public class QuotationInstruction extends AbstractInstruction {
                 case CONSTANT_ASSIGNMENT: {
                     ConstantAssignmentInstruction c = (ConstantAssignmentInstruction) ins;
                     Variable dest = convertToZ.get(c.getVariable());
-                    int k = c.getConstant(); // אם אצלך זה getNumber() - החליפי בהתאם
+                    int k = c.getConstant();
                     newInstructions.add(new ConstantAssignmentInstruction(dest, k, myLabel));
                     break;
                 }
 
-                case JUMP_NOT_ZERO: { // הדוגמה שנתת
+                case JUMP_NOT_ZERO: {
                     JumpNotZeroInstruction jnz = (JumpNotZeroInstruction) ins;
                     Variable v = convertToZ.get(jnz.getVariable());
                     Label target = newLabelMap.get(jnz.getTargetLabel());

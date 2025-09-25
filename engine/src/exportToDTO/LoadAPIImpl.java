@@ -4,6 +4,7 @@ import api.DisplayAPI;
 import api.LoadAPI;
 import exceptions.InvalidFileExtensionException;
 import exceptions.InvalidXmlFormatException;
+import exceptions.UndefinedFunctionException;
 import exceptions.UndefinedLabelException;
 import jakarta.xml.bind.JAXBException;
 import structure.program.ProgramImpl;
@@ -43,6 +44,9 @@ public class LoadAPIImpl implements LoadAPI {
             return new DisplayAPIImpl(program);
         }
         catch (UndefinedLabelException e){
+            throw e;
+        }
+        catch (UndefinedFunctionException e){
             throw e;
         }
 

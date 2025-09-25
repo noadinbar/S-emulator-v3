@@ -151,7 +151,7 @@ public class HeaderController {
         currentDegree.set(current);
         syncDegreeField();
     }
-    public void setMaxDegree(int max)         { maxDegree.set(max); }
+    public void setMaxDegree(int max) { maxDegree.set(max); }
     public int getCurrentDegree() { return currentDegree.get(); }
 
     // === Handlers ===

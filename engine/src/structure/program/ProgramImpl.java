@@ -1,5 +1,6 @@
 package structure.program;
 
+import exceptions.UndefinedFunctionException;
 import structure.expand.ExpandResult;
 import structure.expand.ProgramExpander;
 import structure.function.Function;
@@ -60,7 +61,7 @@ public class ProgramImpl implements Program, Serializable {
     public Function getFunction(String name) {
         Function func = stringFunctionMap.get(name);
         if (func == null) {
-            throw new IllegalArgumentException("Function '" + name + "' not found");
+            throw new UndefinedFunctionException("Function '" + name + "' not found");
         }
         return func;
     }
@@ -73,9 +74,12 @@ public class ProgramImpl implements Program, Serializable {
         stringFunctionMap.put(name, function);
     }
 
+
     @Override
     public ParseResult validate() {
         Set<String> definedLabels = new HashSet<>();
+        Set<String> definedFunctions = new HashSet<>();
+
         for (Instruction instr : instructions) {
             Label label = instr.getMyLabel();
             if (label != null && label != FixedLabel.EMPTY) {
@@ -83,8 +87,17 @@ public class ProgramImpl implements Program, Serializable {
             }
         }
 
+        for (Function func : functions) {
+            if (func != null && func.getName() != null) {
+                definedFunctions.add(func.getName().trim());
+            }
+        }
+
         for (Instruction instr : instructions) {
             Label targetLabel = null;
+            String functionName = null;
+            boolean hasFunction = false;
+
             switch (instr.getName()) {
                 case "JUMP_NOT_ZERO":
                     targetLabel = ((JumpNotZeroInstruction) instr).getTargetLabel();
@@ -101,22 +114,41 @@ public class ProgramImpl implements Program, Serializable {
                 case "GOTO_LABEL":
                     targetLabel = ((GoToInstruction) instr).getTarget();
                     break;
-                    case "JUMP_EQUAL_FUNCTION":
-                        targetLabel= ((JumpEqualFunctionInstruction) instr).getTargetLabel();
+                case "JUMP_EQUAL_FUNCTION":
+                    targetLabel = ((JumpEqualFunctionInstruction) instr).getTargetLabel();
+                    functionName = ((JumpEqualFunctionInstruction) instr).getFunctionName();
+                    hasFunction = true;
+                    break;
+                case "QUOTE":
+                    functionName = ((QuotationInstruction) instr).getFunctionName();
+                    hasFunction = true;
+                    break;
                 default:
                     break;
             }
 
-            if (isExit(targetLabel)) continue;
 
-            if (targetLabel != null &&
+            if (!isExit(targetLabel)&&targetLabel != null &&
                     targetLabel != FixedLabel.EMPTY &&
                     !definedLabels.contains(targetLabel.getLabelRepresentation())) {
-
                 throw new UndefinedLabelException(
                         "Label '" + targetLabel.getLabelRepresentation() + "' is referenced but not defined."
                 );
             }
+
+
+
+            if (hasFunction && functionName != null) {
+                String fnameToFind = functionName.trim();
+                if (!definedFunctions.contains(fnameToFind)) {
+                    throw new UndefinedFunctionException(
+                            "Function '" + functionName + "' is referenced but not defined."
+                    );
+                }
+            }
+
+
+
         }
 
         return ParseResult.success("Program validation passed successfully.");

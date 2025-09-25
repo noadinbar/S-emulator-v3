@@ -38,6 +38,9 @@ public final class ProgramExpander {
                 {
                     children = qi.expand(mgr, current);
                 }
+                else if( ins instanceof JumpEqualFunctionInstruction jef){
+                    children = jef.expand(mgr, current);
+                }
                 else {
                     children = ins.expand(mgr);
 

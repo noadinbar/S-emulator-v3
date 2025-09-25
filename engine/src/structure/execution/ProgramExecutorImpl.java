@@ -92,10 +92,10 @@ public class ProgramExecutorImpl implements ProgramExecutor{
         Instruction current = instructions.get(pc);
         Label next;
         if (current instanceof QuotationInstruction quotationInstruction) {
-            next = quotationInstruction.execute(context, this.program);
+            next = quotationInstruction.execute(context, program);
         }
         else if(current instanceof JumpEqualFunctionInstruction jumpEqualFunctionInstruction) {
-            next = jumpEqualFunctionInstruction.execute(context, this.program);
+            next = jumpEqualFunctionInstruction.execute(context, program);
         }
         else {
             next = current.execute(context);

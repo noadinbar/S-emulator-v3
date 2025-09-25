@@ -6,6 +6,7 @@ import display.ExpandedInstructionDTO;
 import display.InstructionDTO;
 import structure.expand.ExpandResult;
 import structure.expand.ProgramExpander;
+import structure.function.Function;
 import structure.instruction.AbstractInstruction;
 import structure.instruction.Instruction;
 import structure.program.Program;
@@ -30,6 +31,7 @@ public final class ExpandMapper {
         for (int lvl = 0; lvl <= lastLevel; lvl++) {
             ProgramImpl progL = new ProgramImpl(finalProg.getName());
             for (Instruction ins : levels.get(lvl)) progL.addInstruction(ins);
+            for (Function fn : finalProg.getFunctions()) progL.addFunction(fn);
             DisplayDTO c2 = DisplayMapper.toCommand2(progL);
 
             List<Instruction> insL = levels.get(lvl);

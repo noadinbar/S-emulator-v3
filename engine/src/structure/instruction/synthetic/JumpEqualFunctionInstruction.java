@@ -15,6 +15,7 @@ import structure.program.Program;
 import structure.variable.Variable;
 import structure.variable.VariableImpl;
 import structure.variable.VariableType;
+import utils.InstructionsHelpers;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -26,6 +27,7 @@ public class JumpEqualFunctionInstruction extends AbstractInstruction {
     private final String userString;
     private final String functionArguments;
     private int lastFunctionCycles = 0;
+    private static InstructionsHelpers helper = new InstructionsHelpers();
 
     public JumpEqualFunctionInstruction(Variable variable, Label targetLabel, String functionName,String userString, String functionArguments) {
         super(InstructionKind.SYNTHETIC, InstructionType.JUMP_EQUAL_FUNCTION, variable);
@@ -62,13 +64,18 @@ public class JumpEqualFunctionInstruction extends AbstractInstruction {
     public Label execute(ExecutionContext context, Program program) {
         final Function function;
         function = program.getFunction(functionName);
+        final int[] nestedCycles = {0};
 
-        List<Long> inputsList = parseFunctionInputs(functionArguments, context);
-        Long[] inputs = inputsList.toArray(new Long[0]);
+        List<ArgVal> args = helper.parseFunctionInputs(functionArguments, context);
+        Long[] inputs = new Long[args.size()];
+        for (int i = 0; i < args.size(); i++) {
+            inputs[i] = evalArgVal(args.get(i), context, program);
+        }
 
         FunctionExecutor runner = new FunctionExecutorImpl();
         long qResult = runner.run(function, program, inputs);
-        lastFunctionCycles = runner.getLastRunCycles();
+        nestedCycles[0] += runner.getLastRunCycles();
+        lastFunctionCycles = nestedCycles[0] + runner.getLastRunCycles();
         long v = context.getVariableValue(getVariable());
         return (v == qResult) ? targetLabel : FixedLabel.EMPTY;
     }
@@ -81,10 +88,10 @@ public class JumpEqualFunctionInstruction extends AbstractInstruction {
         Label myLabel=getMyLabel();
         if (myLabel==FixedLabel.EMPTY)
         {
-            newInstructions.add(new QuotationInstruction(z, functionName, userString, functionArguments));
+            newInstructions.add(new QuotationInstruction(z, function.getName(), function.getUserString(), functionArguments));
         }
         else {
-            newInstructions.add(new QuotationInstruction(z, functionName, userString, functionArguments, myLabel));
+            newInstructions.add(new QuotationInstruction(z, function.getName(), function.getUserString(), functionArguments, myLabel));
         }
 
         newInstructions.add(new JumpEqualVariableInstruction(getVariable(), targetLabel, z));
@@ -122,5 +129,37 @@ public class JumpEqualFunctionInstruction extends AbstractInstruction {
             }
         }
         return csvInputs;
+    }
+
+    private Long evalArgVal(ArgVal a, ExecutionContext ctx, Program program) {
+        if (a.getKind() == ArgKind.LONG) {
+            return a.getLongValue();
+        }
+        String t = a.getText();
+
+        if (t.startsWith("(") && t.endsWith(")")) {
+            String[] fa = helper.splitFuncNameAndArgs(t);
+            String fname = fa[0];
+            String fargs = fa[1];
+
+            try {
+                Function f = program.getFunction(fname);
+                List<ArgVal> nested = helper.parseFunctionInputs(fargs, ctx);
+
+                Long[] nestedInputs = new Long[nested.size()];
+                for (int i = 0; i < nested.size(); i++) {
+                    nestedInputs[i] = evalArgVal(nested.get(i), ctx, program);
+                }
+
+                FunctionExecutor runner = new FunctionExecutorImpl();
+                long val = runner.run(f, program, nestedInputs);
+                lastFunctionCycles += runner.getLastRunCycles();
+
+                return val;
+            } catch (Exception ignore) {
+                return 0L;
+            }
+        }
+        return 0L;
     }
 }

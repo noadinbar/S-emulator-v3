@@ -19,10 +19,9 @@ import structure.program.Program;
 import structure.variable.Variable;
 import structure.variable.VariableImpl;
 import structure.variable.VariableType;
+import utils.InstructionsHelpers;
 
 import java.util.*;
-
-import static java.lang.Integer.parseInt;
 
 public class QuotationInstruction extends AbstractInstruction {
 
@@ -30,6 +29,7 @@ public class QuotationInstruction extends AbstractInstruction {
     private final String userString;
     private final String functionArguments;
     private int lastFunctionCycles = 0;
+    private static InstructionsHelpers helper = new InstructionsHelpers();
 
     public QuotationInstruction(Variable dest,
                                 String functionName,
@@ -75,21 +75,14 @@ public class QuotationInstruction extends AbstractInstruction {
     }
 
     public Label execute(ExecutionContext context, Program program) {
-        if (program == null) {
-            context.updateVariable(getVariable(), 0L);
-            lastFunctionCycles = 0;
-            return FixedLabel.EMPTY;
-        }
-
         Function function;
         function = program.getFunction(functionName);
         final int[] nestedCycles = new int[]{0};
 
-
-        List<ArgVal> inputsList = parseFunctionInputs(functionArguments, context);
+        List<ArgVal> inputsList = helper.parseFunctionInputs(functionArguments, context);
         Long[] inputs = new Long[inputsList.size()];
         for (int i = 0; i < inputsList.size(); i++) {
-            inputs[i] = evalArgVal(inputsList.get(i), context, program);  // חדש
+            inputs[i] = evalArgVal(inputsList.get(i), context, program);
         }
 
         FunctionExecutor functionRunner = new FunctionExecutorImpl();
@@ -222,7 +215,6 @@ public class QuotationInstruction extends AbstractInstruction {
 
         if (isExit) {newLabelMap.put(FixedLabel.EXIT,prog.newLabel());}
 
-
         newInstructions.add(new NeutralInstruction(getVariable(),getMyLabel()));
 
         for (Map.Entry<String, Variable> e : argToX.entrySet()) {
@@ -243,31 +235,18 @@ public class QuotationInstruction extends AbstractInstruction {
                 continue;
             }
 
-            String s=t;
-            if (s.startsWith("(") && s.endsWith(")")) {
-                s = s.substring(1, s.length() - 1).trim();
-            }
-
-            int depth = 0, cut = -1;
-            for (int i = 0; i < s.length(); i++) {
-                char c = s.charAt(i);
-                if (c == '(') depth++;
-                else if (c == ')') depth--;
-                else if (c == ',' && depth == 0) { cut = i; break; }
-            }
-
-            String funcName = (cut == -1) ? s.trim() : s.substring(0, cut).trim();
-            String funcArgs = (cut == -1) ? ""      : s.substring(cut + 1).trim();
+            String[] fa = helper.splitFuncNameAndArgs(t);
+            String funcName = fa[0];
+            String funcArgs = fa[1];
             String funcUserString = program.getFunction(funcName).getUserString();
 
             newInstructions.add(new QuotationInstruction(dest, funcName, funcUserString, funcArgs));
-
         }
 
         convertToZ.put(y, prog.newWorkVar());
 
         for (Instruction ins : function.getInstructions()) {
-           Label myLabel=FixedLabel.EMPTY;
+            Label myLabel=FixedLabel.EMPTY;
             if (ins.getMyLabel() != FixedLabel.EMPTY) myLabel = newLabelMap.get(ins.getMyLabel());
             InstructionType type = InstructionType.valueOf(ins.getName().toUpperCase());
 
@@ -387,53 +366,6 @@ public class QuotationInstruction extends AbstractInstruction {
         return newInstructions;
     }
 
-    private List<ArgVal> parseFunctionInputs(String argsString, ExecutionContext ctx) {
-        List<ArgVal> out = new ArrayList<>();
-        if (argsString == null) return out;
-
-        List<String> tokens = new ArrayList<>();
-        StringBuilder cur = new StringBuilder();
-        int depth = 0;
-        for (int i = 0; i < argsString.length(); i++) {
-            char c = argsString.charAt(i);
-            if (c == '(') { depth++; cur.append(c); continue; }
-            if (c == ')') { depth--; cur.append(c); continue; }
-            if (c == ',' && depth == 0) { tokens.add(cur.toString().trim()); cur.setLength(0); continue; }
-            cur.append(c);
-        }
-        tokens.add(cur.toString().trim());
-
-        for (String raw : tokens) {
-            String t = raw.trim();
-            if (t.isEmpty()) { out.add(ArgVal.ofLong(0L)); continue; }
-
-            if (t.startsWith("(") && t.endsWith(")")) {
-                out.add(ArgVal.ofString(t));
-                continue;
-            }
-
-            try {
-                out.add(ArgVal.ofLong(Long.parseLong(t)));
-                continue;
-            } catch (NumberFormatException ignore) {}
-
-            if ("y".equals(t)) {
-                out.add(ArgVal.ofLong(ctx.getVariableValue(Variable.RESULT)));
-            } else if (t.length() >= 2 && (t.charAt(0) == 'x' || t.charAt(0) == 'z')) {
-                try {
-                    int idx = Integer.parseInt(t.substring(1));
-                    VariableType vt = (t.charAt(0) == 'x') ? VariableType.INPUT : VariableType.WORK;
-                    out.add(ArgVal.ofLong(ctx.getVariableValue(new VariableImpl(vt, idx))));
-                } catch (Exception e) {
-                    out.add(ArgVal.ofLong(0L));
-                }
-            } else {
-                out.add(ArgVal.ofString(t));
-            }
-        }
-        return out;
-    }
-
     private Long evalArgVal(ArgVal a, ExecutionContext ctx, Program program) {
         if (a.getKind() == ArgKind.LONG) {
             return a.getLongValue();
@@ -441,20 +373,13 @@ public class QuotationInstruction extends AbstractInstruction {
         String t = a.getText();
 
         if (t.startsWith("(") && t.endsWith(")")) {
-            String inner = t.substring(1, t.length() - 1).trim();
-            int depth = 0, cut = -1;
-            for (int i = 0; i < inner.length(); i++) {
-                char c = inner.charAt(i);
-                if (c == '(') depth++;
-                else if (c == ')') depth--;
-                else if (c == ',' && depth == 0) { cut = i; break; }
-            }
-            String fname = (cut == -1) ? inner.trim() : inner.substring(0, cut).trim();
-            String fargs = (cut == -1) ? "" : inner.substring(cut + 1).trim();
+            String[] fa = helper.splitFuncNameAndArgs(t);
+            String fname = fa[0];
+            String fargs = fa[1];
 
             try {
                 Function f = program.getFunction(fname);
-                List<ArgVal> nested = parseFunctionInputs(fargs, ctx);
+                List<ArgVal> nested = helper.parseFunctionInputs(fargs, ctx);
 
                 Long[] nestedInputs = new Long[nested.size()];
                 for (int i = 0; i < nested.size(); i++) {
@@ -493,27 +418,13 @@ public class QuotationInstruction extends AbstractInstruction {
         Map<String, Variable> map = new LinkedHashMap<>();
         if (functionArguments == null || functionArguments.isBlank()) return map;
 
+        List<String> items = helper.splitTopArguments(functionArguments);
         int idx = 1;
-        StringBuilder cur = new StringBuilder();
-        int depth = 0;
-
-        for (int i = 0; i < functionArguments.length(); i++) {
-            char c = functionArguments.charAt(i);
-            if (c == '(') { depth++; cur.append(c); continue; }
-            if (c == ')') { depth--; cur.append(c); continue; }
-            if (c == ',' && depth == 0) {
-                String key = cur.toString().trim();
-                if (!key.isEmpty()) map.putIfAbsent(key, new VariableImpl(VariableType.INPUT, idx));
-                idx++;
-                cur.setLength(0);
-                continue;
-            }
-            cur.append(c);
+        for (String key : items) {
+            String k = (key == null) ? "" : key.trim();
+            if (!k.isEmpty()) map.putIfAbsent(k, new VariableImpl(VariableType.INPUT, idx));
+            idx++;
         }
-
-        String last = cur.toString().trim();
-        if (!last.isEmpty()) map.putIfAbsent(last, new VariableImpl(VariableType.INPUT, idx));
-
         return map;
     }
 

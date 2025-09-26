@@ -64,7 +64,7 @@ public class JumpEqualFunctionInstruction extends AbstractInstruction {
     public Label execute(ExecutionContext context, Program program) {
         final Function function;
         function = program.getFunction(functionName);
-        final int[] nestedCycles = {0};
+        lastFunctionCycles = 0;
 
         List<ArgVal> args = helper.parseFunctionInputs(functionArguments, context);
         Long[] inputs = new Long[args.size()];
@@ -74,8 +74,7 @@ public class JumpEqualFunctionInstruction extends AbstractInstruction {
 
         FunctionExecutor runner = new FunctionExecutorImpl();
         long qResult = runner.run(function, program, inputs);
-        nestedCycles[0] += runner.getLastRunCycles();
-        lastFunctionCycles = nestedCycles[0] + runner.getLastRunCycles();
+        lastFunctionCycles += runner.getLastRunCycles();
         long v = context.getVariableValue(getVariable());
         return (v == qResult) ? targetLabel : FixedLabel.EMPTY;
     }

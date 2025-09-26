@@ -30,6 +30,7 @@ public class InputsController implements Initializable {
     @Override
     public void initialize(URL location, ResourceBundle resources) {
         clear();
+
     }
 
     public void show(DisplayDTO dto) {
@@ -120,8 +121,6 @@ public class InputsController implements Initializable {
 
         focusFirstField();
     }
-
-
 
     private int parseIndex(String labelText) {
 

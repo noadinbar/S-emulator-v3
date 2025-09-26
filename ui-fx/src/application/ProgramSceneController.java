@@ -214,7 +214,6 @@ public class ProgramSceneController {
             return;
         }
 
-
         String csv = inputsController.collectValuesCsvPadded();
         if (outputsController != null) {
             outputsController.setVariableLines(List.of(csv));
@@ -253,18 +252,15 @@ public class ProgramSceneController {
     private void doApply(int requestedDegree) {
         if (display == null || programTableController == null) return;
 
-        // לוודא שיש ExecutionAPI עדכני עבור החישוב של המקסימום
         if (execute == null) {
             execute = display.execution();
         }
         int max = (execute != null) ? execute.getMaxDegree() : 0;
         int target = Math.max(0, Math.min(requestedDegree, max));
 
-        // להציג את התוכנית הדרושה בדרגה המבוקשת
         ExpandDTO expanded = display.expand(target);
         programTableController.showExpanded(expanded);
 
-        // לעדכן אפשרויות Highlight ולרענן הטבלה העליונה
         if (headerController != null && programTableController.getTableView() != null) {
             headerController.populateHighlight(programTableController.getTableView().getItems());
             wireHighlight(programTableController);
@@ -272,7 +268,6 @@ public class ProgramSceneController {
             programTableController.getTableView().refresh();
         }
 
-        // ניקוי בחירה/תוצאות ריצה
         if (programTableController.getTableView() != null) {
             programTableController.getTableView().getSelectionModel().clearSelection();
         }
@@ -280,7 +275,6 @@ public class ProgramSceneController {
             outputsController.clear();
         }
 
-        // אפס מצב דיבוג אם היה פעיל
         debugStarted = false;
         debugApi = null;
         debugStopRequested = false;
@@ -289,17 +283,13 @@ public class ProgramSceneController {
             debugResumeTask = null;
         }
 
-        // לעדכן state פנימי וה-Header
         currentDegree = target;
         if (headerController != null) {
             headerController.setCurrentDegree(currentDegree);
         }
 
-        // לעדכן טבלת ה-Chain (תחתונה) לפי בחירה נוכחית
         updateChain(programTableController.getSelectedItem());
     }
-
-
 
     public void setDebugMode(boolean on) {
         this.debugMode = on;
@@ -542,14 +532,13 @@ public class ProgramSceneController {
     private void onProgramComboChanged(String sel) {
         if (programTableController == null || headerController == null) return;
 
-        // Program מלא או ברירת מחדל
         if (sel == null || !sel.startsWith("FUNCTION: ")) {
             this.execute = display.execution();
             headerController.setMaxDegree(execute.getMaxDegree());
             ExpandDTO expanded = display.expand(currentDegree);
             programTableController.showExpanded(expanded);
 
-            if (inputsController != null)  inputsController.show(display.getCommand2());
+            if (inputsController != null)  inputsController.clear();
             if (outputsController != null) outputsController.clear();
 
             if (programTableController.getTableView() != null) {
@@ -586,7 +575,7 @@ public class ProgramSceneController {
             }
         }
 
-        if (inputsController != null)  inputsController.show(display.getCommand2());
+        if (inputsController != null)  inputsController.clear();
         if (outputsController != null) outputsController.clear();
 
         if (programTableController.getTableView() != null) {

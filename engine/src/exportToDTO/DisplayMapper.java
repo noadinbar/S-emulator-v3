@@ -165,19 +165,22 @@ class DisplayMapper {
 
             case "JUMP_EQUAL_FUNCTION": {
                 JumpEqualFunctionInstruction f = (JumpEqualFunctionInstruction) ins;
-                String shownArgs = ArgsWithComposition(f.getFunctionArguments());
+                VarRefDTO v = toVarRef(f.getVariable());
                 return new InstructionBodyDTO(
                         InstrOpDTO.JUMP_EQUAL_FUNCTION,
-                        null, null, null,
-                        toVarRef(f.getVariable()),
+                        v,
+                        null,
+                        null,
+                        v,
                         null,
                         0L,
                         labelDTO(f.getTargetLabel()),
                         f.getFunctionName(),
                         f.getUserString(),
-                        shownArgs
+                        f.getFunctionArguments()
                 );
             }
+
 
             default:
                 throw new IllegalStateException("Unknown instruction name: " + ins.getName());

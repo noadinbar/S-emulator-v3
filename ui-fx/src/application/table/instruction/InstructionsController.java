@@ -29,23 +29,12 @@ import java.util.Set;
 
 public class InstructionsController {
 
-    @FXML
-    private TableView<InstructionDTO> tblInstructions;
-
-    @FXML
-    private TableColumn<InstructionDTO, Number> colLine;
-
-    @FXML
-    private TableColumn<InstructionDTO, String> colBS;
-
-    @FXML
-    private TableColumn<InstructionDTO, String> colLabel;
-
-    @FXML
-    private TableColumn<InstructionDTO, Number> colCycles;
-
-    @FXML
-    private TableColumn<InstructionDTO, String> colInstruction;
+    @FXML private TableView<InstructionDTO> tblInstructions;
+    @FXML private TableColumn<InstructionDTO, Number> colLine;
+    @FXML private TableColumn<InstructionDTO, String> colBS;
+    @FXML private TableColumn<InstructionDTO, String> colLabel;
+    @FXML private TableColumn<InstructionDTO, Number> colCycles;
+    @FXML private TableColumn<InstructionDTO, String> colInstruction;
 
     private final ObservableList<InstructionDTO> items = FXCollections.observableArrayList();
     private final Map<Integer, ExpandedInstructionDTO> expandedByNumber = new HashMap<>();
@@ -228,7 +217,6 @@ public class InstructionsController {
                     String.format("%s <- (%s,%s)", formatVar(b.getVariable()), b.getUserString(), b.getFunctionArgs());
             case JUMP_EQUAL_FUNCTION ->
                     String.format("IF %s = (%s,%s) GOTO %s", formatVar(b.getVariable()), b.getUserString(), b.getFunctionArgs(), formatLabel(b.getJumpTo()));
-            default -> "?";
         };
     }
 

@@ -47,6 +47,9 @@ public class InstructionsController {
         colLine.setCellValueFactory(d ->
                 new ReadOnlyIntegerWrapper(d.getValue().getNumber()));
 
+
+
+
         colBS.setCellValueFactory(d ->
                 new ReadOnlyStringWrapper(
                         d.getValue().getKind() == InstrKindDTO.BASIC ? "B" : "S"));

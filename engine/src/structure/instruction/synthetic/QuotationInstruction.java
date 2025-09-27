@@ -180,18 +180,12 @@ public class QuotationInstruction extends AbstractInstruction {
                     break;
                 }
 
-                case "JUMP_EQUAL_FUNCTION": { //TODO: check after implement that arguments maybe need to be changed?
+                case "JUMP_EQUAL_FUNCTION": {
                     JumpEqualFunctionInstruction jef = (JumpEqualFunctionInstruction) ins;
                     addVar(jef.getVariable(), xs, zs);
                     addLabel(jef.getTargetLabel(), labelSet);
                     break;
                 }
-
-                case "QUOTE":
-                    // ציטוט מקונן – כרגע לא מוסיפים עוד משתנים/תוויות מעבר ל-myLabel שכבר נאסףTODO:
-                    break;
-
-                default:
             }
         }
 
@@ -361,9 +355,9 @@ public class QuotationInstruction extends AbstractInstruction {
         }
 
         if(newLabelMap.containsKey(FixedLabel.EXIT) ) {
-            newInstructions.add(new AssignmentInstruction(convertToZ.get(Variable.RESULT), getVariable(), newLabelMap.get(FixedLabel.EXIT)));
+            newInstructions.add(new AssignmentInstruction(getVariable(), convertToZ.get(Variable.RESULT),newLabelMap.get(FixedLabel.EXIT)));
         }
-        else newInstructions.add(new AssignmentInstruction(convertToZ.get(Variable.RESULT), getVariable()));
+        else newInstructions.add(new AssignmentInstruction(getVariable(), convertToZ.get(Variable.RESULT)));
 
         return newInstructions;
     }

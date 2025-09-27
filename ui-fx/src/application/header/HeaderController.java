@@ -426,7 +426,10 @@ public class HeaderController {
             Alert alert = new Alert(Alert.AlertType.ERROR);
             alert.setTitle(title);
             alert.setHeaderText(null);
-            alert.setContentText(msg);
+            TextArea area = new TextArea(msg);
+            area.setEditable(false);
+            area.setWrapText(true);
+            alert.getDialogPane().setContent(area);
             alert.showAndWait();
         });
     }

@@ -11,6 +11,7 @@ import structure.label.FixedLabel;
 import structure.label.Label;
 import structure.variable.Variable;
 import structure.variable.VariableType;
+import utils.InstructionsHelpers;
 import utils.ParseResult;
 import utils.RunHistory;
 import exceptions.UndefinedLabelException;
@@ -29,6 +30,7 @@ public class ProgramImpl implements Program, Serializable {
     private final Map<String, Function> stringFunctionMap = new LinkedHashMap<>();
     private int currentRunDegree = 0;
     private static final Pattern LBL_PATTERN = Pattern.compile("^L(\\d+)$");
+    private final InstructionsHelpers helper = new InstructionsHelpers();
     private static final long serialVersionUID = 1L;
 
     public ProgramImpl(String name) {
@@ -74,16 +76,19 @@ public class ProgramImpl implements Program, Serializable {
         stringFunctionMap.put(name, function);
     }
 
-
     @Override
     public ParseResult validate() {
         Set<String> definedLabels = new HashSet<>();
         Set<String> definedFunctions = new HashSet<>();
+        List<String> errors = new ArrayList<>();
 
         for (Instruction instr : instructions) {
             Label label = instr.getMyLabel();
             if (label != null && label != FixedLabel.EMPTY) {
-                definedLabels.add(label.getLabelRepresentation());
+                String rep = label.getLabelRepresentation();
+                if (rep != null && !rep.isBlank()) {
+                    definedLabels.add(rep);
+                }
             }
         }
 
@@ -93,62 +98,101 @@ public class ProgramImpl implements Program, Serializable {
             }
         }
 
-        for (Instruction instr : instructions) {
-            Label targetLabel = null;
-            String functionName = null;
-            boolean hasFunction = false;
+        for (int i = 0; i < instructions.size(); i++) {
+            Instruction instr = instructions.get(i);
 
-            switch (instr.getName()) {
-                case "JUMP_NOT_ZERO":
-                    targetLabel = ((JumpNotZeroInstruction) instr).getTargetLabel();
-                    break;
-                case "JUMP_ZERO":
-                    targetLabel = ((JumpZeroInstruction) instr).getTargetLabel();
-                    break;
-                case "JUMP_EQUAL_CONSTANT":
-                    targetLabel = ((JumpEqualConstantInstruction) instr).getTargetLabel();
-                    break;
-                case "JUMP_EQUAL_VARIABLE":
-                    targetLabel = ((JumpEqualVariableInstruction) instr).getTargetLabel();
-                    break;
-                case "GOTO_LABEL":
-                    targetLabel = ((GoToInstruction) instr).getTarget();
-                    break;
-                case "JUMP_EQUAL_FUNCTION":
-                    targetLabel = ((JumpEqualFunctionInstruction) instr).getTargetLabel();
-                    functionName = ((JumpEqualFunctionInstruction) instr).getFunctionName();
-                    hasFunction = true;
-                    break;
-                case "QUOTE":
-                    functionName = ((QuotationInstruction) instr).getFunctionName();
-                    hasFunction = true;
-                    break;
-                default:
-                    break;
-            }
+            Label targetLabel = switch (instr.getName()) {
+                case "JUMP_NOT_ZERO"       -> ((JumpNotZeroInstruction) instr).getTargetLabel();
+                case "JUMP_ZERO"           -> ((JumpZeroInstruction) instr).getTargetLabel();
+                case "JUMP_EQUAL_CONSTANT" -> ((JumpEqualConstantInstruction) instr).getTargetLabel();
+                case "JUMP_EQUAL_VARIABLE" -> ((JumpEqualVariableInstruction) instr).getTargetLabel();
+                case "GOTO_LABEL"          -> ((GoToInstruction) instr).getTarget();
+                case "JUMP_EQUAL_FUNCTION" -> ((JumpEqualFunctionInstruction) instr).getTargetLabel();
+                default -> null;
+            };
 
-            if (!isExit(targetLabel)&&targetLabel != null &&
+            if (targetLabel != null &&
                     targetLabel != FixedLabel.EMPTY &&
+                    !"EXIT".equals(targetLabel.getLabelRepresentation()) &&
                     !definedLabels.contains(targetLabel.getLabelRepresentation())) {
-                throw new UndefinedLabelException(
-                        "Label '" + targetLabel.getLabelRepresentation() + "' is referenced but not defined."
-                );
+                errors.add("Undefined label '" + targetLabel.getLabelRepresentation() +
+                        "' referenced at " + where(instr, i + 1) + " (main).");
             }
 
-            if (hasFunction && functionName != null) {
-                String fnameToFind = functionName.trim();
-                if (!definedFunctions.contains(fnameToFind)) {
-                    throw new UndefinedFunctionException(
-                            "Function '" + functionName + "' is referenced but not defined."
-                    );
+            for (String fn : referencedFunctionsInOrder(instr)) {
+                if (!definedFunctions.contains(fn)) {
+                    errors.add("Undefined function '" + fn +
+                            "' referenced at " + where(instr, i + 1) + " (main).");
                 }
             }
-
-
-
         }
 
+        for (Function func : functions) {
+            List<Instruction> body = func.getInstructions();
+            for (int i = 0; i < body.size(); i++) {
+                Instruction instr = body.get(i);
+                for (String fn : referencedFunctionsInOrder(instr)) {
+                    if (!definedFunctions.contains(fn)) {
+                        errors.add("Undefined function '" + fn +
+                                "' referenced inside function '" + func.getName() +
+                                "' at " + where(instr, i + 1) + ".");
+                    }
+                }
+            }
+        }
+
+        if (!errors.isEmpty()) {
+            throw new UndefinedFunctionException("Validation failed:\n" + String.join("\n", errors));
+        }
         return ParseResult.success("Program validation passed successfully.");
+    }
+
+    private void collectFunctionsInArgsOrdered(String args, List<String> out) {
+        if (args == null || args.isBlank()) return;
+        List<String> items = helper.splitTopArguments(args);
+        for (String raw : items) {
+            if (raw == null) continue;
+            String t = raw.trim();
+            if (t.isEmpty()) continue;
+
+            if (t.charAt(0) == '(' && t.charAt(t.length() - 1) == ')') {
+                String[] fa = helper.splitFuncNameAndArgs(t);
+                String fname = (fa[0] == null) ? "" : fa[0].trim();
+                if (!fname.isEmpty()) out.add(fname);
+                collectFunctionsInArgsOrdered(fa[1], out);
+            }
+        }
+    }
+
+    private List<String> referencedFunctionsInOrder(Instruction instr) {
+        List<String> out = new ArrayList<>();
+        switch (instr.getName()) {
+            case "QUOTE": {
+                QuotationInstruction q = (QuotationInstruction) instr;
+                String direct = q.getFunctionName();
+                if (direct != null && !direct.trim().isEmpty()) out.add(direct.trim());
+                collectFunctionsInArgsOrdered(q.getFunctionArguments(), out);
+                break;
+            }
+            case "JUMP_EQUAL_FUNCTION": {
+                JumpEqualFunctionInstruction jef = (JumpEqualFunctionInstruction) instr;
+                String direct = jef.getFunctionName();
+                if (direct != null && !direct.trim().isEmpty()) out.add(direct.trim());
+                collectFunctionsInArgsOrdered(jef.getFunctionArguments(), out);
+                break;
+            }
+            default: break;
+        }
+        return out;
+    }
+
+    private String where(Instruction instr, int oneBasedIndex) {
+        Label lbl = instr.getMyLabel();
+        if (lbl != null && lbl != FixedLabel.EMPTY) {
+            String rep = lbl.getLabelRepresentation();
+            if (rep != null && !rep.isBlank()) return "label " + rep;
+        }
+        return "instruction #" + oneBasedIndex;
     }
 
     public void setCurrentRunDegree(int degree) { this.currentRunDegree = Math.max(0, degree); }

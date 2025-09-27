@@ -121,8 +121,6 @@ public class RunOptionsController {
         }
         else {
             boolean debugOn = chkDebug != null && chkDebug.isSelected();
-            boolean anyMode = (chkRun != null && chkRun.isSelected()) || debugOn;
-
             if (btnStop != null)     btnStop.setDisable(!debugOn);
             if (btnResume != null)   btnResume.setDisable(!debugOn);
             if (btnStepOver != null) btnStepOver.setDisable(!debugOn);
@@ -130,7 +128,4 @@ public class RunOptionsController {
             if (chkDebug != null)    chkDebug.setDisable(false);
         }
     }
-
-    public void setRunning(boolean running) { /* TODO */ }
-    public void setDebugMode(boolean debug) { /* TODO */ }
 }

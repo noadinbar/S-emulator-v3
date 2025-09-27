@@ -1,7 +1,7 @@
 package application;
 
 import api.DebugAPI;
-import display.FunctionDTO;
+import display.*;
 import execution.*;
 import execution.debug.DebugStateDTO;
 import execution.debug.DebugStepDTO;
@@ -23,10 +23,6 @@ import application.inputs.InputsController;
 import api.DisplayAPI;
 import api.ExecutionAPI;
 
-import display.DisplayDTO;
-import display.ExpandDTO;
-import display.InstructionDTO;
-
 import javafx.scene.Scene;
 import javafx.scene.control.TableRow;
 import javafx.scene.control.TextArea;
@@ -43,6 +39,8 @@ import types.VarOptionsDTO;
 import types.VarRefDTO;
 
 import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class ProgramSceneController {
     @FXML private HeaderController headerController;
@@ -73,6 +71,8 @@ public class ProgramSceneController {
 
     private String currentHighlight = null;
     private static final String HIGHLIGHT_CLASS = "hilite";
+    private static final Pattern X_VAR_PATTERN = Pattern.compile("\\bx(\\d+)\\b");
+    private static final Pattern Z_VAR_PATTERN = Pattern.compile("\\bz(\\d+)\\b");
 
     @FXML
     private void initialize() {
@@ -335,7 +335,6 @@ public class ProgramSceneController {
             debugToHistory();
             runOptionsController.setDebugBtnsDisabled(true);
         }
-
     }
 
     public void debugResume() {
@@ -403,25 +402,20 @@ public class ProgramSceneController {
         historyController.addEntry(lastDebugState, degree, inputs);
     }
 
-
     private void showDebugState(DebugStateDTO state) {
         if (state == null || outputsController == null) return;
         outputsController.setCycles(state.getCyclesSoFar());
+        Set<Integer> xs = new TreeSet<>();
+        Set<Integer> zs = new TreeSet<>();
 
-        Set<String> names = new LinkedHashSet<>();
-        names.add("y");
         if (programTableController != null && programTableController.getTableView() != null) {
-            Set<Integer> xs = new TreeSet<>();
-            Set<Integer> zs = new TreeSet<>();
-            for (display.InstructionDTO ins : programTableController.getTableView().getItems()) {
-                var body = (ins != null) ? ins.getBody() : null;
+            for (InstructionDTO ins : programTableController.getTableView().getItems()) {
+                InstructionBodyDTO body = (ins != null) ? ins.getBody() : null;
                 if (body == null) continue;
-                for (types.VarRefDTO r : new types.VarRefDTO[]{
-                      body.getVariable(),
-                      body.getDest(),
-                      body.getSource(),
-                      body.getCompare(),
-                      body.getCompareWith()
+
+                for (VarRefDTO r : new VarRefDTO[]{
+                        body.getVariable(), body.getDest(), body.getSource(),
+                        body.getCompare(), body.getCompareWith()
                 }) {
                     if (r == null) continue;
                     switch (r.getVariable()) {
@@ -430,27 +424,46 @@ public class ProgramSceneController {
                         case y -> {}
                     }
                 }
+                if (body.getOp() == InstrOpDTO.QUOTE || body.getOp() == InstrOpDTO.JUMP_EQUAL_FUNCTION) {
+                        String argsText = body.getFunctionArgs();
+                        parseVariablesFromArgs(argsText, xs, zs);
+                }
             }
-            xs.forEach(i -> names.add("x" + i));
-            zs.forEach(i -> names.add("z" + i));
         }
 
         Map<String, Long> values = new HashMap<>();
         for (VarValueDTO v : state.getVars()) {
-            String n = switch (v.getVar().getVariable()) {
-                case y -> "y";
-                case x -> "x" + v.getVar().getIndex();
-                case z -> "z" + v.getVar().getIndex();
-            };
-            values.put(n, v.getValue());
+            switch (v.getVar().getVariable()) {
+                case x -> {
+                    xs.add(v.getVar().getIndex());
+                    values.put("x" + v.getVar().getIndex(), v.getValue());
+                }
+                case z -> {
+                    zs.add(v.getVar().getIndex());
+                    values.put("z" + v.getVar().getIndex(), v.getValue());
+                }
+                case y -> values.put("y", v.getValue());
+            }
         }
 
-        List<String> lines = new ArrayList<>(names.size());
-        for (String n : names) {
-            long val = values.getOrDefault(n, 0L);
-            lines.add(n + " = " + val);
-        }
+       List<String> lines = new ArrayList<>(1 + xs.size() + zs.size());
+        lines.add("y = " + values.getOrDefault("y", 0L));
+        for (int i : xs) lines.add("x" + i + " = " + values.getOrDefault("x" + i, 0L));
+        for (int i : zs) lines.add("z" + i + " = " + values.getOrDefault("z" + i, 0L));
+
         outputsController.setVariableLines(lines);
+    }
+
+    private static void parseVariablesFromArgs(String text, Set<Integer> xs, Set<Integer> zs) {
+        if (text == null || text.isBlank()) return;
+        Matcher mx = X_VAR_PATTERN.matcher(text);
+        while (mx.find()) {
+            xs.add(Integer.parseInt(mx.group(1)));
+        }
+        Matcher mz = Z_VAR_PATTERN.matcher(text);
+        while (mz.find()) {
+            zs.add(Integer.parseInt(mz.group(1)));
+        }
     }
 
     private static Set<String> computeChangedVarNames(DebugStateDTO prev, DebugStateDTO curr) {
@@ -477,7 +490,6 @@ public class ProgramSceneController {
             };
             cm.put(name, v.getValue());
         }
-
         Set<String> keys = new HashSet<>(cm.keySet());
         keys.addAll(pm.keySet());
         for (String k : keys) {
@@ -501,25 +513,6 @@ public class ProgramSceneController {
         tv.getSelectionModel().clearAndSelect(pc);
         tv.getFocusModel().focus(pc);
         tv.scrollTo(pc);
-    }
-
-
-    public void setDisplay(DisplayAPI display) {
-        this.display = display;
-        this.execute = null;
-    }
-
-    public void showCommand2(DisplayDTO dto) {
-        if (programTableController != null) {
-            programTableController.show(dto);
-            updateChain(null);
-            if (headerController != null && dto != null) {
-                headerController.populateHighlight(dto.getInstructions());
-                wireHighlight(programTableController);
-                currentHighlight = headerController.getSelectedHighlight();
-                programTableController.getTableView().refresh();
-            }
-        }
     }
 
     public void showInputsForEditing() {
@@ -644,7 +637,6 @@ public class ProgramSceneController {
         return str.toString();
     }
 
-
     private void openTextPopup(String title, String text) {
         TextArea area = new TextArea(text);
         area.setEditable(false);
@@ -695,15 +687,15 @@ public class ProgramSceneController {
 
                 if (sel != null && !sel.isBlank()) {
                     var body    = ins.getBody();
-                    LabelDTO my = (LabelDTO) ins.getLabel();
-                    LabelDTO jt = (body != null) ? (LabelDTO) body.getJumpTo() : null;
+                    LabelDTO my = ins.getLabel();
+                    LabelDTO jt = (body != null) ? body.getJumpTo() : null;
 
                     if ("EXIT".equals(sel)) {
                         on = (jt != null && jt.isExit());
                     } else if (sel.startsWith("L")) {
                         boolean isMy = (my != null && !my.isExit() && sel.equals(my.getName()));
                         boolean j2L  = (jt != null && !jt.isExit() && sel.equals(jt.getName()));
-                        on = isMy || j2L; // גם שורת התווית וגם מי שקופץ אליה
+                        on = isMy || j2L;
                     } else if (body != null) {
                         for (VarRefDTO r : new VarRefDTO[]{
                                body.getVariable(),
@@ -721,7 +713,6 @@ public class ProgramSceneController {
                         }
                     }
                 }
-
                 getStyleClass().removeAll(HIGHLIGHT_CLASS);
                 if (on) getStyleClass().add(HIGHLIGHT_CLASS);
             }

@@ -49,8 +49,5 @@ public class LoadAPIImpl implements LoadAPI {
         catch (UndefinedFunctionException e){
             throw e;
         }
-
-
-
     }
 }

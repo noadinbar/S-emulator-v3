@@ -1,5 +1,5 @@
 package utils;
-import structure.program.SProgram;
+
 public class ParseResult {
     private final boolean success;
     private final String message;

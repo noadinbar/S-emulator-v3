@@ -8,13 +8,12 @@
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.VBox?>
 
-
 <VBox xmlns="http://javafx.com/javafx/24.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="application.table.history.HistoryController">
    <children>
       <HBox prefHeight="32.0" prefWidth="289.0" spacing="10.0">
          <children>
             <Button fx:id="btnRerun" mnemonicParsing="false" onAction="#onRerunAction" text="Re-run" />
-            <Button fx:id="btnShow" mnemonicParsing="false" onAction="#onShowAction" text="show" />
+            <Button fx:id="btnShow" mnemonicParsing="false" onAction="#onShowAction" text="Show" />
          </children>
          <padding>
             <Insets left="10.0" />

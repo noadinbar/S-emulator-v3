@@ -6,6 +6,7 @@ import javafx.beans.property.ReadOnlyStringWrapper;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
+import javafx.scene.control.TableCell;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 
@@ -43,12 +44,8 @@ public class InstructionsController {
     private void initialize() {
         tblInstructions.setItems(items);
 
-
         colLine.setCellValueFactory(d ->
                 new ReadOnlyIntegerWrapper(d.getValue().getNumber()));
-
-
-
 
         colBS.setCellValueFactory(d ->
                 new ReadOnlyStringWrapper(
@@ -59,6 +56,30 @@ public class InstructionsController {
 
         colCycles.setCellValueFactory(d ->
                 new ReadOnlyIntegerWrapper(d.getValue().getCycles()));
+
+        colCycles.setCellFactory(column -> new TableCell<InstructionDTO, Number>() {
+            @Override
+            protected void updateItem(Number value, boolean empty) {
+                super.updateItem(value, empty);
+                if (empty || value == null) {
+                    setText(null);
+                    return;
+                }
+                InstructionDTO row = getTableRow() != null ? getTableRow().getItem() : null;
+                if (row == null || row.getBody() == null) {
+                    setText(String.valueOf(value.intValue()));
+                    return;
+                }
+                InstrOpDTO op = row.getBody().getOp();
+                if (op == InstrOpDTO.QUOTE) {
+                    setText("5+");
+                } else if (op == InstrOpDTO.JUMP_EQUAL_FUNCTION) {
+                    setText("6+");
+                } else {
+                    setText(String.valueOf(value.intValue()));
+                }
+            }
+        });
 
         colInstruction.setCellValueFactory(d ->
                 new ReadOnlyStringWrapper(formatBody(d.getValue().getBody())));

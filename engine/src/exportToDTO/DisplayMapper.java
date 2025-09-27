@@ -151,7 +151,7 @@ class DisplayMapper {
             }
             case "QUOTE": {
                 QuotationInstruction q = (QuotationInstruction) ins;
-                String shownArgs = ArgsWithComposition(q.getFunctionArguments()); // תצוגה בלבד
+                String shownArgs = ArgsWithComposition(q.getFunctionArguments());
                 return new InstructionBodyDTO(
                         InstrOpDTO.QUOTE,
                         toVarRef(q.getVariable()),
@@ -162,10 +162,10 @@ class DisplayMapper {
                         shownArgs
                 );
             }
-
             case "JUMP_EQUAL_FUNCTION": {
                 JumpEqualFunctionInstruction f = (JumpEqualFunctionInstruction) ins;
                 VarRefDTO v = toVarRef(f.getVariable());
+                String shownArgs = ArgsWithComposition(f.getFunctionArguments());
                 return new InstructionBodyDTO(
                         InstrOpDTO.JUMP_EQUAL_FUNCTION,
                         v,
@@ -177,7 +177,7 @@ class DisplayMapper {
                         labelDTO(f.getTargetLabel()),
                         f.getFunctionName(),
                         f.getUserString(),
-                        f.getFunctionArguments()
+                        shownArgs
                 );
             }
 

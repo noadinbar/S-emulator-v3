@@ -15,6 +15,7 @@ import structure.instruction.basic.JumpNotZeroInstruction;
 import structure.instruction.basic.NeutralInstruction;
 import structure.label.FixedLabel;
 import structure.label.Label;
+import structure.label.LabelImpl;
 import structure.program.Program;
 import structure.variable.Variable;
 import structure.variable.VariableImpl;
@@ -213,7 +214,8 @@ public class QuotationInstruction extends AbstractInstruction {
             else isExit=true;
         }
 
-        if (isExit) {newLabelMap.put(FixedLabel.EXIT,prog.newLabel());}
+        Label exitLabel=new LabelImpl("EXIT");
+        if (isExit) {newLabelMap.put(exitLabel,prog.newLabel());}
 
         newInstructions.add(new NeutralInstruction(getVariable(),getMyLabel()));
 

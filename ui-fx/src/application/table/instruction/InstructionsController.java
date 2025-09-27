@@ -43,6 +43,7 @@ public class InstructionsController {
     private void initialize() {
         tblInstructions.setItems(items);
 
+
         colLine.setCellValueFactory(d ->
                 new ReadOnlyIntegerWrapper(d.getValue().getNumber()));
 

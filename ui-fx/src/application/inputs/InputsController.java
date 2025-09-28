@@ -30,12 +30,10 @@ public class InputsController implements Initializable {
     @Override
     public void initialize(URL location, ResourceBundle resources) {
         clear();
-
     }
 
     public void show(DisplayDTO dto) {
         clear();
-
         List<Integer> indices = new ArrayList<>();
         for (VarRefDTO o : dto.getInputsInUse()) {
             if (o.getVariable() == VarOptionsDTO.x) {
@@ -54,7 +52,6 @@ public class InputsController implements Initializable {
         if (lstInputs != null) lstInputs.getItems().clear();
     }
 
-
     private HBox createRow(int index) {
         Label lbl = new Label("x" + index + " =");
         TextField tf = new TextField("0");
@@ -69,7 +66,6 @@ public class InputsController implements Initializable {
         tf.setOnAction(e -> focusNextFromRow(row));
         return row;
     }
-
 
     public List<Long> collectValuesPadded() {
         Map<Integer, Long> byIndex = new HashMap<>();
@@ -101,8 +97,6 @@ public class InputsController implements Initializable {
         return vals.stream().map(String::valueOf).collect(Collectors.joining(","));
     }
 
-
-
     public void fillInputs(List<Long> values) {
         if (values == null || lstInputs == null) return;
 
@@ -118,19 +112,15 @@ public class InputsController implements Initializable {
             }
             textField.setText(text);
         }
-
         focusFirstField();
     }
 
     private int parseIndex(String labelText) {
-
         labelText = labelText.trim();
-
         labelText = labelText.substring(1).trim();
 
         int i = 0;
         while (i < labelText.length() && Character.isDigit(labelText.charAt(i))) i++;
-
         try {
             return Integer.parseInt(labelText.substring(0, i));
         } catch (NumberFormatException e) {
@@ -164,4 +154,14 @@ public class InputsController implements Initializable {
             focusTextFieldAt(i + 1);
         }
     }
+
+    public void setInputsEditable(boolean editable) {
+        if (lstInputs == null) return;
+        for (HBox row : lstInputs.getItems()) {
+            TextField textField = (TextField) row.getChildren().get(1);
+            textField.setEditable(editable);
+            textField.setFocusTraversable(editable);
+        }
+    }
+
 }

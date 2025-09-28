@@ -232,6 +232,7 @@ public class ProgramSceneController {
             outputsController.setVariableLines(List.of(csv));
         }
         handleRun();
+        if (inputsController != null) inputsController.setInputsEditable(false);
     }
 
     private void handleRun() {
@@ -328,6 +329,7 @@ public class ProgramSceneController {
         debugStarted = true;
         lastDebugState = state;
         showDebugState(state);
+        if (inputsController != null) inputsController.setInputsEditable(false);
         outputsController.highlightChanged(Set.of());
     }
 
@@ -475,6 +477,7 @@ public class ProgramSceneController {
             String sk = snapKey(currentHistoryKey, entryIndex);
             snapshots.merge(sk, RowSnapshot.ofDebug(outputsController.getVariableLines()), RowSnapshot::merge);
         }
+        if (inputsController != null) inputsController.setInputsEditable(false);
     }
 
     private void showDebugState(DebugStateDTO state) {

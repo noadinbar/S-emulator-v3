@@ -319,6 +319,7 @@ public class HeaderController {
                 To see the values of all the variables from past runs/debugs select a row in History and click Show.
                 
                 TIP: - You must press Start before executing. 
+                     - Inputs can be edited ONLY after clicking Start/Rerun.
                       
                 BONUSES: - You can choose a skin for the system as you like.
                 """);

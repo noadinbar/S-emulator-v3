@@ -51,7 +51,6 @@ public class RunOptionsController {
         );
     }
 
-
     public void startEnabled(boolean enabled) {
         if (btnStart != null) btnStart.setDisable(!enabled);
     }
@@ -69,6 +68,12 @@ public class RunOptionsController {
         }
     }
 
+    public void clearRunCheckBox()
+    {
+        chkDebug.setSelected(false);
+        chkDebug.setSelected(false);
+    }
+
     public void setDebugBtnsDisabled(boolean disabled) {
         if (btnStepOver != null)     btnStepOver.setDisable(disabled);
         if (btnResume != null)       btnResume.setDisable(disabled);
@@ -83,11 +88,8 @@ public class RunOptionsController {
     }
 
     @FXML private void onRunAction() { main.runExecute(); }
-
     @FXML private void onDebugAction() { main.runExecute();  }
-
     @FXML private void onStopAction()  { main.debugStop(); }
-
     @FXML private void onResumeAction() {
         chkDebug.setSelected(true);
         main.debugResume();

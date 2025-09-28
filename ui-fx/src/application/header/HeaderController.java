@@ -303,16 +303,24 @@ public class HeaderController {
     private void onHelp() {
         Alert alert = new Alert(Alert.AlertType.INFORMATION);
         alert.setTitle("Help");
-        alert.setHeaderText("How to use this screen");
+        alert.setHeaderText("How to use");
 
         TextArea area = new TextArea("""
-                Open the app and click Load File to choose an .xml program.
-                (Optional) Pick a Theme in the header.
-                Press Start to show the Inputs panel, edit the values, then press Run to execute.
-                The program view (left) shows the Instructions table; the right side shows Variables/Inputs; results appear in Outputs.
-                Use Expand/Collapse to change the current Degree.
-                Every run is recorded in History (bottom-right). To repeat a past run, select a row in History and click RERUN—inputs and degree are restored automatically.
-                Tip: you must press Start before Run the first time after loading a file.
+                To load a file-> click Load File, navigate through your file system and choose the file you want to load.
+                **YOU CAN ONLY CHOOSE .XML FILES**
+                
+                Press Start to show the Inputs panel, edit the values, then choose between Run/Debug mode, and then press Execute to run with the chosen mode.
+                The program view (left) shows the Instructions table, when you click on a row, you can see its ancestry in the bottom table.
+                You can choose between running the program or each function alone at the combobox on the left.
+                The right side shows Variables/Inputs; results appear in Outputs.
+                Use Expand/Collapse to change the current Degree or you can directly write the wanted degree and press ENTER. 
+                Every run/debug is recorded in History (bottom-right).
+                To repeat a past run, select a row in History and click Rerun—inputs and degree are restored automatically.
+                To see the values of all the variables from past runs/debugs select a row in History and click Show.
+                
+                TIP: - You must press Start before executing. 
+                      
+                BONUSES: - You can choose a skin for the system as you like.
                 """);
         area.setEditable(false);
         area.setWrapText(true);

@@ -57,6 +57,7 @@ public class ProgramSceneController {
     @FXML private VBox contentRoot;
 
     private DisplayAPI display;
+    private DisplayAPI rootDisplay;
     private Map<String, DisplayAPI> functionDisplays = Collections.emptyMap();
     private ExecutionAPI execute;
     private int currentDegree = 0;
@@ -152,6 +153,7 @@ public class ProgramSceneController {
 
     private void onProgramLoaded(DisplayAPI display) {
         this.display = display;
+        this.rootDisplay = display;
         this.functionDisplays = display.functionDisplaysByUserString();
         this.execute = display.execution();
         debugApi = null;
@@ -598,8 +600,10 @@ public class ProgramSceneController {
             debugStop();
         }
         String key = (sel != null) ? sel : headerController.getSelectedProgramFunction();
+        runOptionsController.clearRunCheckBox();
 
         if (key == null || !key.startsWith("FUNCTION: ")) {
+            this.display = rootDisplay;
             this.execute = display.execution();
             headerController.setMaxDegree(execute.getMaxDegree());
             ExpandDTO expanded = display.expand(currentDegree);
@@ -620,7 +624,6 @@ public class ProgramSceneController {
 
         this.display = fnDisplay;
         this.execute = display.execution();
-
         currentDegree = 0;
         headerController.setCurrentDegree(currentDegree);
         headerController.setMaxDegree(execute.getMaxDegree());
@@ -818,7 +821,7 @@ public class ProgramSceneController {
         return key + "|" + runNo;
     }
 
-    //bonus
+    // bonus
     public void applyTheme(String themeClass) {
         ObservableList<String> classes = rootScroll.getStyleClass();
         classes.removeIf(s -> s.startsWith("theme-"));

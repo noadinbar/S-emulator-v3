@@ -130,11 +130,7 @@ public class XMLToStructure {
             case JUMP_EQUAL_VARIABLE:
                 Variable toCompare = extractVariable(sInstruction, "variableName");
                 String jevText = getArgumentValue(sInstruction, "JEVariableLabel");
-                Label jevLabel = null;
-                if (jevText != null && !jevText.isBlank()) {
-                    String normalizedLabel = jevText.trim(); // TODO: see if we can change it like the other jumps
-                    jevLabel = "EXIT".equalsIgnoreCase(normalizedLabel) ? FixedLabel.EXIT : new LabelImpl(normalizedLabel);
-                }
+                Label jevLabel = jevText!=null ? new LabelImpl(jevText) : null;
 
                 return (label != null)
                         ? new JumpEqualVariableInstruction(variable, jevLabel, toCompare, label)

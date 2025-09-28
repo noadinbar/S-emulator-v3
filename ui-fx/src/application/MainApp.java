@@ -8,7 +8,6 @@ import javafx.scene.Scene;
 import javafx.stage.Stage;
 import javafx.stage.StageStyle;
 
-// ממשקי המנוע וה-DTO לבדיקה ידנית
 
 
 public class MainApp extends Application {

@@ -58,7 +58,7 @@
              <TextField fx:id="txtMaxDegree" editable="false" focusTraversable="false" layoutX="460.0" layoutY="5.0" prefHeight="25.0" prefWidth="32.0" />
             <Button fx:id="btnExpand" layoutX="501.0" layoutY="5.0" mnemonicParsing="false" onAction="#onExpandClicked" text="Expand" />
             <ComboBox fx:id="cmbHighlight" layoutX="562.0" layoutY="5.0" onAction="#onHighlightChanged" prefHeight="25.0" prefWidth="109.0" promptText="Highlight selection" />
-            <ComboBox fx:id="cmbTheme" layoutX="683.0" layoutY="5.0" prefHeight="25.0" prefWidth="87.0" promptText="Theme" />
+            <ComboBox fx:id="cmbSkin" layoutX="683.0" layoutY="5.0" prefHeight="25.0" prefWidth="87.0" promptText="Skin" />
          </children></AnchorPane>
   </items>
 </SplitPane>

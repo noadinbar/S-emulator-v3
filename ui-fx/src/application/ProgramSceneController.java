@@ -87,7 +87,7 @@ public class ProgramSceneController {
             headerController.setOnProgramSelected(this::onProgramComboChanged);
             headerController.setOnExpand(()  -> changeDegreeAndShow(+1));
             headerController.setOnCollapse(() -> changeDegreeAndShow(-1));
-            headerController.setOnThemeChanged(this::applyTheme);
+            headerController.setOnSkinChanged(this::applySkin);
             headerController.setOnApplyDegree(() -> doApply(headerController.getCurrentDegree()));
 
             headerController.setOnHighlightChanged(sel -> {
@@ -825,9 +825,9 @@ public class ProgramSceneController {
     }
 
     // bonus
-    public void applyTheme(String themeClass) {
+    public void applySkin(String skinClass) {
         ObservableList<String> classes = rootScroll.getStyleClass();
-        classes.removeIf(s -> s.startsWith("theme-"));
+        classes.removeIf(s -> s.startsWith("skin-"));
 
         // clear selections to avoid color conflicts
         if (programTableController != null && programTableController.getTableView() != null) {
@@ -840,8 +840,8 @@ public class ProgramSceneController {
             historyController.getTableView().getSelectionModel().clearSelection();
         }
 
-        if (themeClass != null && !themeClass.isBlank() && !classes.contains(themeClass)) {
-            classes.add(themeClass);
+        if (skinClass != null && !skinClass.isBlank() && !classes.contains(skinClass)) {
+            classes.add(skinClass);
         }
         rootScroll.applyCss();
     }

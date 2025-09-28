@@ -1,41 +1,41 @@
 /* default */
-.theme-default .scroll-pane,
-.theme-default .scroll-pane > .viewport { -fx-background-color: white; }
-.theme-default .label { -fx-font-size: 11px; }
+.skin-default .scroll-pane,
+.skin-default .scroll-pane > .viewport { -fx-background-color: white; }
+.skin-default .label { -fx-font-size: 11px; }
 
-.theme-default .content-root {
+.skin-default .content-root {
     -fx-background-image: null;
     -fx-background-color: #ffffff;
     -fx-background-radius: 0;
     -fx-padding: 10;
 }
 
-.theme-default .content-root AnchorPane,
-.theme-default .content-root VBox,
-.theme-default .content-root HBox,
-.theme-default .content-root StackPane,
-.theme-default .content-root GridPane,
-.theme-default .content-root .split-pane,
-.theme-default .content-root .split-pane > .split-pane-divider,
-.theme-default .content-root .scroll-pane,
-.theme-default .content-root .scroll-pane > .viewport { -fx-background-color: transparent; }
+.skin-default .content-root AnchorPane,
+.skin-default .content-root VBox,
+.skin-default .content-root HBox,
+.skin-default .content-root StackPane,
+.skin-default .content-root GridPane,
+.skin-default .content-root .split-pane,
+.skin-default .content-root .split-pane > .split-pane-divider,
+.skin-default .content-root .scroll-pane,
+.skin-default .content-root .scroll-pane > .viewport { -fx-background-color: transparent; }
 
-.theme-default .content-root .table-view {
+.skin-default .content-root .table-view {
     -fx-background-color: transparent;
     -fx-control-inner-background: white;
     -fx-control-inner-background-alt: derive(white, -2%);
     -fx-background-insets: 0;
     -fx-padding: 0;
 }
-.theme-default .content-root .table-row-cell,
-.theme-default .content-root .column-header-background,
-.theme-default .content-root .filler { -fx-background-color: transparent; }
+.skin-default .content-root .table-row-cell,
+.skin-default .content-root .column-header-background,
+.skin-default .content-root .filler { -fx-background-color: transparent; }
 
-/* pink theme */
-.theme-rose .scroll-pane,
-.theme-rose .scroll-pane > .viewport { -fx-background-color: #fdd8d8; }
+/* pink skin */
+.skin-rose .scroll-pane,
+.skin-rose .scroll-pane > .viewport { -fx-background-color: #fdd8d8; }
 
-.theme-rose .content-root {
+.skin-rose .content-root {
     -fx-background-image: url("resources/back.jpg");
     -fx-background-size: cover;
     -fx-background-position: center;
@@ -44,31 +44,31 @@
     -fx-padding: 10;
 }
 
-.theme-rose .content-root AnchorPane,
-.theme-rose .content-root VBox,
-.theme-rose .content-root HBox,
-.theme-rose .content-root StackPane,
-.theme-rose .content-root GridPane,
-.theme-rose .content-root .split-pane,
-.theme-rose .content-root .split-pane > .split-pane-divider,
-.theme-rose .content-root .scroll-pane,
-.theme-rose .content-root .scroll-pane > .viewport { -fx-background-color: transparent; }
+.skin-rose .content-root AnchorPane,
+.skin-rose .content-root VBox,
+.skin-rose .content-root HBox,
+.skin-rose .content-root StackPane,
+.skin-rose .content-root GridPane,
+.skin-rose .content-root .split-pane,
+.skin-rose .content-root .split-pane > .split-pane-divider,
+.skin-rose .content-root .scroll-pane,
+.skin-rose .content-root .scroll-pane > .viewport { -fx-background-color: transparent; }
 
-.theme-rose .content-root .table-view {
+.skin-rose .content-root .table-view {
     -fx-background-color: transparent;
     -fx-control-inner-background: transparent;
     -fx-background-insets: 0;
     -fx-padding: 0;
 }
-.theme-rose .content-root .table-row-cell,
-.theme-rose .content-root .column-header-background,
-.theme-rose .content-root .filler { -fx-background-color: transparent; }
+.skin-rose .content-root .table-row-cell,
+.skin-rose .content-root .column-header-background,
+.skin-rose .content-root .filler { -fx-background-color: transparent; }
 
-/* sky theme */
-.theme-sky .scroll-pane,
-.theme-sky .scroll-pane > .viewport { -fx-background-color: #e6f3ff; }
+/* sky skin */
+.skin-sky .scroll-pane,
+.skin-sky .scroll-pane > .viewport { -fx-background-color: #e6f3ff; }
 
-.theme-sky .content-root {
+.skin-sky .content-root {
     -fx-background-image: url("resources/blue.jpg");
     -fx-background-size: cover;
     -fx-background-position: center;
@@ -77,63 +77,63 @@
     -fx-padding: 10;
 }
 
-.theme-sky .content-root AnchorPane,
-.theme-sky .content-root VBox,
-.theme-sky .content-root HBox,
-.theme-sky .content-root StackPane,
-.theme-sky .content-root GridPane,
-.theme-sky .content-root .split-pane,
-.theme-sky .content-root .split-pane > .split-pane-divider,
-.theme-sky .content-root .scroll-pane,
-.theme-sky .content-root .scroll-pane > .viewport { -fx-background-color: transparent; }
+.skin-sky .content-root AnchorPane,
+.skin-sky .content-root VBox,
+.skin-sky .content-root HBox,
+.skin-sky .content-root StackPane,
+.skin-sky .content-root GridPane,
+.skin-sky .content-root .split-pane,
+.skin-sky .content-root .split-pane > .split-pane-divider,
+.skin-sky .content-root .scroll-pane,
+.skin-sky .content-root .scroll-pane > .viewport { -fx-background-color: transparent; }
 
-.theme-sky .content-root .table-view {
+.skin-sky .content-root .table-view {
     -fx-background-color: transparent;
     -fx-control-inner-background: transparent;
     -fx-background-insets: 0;
     -fx-padding: 0;
 }
-.theme-sky .content-root .table-row-cell,
-.theme-sky .content-root .column-header-background,
-.theme-sky .content-root .filler { -fx-background-color: transparent; }
+.skin-sky .content-root .table-row-cell,
+.skin-sky .content-root .column-header-background,
+.skin-sky .content-root .filler { -fx-background-color: transparent; }
 
-/* all theme variables and highlight */
-.theme-default {
+/* all skin variables and highlight */
+.skin-default {
     -fx-table-text: #222222;
     -fx-table-sel-bg: rgb(106, 86, 86);
     -fx-table-sel-border: #6a5656;
 }
-.theme-rose {
+.skin-rose {
     -fx-table-text: #222222;
     -fx-table-sel-bg: rgb(106, 86, 86);
     -fx-table-sel-border: #6a5656;
 }
-.theme-sky {
+.skin-sky {
     -fx-table-text: #222222;
     -fx-table-sel-bg: #3b82f6;
     -fx-table-sel-border: #2563eb;
 }
 
-/*all tables styles for all themes*/
+/*all tables styles for all skins*/
 
-.theme-default .table-view .table-cell,
-.theme-rose    .table-view .table-cell,
-.theme-sky     .table-view .table-cell { -fx-text-fill: -fx-table-text; }
+.skin-default .table-view .table-cell,
+.skin-rose    .table-view .table-cell,
+.skin-sky     .table-view .table-cell { -fx-text-fill: -fx-table-text; }
 
-.theme-default .table-row-cell .text,
-.theme-rose    .table-row-cell .text,
-.theme-sky     .table-row-cell .text { -fx-fill: -fx-table-text; }
+.skin-default .table-row-cell .text,
+.skin-rose    .table-row-cell .text,
+.skin-sky     .table-row-cell .text { -fx-fill: -fx-table-text; }
 
-.theme-default .placeholder .label,
-.theme-rose    .placeholder .label,
-.theme-sky     .placeholder .label { -fx-text-fill: #555555; }
+.skin-default .placeholder .label,
+.skin-rose    .placeholder .label,
+.skin-sky     .placeholder .label { -fx-text-fill: #555555; }
 
-.theme-default .table-row-cell:filled:selected,
-.theme-default .table-row-cell:filled:focused:selected,
-.theme-rose    .table-row-cell:filled:selected,
-.theme-rose    .table-row-cell:filled:focused:selected,
-.theme-sky     .table-row-cell:filled:selected,
-.theme-sky     .table-row-cell:filled:focused:selected {
+.skin-default .table-row-cell:filled:selected,
+.skin-default .table-row-cell:filled:focused:selected,
+.skin-rose    .table-row-cell:filled:selected,
+.skin-rose    .table-row-cell:filled:focused:selected,
+.skin-sky     .table-row-cell:filled:selected,
+.skin-sky     .table-row-cell:filled:focused:selected {
     -fx-background-color: -fx-table-sel-bg;
     -fx-background-insets: 0;
     -fx-background-radius: 6;
@@ -142,75 +142,75 @@
     -fx-border-radius: 6;
 }
 
-.theme-default .table-row-cell:filled:selected .table-cell,
-.theme-default .table-row-cell:filled:focused:selected .table-cell,
-.theme-rose    .table-row-cell:filled:selected .table-cell,
-.theme-rose    .table-row-cell:filled:focused:selected .table-cell,
-.theme-sky     .table-row-cell:filled:selected .table-cell,
-.theme-sky     .table-row-cell:filled:focused:selected .table-cell {
+.skin-default .table-row-cell:filled:selected .table-cell,
+.skin-default .table-row-cell:filled:focused:selected .table-cell,
+.skin-rose    .table-row-cell:filled:selected .table-cell,
+.skin-rose    .table-row-cell:filled:focused:selected .table-cell,
+.skin-sky     .table-row-cell:filled:selected .table-cell,
+.skin-sky     .table-row-cell:filled:focused:selected .table-cell {
     -fx-background-color: transparent;
     -fx-text-fill: white;
 }
 
-.theme-default .table-row-cell:filled:selected .text,
-.theme-default .table-row-cell:filled:focused:selected .text,
-.theme-rose    .table-row-cell:filled:selected .text,
-.theme-rose    .table-row-cell:filled:focused:selected .text,
-.theme-sky     .table-row-cell:filled:selected .text,
-.theme-sky     .table-row-cell:filled:focused:selected .text {
+.skin-default .table-row-cell:filled:selected .text,
+.skin-default .table-row-cell:filled:focused:selected .text,
+.skin-rose    .table-row-cell:filled:selected .text,
+.skin-rose    .table-row-cell:filled:focused:selected .text,
+.skin-sky     .table-row-cell:filled:selected .text,
+.skin-sky     .table-row-cell:filled:focused:selected .text {
     -fx-fill: white;
 }
 /* ROSE */
-.theme-rose .combo-box {
+.skin-rose .combo-box {
     -fx-background-color: #ef4d7e;
     -fx-border-color: #c44b73;
     -fx-text-fill: white;
 }
-.theme-rose .combo-box .label { -fx-text-fill: white; }
-.theme-rose .combo-box .arrow-button { -fx-background-color: transparent; -fx-border-color: transparent; }
-.theme-rose .combo-box .arrow { -fx-background-color: white; }
-.theme-rose .combo-box .list-cell { -fx-text-fill: white; }
-.theme-rose .combo-box-popup .list-view { -fx-background-color: #ef4d7e; }
-.theme-rose .combo-box-popup .list-view .list-cell { -fx-background-color: transparent; -fx-text-fill: white; }
-.theme-rose .combo-box-popup .list-view .list-cell:filled:selected,
-.theme-rose .combo-box-popup .list-view .list-cell:filled:focused:selected { -fx-background-color: #c44b73; -fx-text-fill: white; }
+.skin-rose .combo-box .label { -fx-text-fill: white; }
+.skin-rose .combo-box .arrow-button { -fx-background-color: transparent; -fx-border-color: transparent; }
+.skin-rose .combo-box .arrow { -fx-background-color: white; }
+.skin-rose .combo-box .list-cell { -fx-text-fill: white; }
+.skin-rose .combo-box-popup .list-view { -fx-background-color: #ef4d7e; }
+.skin-rose .combo-box-popup .list-view .list-cell { -fx-background-color: transparent; -fx-text-fill: white; }
+.skin-rose .combo-box-popup .list-view .list-cell:filled:selected,
+.skin-rose .combo-box-popup .list-view .list-cell:filled:focused:selected { -fx-background-color: #c44b73; -fx-text-fill: white; }
 
-.theme-rose .table-view .column-header-background,
-.theme-rose .table-view .column-header,
-.theme-rose .table-view .filler { -fx-background-color: #ef4d7e; -fx-background-insets: 0; }
-.theme-rose .table-view .column-header .label { -fx-text-fill: white; }
-.theme-rose .button { -fx-background-color: #ef4d7e; -fx-text-fill: white; -fx-border-color: #c44b73; }
-.theme-rose .label { -fx-font-family: "Segoe UI Semibold", "Segoe UI", "Arial"; -fx-font-size: 14px; }
+.skin-rose .table-view .column-header-background,
+.skin-rose .table-view .column-header,
+.skin-rose .table-view .filler { -fx-background-color: #ef4d7e; -fx-background-insets: 0; }
+.skin-rose .table-view .column-header .label { -fx-text-fill: white; }
+.skin-rose .button { -fx-background-color: #ef4d7e; -fx-text-fill: white; -fx-border-color: #c44b73; }
+.skin-rose .label { -fx-font-family: "Segoe UI Semibold", "Segoe UI", "Arial"; -fx-font-size: 14px; }
 
 /* SKY */
-.theme-sky .combo-box {
+.skin-sky .combo-box {
     -fx-background-color: #60a5fa;
     -fx-border-color: #3b82f6;
     -fx-text-fill: white;
 }
-.theme-sky .combo-box .label,
-.theme-sky .combo-box .list-cell { -fx-text-fill: white; -fx-font-size: 12px; }
-.theme-sky .combo-box .arrow-button { -fx-background-color: transparent; -fx-border-color: transparent; }
-.theme-sky .combo-box .arrow { -fx-background-color: white; }
+.skin-sky .combo-box .label,
+.skin-sky .combo-box .list-cell { -fx-text-fill: white; -fx-font-size: 12px; }
+.skin-sky .combo-box .arrow-button { -fx-background-color: transparent; -fx-border-color: transparent; }
+.skin-sky .combo-box .arrow { -fx-background-color: white; }
 
-.theme-sky .combo-box-popup .list-view { -fx-background-color: #60a5fa; }
-.theme-sky .combo-box-popup .list-view .list-cell {
+.skin-sky .combo-box-popup .list-view { -fx-background-color: #60a5fa; }
+.skin-sky .combo-box-popup .list-view .list-cell {
     -fx-background-color: transparent;
     -fx-text-fill: white;
     -fx-font-size: 12px;
 }
-.theme-sky .combo-box-popup .list-view .list-cell:filled:selected,
-.theme-sky .combo-box-popup .list-view .list-cell:filled:focused:selected { -fx-background-color: #3b82f6; -fx-text-fill: white; }
+.skin-sky .combo-box-popup .list-view .list-cell:filled:selected,
+.skin-sky .combo-box-popup .list-view .list-cell:filled:focused:selected { -fx-background-color: #3b82f6; -fx-text-fill: white; }
 
-.theme-sky .table-view .column-header-background,
-.theme-sky .table-view .column-header,
-.theme-sky .table-view .filler { -fx-background-color: #60a5fa; -fx-background-insets: 0; }
-.theme-sky .table-view .column-header .label { -fx-text-fill: white; -fx-font-size: 12px; }
-.theme-sky .table-view .column-header .arrow,
-.theme-sky .table-view .column-header .sort-order-dot { -fx-background-color: white; }
+.skin-sky .table-view .column-header-background,
+.skin-sky .table-view .column-header,
+.skin-sky .table-view .filler { -fx-background-color: #60a5fa; -fx-background-insets: 0; }
+.skin-sky .table-view .column-header .label { -fx-text-fill: white; -fx-font-size: 12px; }
+.skin-sky .table-view .column-header .arrow,
+.skin-sky .table-view .column-header .sort-order-dot { -fx-background-color: white; }
 
-.theme-sky .button { -fx-background-color: #60a5fa; -fx-text-fill: white; -fx-border-color: #3b82f6; }
-.theme-sky .label { -fx-font-family: "Tahoma", "Tahoma", "Tahoma"; -fx-font-size: 12px; }
+.skin-sky .button { -fx-background-color: #60a5fa; -fx-text-fill: white; -fx-border-color: #3b82f6; }
+.skin-sky .label { -fx-font-family: "Tahoma", "Tahoma", "Tahoma"; -fx-font-size: 12px; }
 
 
 
@@ -230,36 +230,36 @@
 }
 
 
-/* === THEME: ROSE === */
-.theme-rose .check-box {
+/* === SKIN: ROSE === */
+.skin-rose .check-box {
     -fx-mark-color: white;
     -fx-mark-highlight-color: rgba(255,255,255,0.9);
 }
-.theme-rose .check-box > .box {
+.skin-rose .check-box > .box {
 
     -fx-background-color: #F48FB1, #F8BBD0, #FCE4EC; /* outer, inner, body */
     -fx-background-insets: 0, 1, 2;
     -fx-background-radius: 3, 2, 1;
 }
-.theme-rose .check-box:selected > .box {
+.skin-rose .check-box:selected > .box {
 
     -fx-background-color: #EC407A, #F48FB1, #F06292; /* outer, inner, body */
     -fx-background-insets: 0, 1, 2;
     -fx-background-radius: 3, 2, 1;
 }
 
-/* === THEME: SKY === */
-.theme-sky .check-box {
+/* === SKIN: SKY === */
+.skin-sky .check-box {
     -fx-mark-color: white;
     -fx-mark-highlight-color: rgba(255,255,255,0.9);
 }
-.theme-sky .check-box > .box {
+.skin-sky .check-box > .box {
 
     -fx-background-color: #90CAF9, #BBDEFB, #E3F2FD; /* outer, inner, body */
     -fx-background-insets: 0, 1, 2;
     -fx-background-radius: 3, 2, 1;
 }
-.theme-sky .check-box:selected > .box {
+.skin-sky .check-box:selected > .box {
 
     -fx-background-color: #1E88E5, #64B5F6, #42A5F5; /* outer, inner, body */
     -fx-background-insets: 0, 1, 2;
@@ -268,21 +268,21 @@
 
 /* ====== HIGHLIGHT (מוחלף לספציפיות גבוהה) ====== */
 /* הדגשה רגילה */
-.theme-default .content-root .table-row-cell.hilite { -fx-background-color: #c5abab !important; }
-.theme-rose    .content-root .table-row-cell.hilite { -fx-background-color: #ffffff !important; }
-.theme-sky     .content-root .table-row-cell.hilite { -fx-background-color: #ffffff !important; }
+.skin-default .content-root .table-row-cell.hilite { -fx-background-color: #c5abab !important; }
+.skin-rose    .content-root .table-row-cell.hilite { -fx-background-color: #ffffff !important; }
+.skin-sky     .content-root .table-row-cell.hilite { -fx-background-color: #ffffff !important; }
 
 /* תאים בתוך שורה מודגשת יהיו שקופים כדי שהרקע של השורה ייראה */
-.theme-default .content-root .table-row-cell.hilite .table-cell,
-.theme-rose    .content-root .table-row-cell.hilite .table-cell,
-.theme-sky     .content-root .table-row-cell.hilite .table-cell { -fx-background-color: transparent !important; }
+.skin-default .content-root .table-row-cell.hilite .table-cell,
+.skin-rose    .content-root .table-row-cell.hilite .table-cell,
+.skin-sky     .content-root .table-row-cell.hilite .table-cell { -fx-background-color: transparent !important; }
 
 /* טקסט ב-Bold בכל שורה עם hilite (בלי לשנות צבעים) */
-.theme-default .content-root .table-row-cell.hilite .table-cell,
-.theme-default .content-root .table-row-cell.hilite .text,
-.theme-rose    .content-root .table-row-cell.hilite .table-cell,
-.theme-rose    .content-root .table-row-cell.hilite .text,
-.theme-sky     .content-root .table-row-cell.hilite .table-cell,
-.theme-sky     .content-root .table-row-cell.hilite .text {
+.skin-default .content-root .table-row-cell.hilite .table-cell,
+.skin-default .content-root .table-row-cell.hilite .text,
+.skin-rose    .content-root .table-row-cell.hilite .table-cell,
+.skin-rose    .content-root .table-row-cell.hilite .text,
+.skin-sky     .content-root .table-row-cell.hilite .table-cell,
+.skin-sky     .content-root .table-row-cell.hilite .text {
     -fx-font-weight: bold !important;
 }

@@ -3,12 +3,10 @@ package application.header;
 import api.DisplayAPI;
 import api.LoadAPI;
 import display.DisplayDTO;
-import display.FunctionDTO;
 import display.InstructionBodyDTO;
 import display.InstructionDTO;
 import exportToDTO.LoadAPIImpl;
 import javafx.application.Platform;
-import javafx.beans.binding.Bindings;
 import javafx.beans.property.*;
 import javafx.concurrent.Task;
 import javafx.fxml.FXML;
@@ -38,7 +36,7 @@ public class HeaderController {
     @FXML private TextField txtMaxDegree;
     @FXML private Button btnExpand;
     @FXML private ComboBox<String> cmbHighlight;
-    @FXML private ComboBox<String> cmbTheme;
+    @FXML private ComboBox<String> cmbSkin;
     @FXML private Button helpButton;
 
     private Path lastValidXmlPath;
@@ -53,7 +51,7 @@ public class HeaderController {
     private final ObjectProperty<Runnable> onApplyDegree = new SimpleObjectProperty<>();
     private TextFormatter<Integer> degreeFormatter;
 
-    private Consumer<String> onThemeChanged;
+    private Consumer<String> onSkinChanged;
     private Consumer<String> onHighlightChangedCb;
     private Consumer<String> onProgramSelectedCb;
 
@@ -100,16 +98,16 @@ public class HeaderController {
 
         progressBar.setVisible(false);
 
-        // Theme combobox
-        if (cmbTheme != null) {
-            cmbTheme.getItems().setAll("Default", "Rose", "Sky");
-            cmbTheme.getSelectionModel().select("Default");
-            cmbTheme.getSelectionModel().selectedItemProperty().addListener((obs, o, v) -> {
-                if (onThemeChanged == null) return;
-                String theme = "Rose".equals(v) ? "theme-rose"
-                        : "Sky".equals(v)     ? "theme-sky"
-                        : "theme-default";
-                onThemeChanged.accept(theme);
+        // skin combobox
+        if (cmbSkin != null) {
+            cmbSkin.getItems().setAll("Default", "Rose", "Sky");
+            cmbSkin.getSelectionModel().select("Default");
+            cmbSkin.getSelectionModel().selectedItemProperty().addListener((obs, o, v) -> {
+                if (onSkinChanged == null) return;
+                String skin = "Rose".equals(v) ? "skin-rose"
+                        : "Sky".equals(v)     ? "skin-sky"
+                        : "skin-default";
+                onSkinChanged.accept(skin);
             });
         }
 
@@ -131,7 +129,7 @@ public class HeaderController {
     public void setOnLoaded(Consumer<DisplayAPI> consumer) {
         onLoaded.set(consumer);
     }
-    public void setOnThemeChanged(Consumer<String> cb) { this.onThemeChanged = cb; }
+    public void setOnSkinChanged(Consumer<String> cb) { this.onSkinChanged = cb; }
     public void setOnProgramSelected(Consumer<String> cb) { this.onProgramSelectedCb = cb; }
     public void setOnApplyDegree(Runnable r) { onApplyDegree.set(r); }
     public void setOnExpand(Runnable r)   { onExpand.set(r); }

@@ -35,13 +35,6 @@ public class SummaryController {
         if (txtSynthetic != null) txtSynthetic.clear();
     }
 
-
-    public void clear() {
-        setDisabled(true);
-        clearText();
-    }
-
-
     public void wireTo(InstructionsController tableCtrl) {
         if (tableCtrl == null) return;
 

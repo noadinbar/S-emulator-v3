@@ -9,9 +9,9 @@ import java.util.Map;
 public interface ProgramExecutor {
 
     long run(Long... input);
-    public int singleExecute(List<Instruction> instructions,
-                             Map<String, Integer> labelToIndex,
-                             ExecutionContext context,
-                             int pc);
+    int singleExecute(List<Instruction> instructions,
+                      Map<String, Integer> labelToIndex,
+                      ExecutionContext context,
+                      int pc);
     Map<Variable, Long> variableState();
 }

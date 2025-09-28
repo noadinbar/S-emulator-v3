@@ -12,7 +12,7 @@
 <?import javafx.scene.image.ImageView?>
 <?import javafx.scene.layout.AnchorPane?>
 
-<SplitPane dividerPositions="0.5" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" orientation="VERTICAL" prefHeight="94.0" prefWidth="788.0" xmlns="http://javafx.com/javafx/24.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="application.header.HeaderController">
+<SplitPane dividerPositions="0.2026143790849673, 0.65359477124183" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" orientation="VERTICAL" prefHeight="118.0" prefWidth="788.0" xmlns="http://javafx.com/javafx/24.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="application.header.HeaderController">
     <stylesheets>
         <URL value="@header.css" />
     </stylesheets>
@@ -20,7 +20,8 @@
         <Insets bottom="8" left="8" right="8" top="8" />
     </padding>
   <items>
-    <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="100.0" prefWidth="160.0">
+      <Label fx:id="Title" text="S-Emulator" />
+    <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="100.0" prefWidth="772.0">
          <children>
             <Button fx:id="btnLoad" layoutX="14.0" layoutY="8.0" mnemonicParsing="false" onAction="#onLoadClicked" text="Load File" />
             <TextField fx:id="txtPath" layoutX="87.0" layoutY="8.0" prefHeight="25.0" prefWidth="443.0" />
@@ -30,17 +31,17 @@
 
 
          </children></AnchorPane>
-    <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="71.0" prefWidth="777.0">
+    <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="71.0" prefWidth="772.0">
          <children>
             <ComboBox fx:id="cmbProgramFunction" layoutY="5.0" onAction="#onProgramChanged" prefHeight="25.0" prefWidth="191.0" promptText="Program\Function selection" />
             <Button fx:id="btnCollapse" layoutX="206.0" layoutY="5.0" mnemonicParsing="false" onAction="#onCollapseClicked" text="Collapse" />
             <Label layoutX="279.0" layoutY="-5.0" prefHeight="45.0" prefWidth="119.0" text="Current/Max Degree:" />
-            <TextField fx:id="txtDegree" layoutX="411.0" layoutY="7.0" prefHeight="25.0" prefWidth="30.0" />
+            <TextField fx:id="txtDegree" layoutX="411.0" layoutY="5.0" prefHeight="25.0" prefWidth="30.0" />
             <Label layoutX="447.0" layoutY="9.0" text="/" />
-             <TextField fx:id="txtMaxDegree" layoutX="460.0" layoutY="7.0" prefHeight="25.0" prefWidth="32.0" editable="false" focusTraversable="false"/>
-            <Button fx:id="btnExpand" layoutX="501.0" layoutY="7.0" mnemonicParsing="false" onAction="#onExpandClicked" text="Expand" />
-            <ComboBox fx:id="cmbHighlight" layoutX="562.0" layoutY="7.0" onAction="#onHighlightChanged" prefHeight="25.0" prefWidth="109.0" promptText="Highlight selection" />
-            <ComboBox fx:id="cmbTheme" layoutX="682.0" layoutY="8.0" prefHeight="25.0" prefWidth="87.0" promptText="Theme" />
+             <TextField fx:id="txtMaxDegree" editable="false" focusTraversable="false" layoutX="460.0" layoutY="5.0" prefHeight="25.0" prefWidth="32.0" />
+            <Button fx:id="btnExpand" layoutX="501.0" layoutY="5.0" mnemonicParsing="false" onAction="#onExpandClicked" text="Expand" />
+            <ComboBox fx:id="cmbHighlight" layoutX="562.0" layoutY="5.0" onAction="#onHighlightChanged" prefHeight="25.0" prefWidth="109.0" promptText="Highlight selection" />
+            <ComboBox fx:id="cmbTheme" layoutX="683.0" layoutY="5.0" prefHeight="25.0" prefWidth="87.0" promptText="Theme" />
          </children></AnchorPane>
   </items>
 </SplitPane>

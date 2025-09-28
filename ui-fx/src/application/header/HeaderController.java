@@ -27,13 +27,11 @@ import java.util.function.UnaryOperator;
 
 public class HeaderController {
 
-    // upper
+
+    @FXML private Label Title;
     @FXML private Button btnLoad;
     @FXML private TextField txtPath;
     @FXML private ProgressBar progressBar;
-    private Path lastValidXmlPath;
-    private File lastDir;
-    // lower
     @FXML private ComboBox<String> cmbProgramFunction;
     @FXML private Button btnCollapse;
     @FXML private TextField txtDegree;
@@ -43,7 +41,8 @@ public class HeaderController {
     @FXML private ComboBox<String> cmbTheme;
     @FXML private Button helpButton;
 
-
+    private Path lastValidXmlPath;
+    private File lastDir;
     private final BooleanProperty busy   = new SimpleBooleanProperty(false); // בזמן טעינה
     private final BooleanProperty loaded = new SimpleBooleanProperty(false); // האם נטען תוכנית
     private final IntegerProperty currentDegree = new SimpleIntegerProperty(0);

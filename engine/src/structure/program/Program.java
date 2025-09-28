@@ -2,7 +2,6 @@ package structure.program;
 
 import structure.function.Function;
 import structure.instruction.Instruction;
-import utils.ParseResult;
 
 import java.util.List;
 
@@ -12,7 +11,7 @@ public interface Program {
     void addInstruction(Instruction instruction);
     List<Instruction> getInstructions();
 
-    ParseResult validate();
+    void validate();
     int calculateMaxDegree();
 
     List<Function> getFunctions();

@@ -36,7 +36,4 @@ public class FunctionExecutorImpl implements FunctionExecutor {
 
     @Override
     public int getLastRunCycles() { return lastRunCycles; }
-
-    @Override
-    public Map<Variable, Long> getFinalVariables() { return finals; }
 }

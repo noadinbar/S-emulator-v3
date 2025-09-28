@@ -13,7 +13,6 @@ public class InstructionBodyDTO {
     private final VarRefDTO compareWith;
     private final long constant;
     private final LabelDTO jumpTo;
-    private final String functionName;
     private final String userString;
     private final String functionArgs;
 
@@ -47,7 +46,6 @@ public class InstructionBodyDTO {
         this.compareWith = compareWith;
         this.constant = constant;
         this.jumpTo = jumpTo;
-        this.functionName = functionName;
         this.userString = userString;
         this.functionArgs=functionArgs;
     }
@@ -60,7 +58,6 @@ public class InstructionBodyDTO {
     public VarRefDTO getCompareWith() { return compareWith; }
     public long getConstant() { return constant; }
     public LabelDTO getJumpTo() { return jumpTo; }
-    public String getFunctionName() { return functionName; }
     public String getUserString() { return userString; }
     public String getFunctionArgs() { return functionArgs; }
 }

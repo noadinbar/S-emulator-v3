@@ -9,5 +9,4 @@ import java.util.Map;
 public interface FunctionExecutor {
     long run(Function function, Program sourceProgram, Long... inputs);
     int getLastRunCycles();
-    Map<Variable, Long> getFinalVariables();
 }

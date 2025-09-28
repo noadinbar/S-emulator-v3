@@ -20,6 +20,6 @@ public class FunctionDTO {
     public String getName() { return name; }
     public String getUserString() { return userString; }
     public List<InstructionDTO> getInstructions() {
-        return Collections.unmodifiableList(instructions);
+        return instructions;
     }
 }

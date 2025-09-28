@@ -24,9 +24,4 @@ public final class RunHistory implements Serializable {
     public List<Long> getInputs() { return inputs; }
     public long getYValue()   { return yValue; }
     public int getCycles()    { return cycles; }
-
-    public String formatForDisplay() {
-        return String.format("#%d | degree=%d | inputs=%s | y=%d | cycles=%d",
-                runNumber, degree, inputs, yValue, cycles);
-    }
 }

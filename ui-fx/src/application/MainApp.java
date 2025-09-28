@@ -14,7 +14,6 @@ import javafx.stage.StageStyle;
 public class MainApp extends Application {
     @Override
     public void start(Stage stage) throws Exception {
-        // טוען את ה-FXML הראשי
         FXMLLoader fxml = new FXMLLoader(getClass().getResource("program_scene.fxml"));
         Parent root = fxml.load();
         ProgramSceneController controller = fxml.getController();
@@ -37,9 +36,6 @@ public class MainApp extends Application {
         stage.setTitle("S-Emulator");
         stage.centerOnScreen();
         stage.show();
-
-        // לא טוענים XML קשיח — מחכים לטעינה דרך ההדר:
-        // tinySmokeTestLoad(controller);
     }
 
     public static void main(String[] args) {

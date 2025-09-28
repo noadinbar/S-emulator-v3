@@ -19,9 +19,7 @@ import java.util.*;
 public class ExecutionAPIImpl implements ExecutionAPI {
     private final Program program;
     private final Program originalProgram;
-    private final DisplayAPI display;
 
-    // הבנאי הישן – עכשיו מפנה לחדש, לשמירת תאימות קריאות קיימות
     public ExecutionAPIImpl(ProgramImpl program,
                             ProgramImpl originalProgram) {
         this(program, originalProgram, null);
@@ -32,7 +30,6 @@ public class ExecutionAPIImpl implements ExecutionAPI {
                             DisplayAPI display) {
         this.program = program;
         this.originalProgram = originalProgram;
-        this.display = display;
     }
 
     @Override

@@ -12,9 +12,7 @@ import structure.label.Label;
 import structure.variable.Variable;
 import structure.variable.VariableType;
 import utils.InstructionsHelpers;
-import utils.ParseResult;
 import utils.RunHistory;
-import exceptions.UndefinedLabelException;
 
 import java.io.Serializable;
 import java.util.*;
@@ -77,7 +75,7 @@ public class ProgramImpl implements Program, Serializable {
     }
 
     @Override
-    public ParseResult validate() {
+    public void validate() {
         Set<String> definedLabels = new HashSet<>();
         Set<String> definedFunctions = new HashSet<>();
         List<String> errors = new ArrayList<>();
@@ -144,7 +142,6 @@ public class ProgramImpl implements Program, Serializable {
         if (!errors.isEmpty()) {
             throw new UndefinedFunctionException("Validation failed:\n" + String.join("\n", errors));
         }
-        return ParseResult.success("Program validation passed successfully.");
     }
 
     private void collectFunctionsInArgsOrdered(String args, List<String> out) {
@@ -197,8 +194,6 @@ public class ProgramImpl implements Program, Serializable {
 
     public void setCurrentRunDegree(int degree) { this.currentRunDegree = Math.max(0, degree); }
 
-    public int getCurrentRunDegree() { return currentRunDegree; }
-
     public void addRunHistory(List<Long> inputs, long yValue, int cycles) {
         int runNumber = runHistory.size() + 1;
         runHistory.add(new RunHistory(runNumber, currentRunDegree, inputs, yValue, cycles));
@@ -207,8 +202,6 @@ public class ProgramImpl implements Program, Serializable {
     public List<RunHistory> getRunHistory() {
         return Collections.unmodifiableList(runHistory);
     }
-
-    public void clearRunHistory() { runHistory.clear(); }
 
     public int findMaxLabelIndex() {
         int max = 0;
@@ -285,12 +278,4 @@ public class ProgramImpl implements Program, Serializable {
             degree++;
         }
     }
-
-    private static boolean isExit(Label l) {
-        if (l == null) return false;
-        if (l == FixedLabel.EXIT) return true;
-        String rep = l.getLabelRepresentation();
-        return "EXIT".equals(rep);
-    }
-
 }

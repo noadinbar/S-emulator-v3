@@ -17,7 +17,6 @@ public final class DebugStateDTO {
         this.vars = (vars == null) ? List.of() : List.copyOf(vars);
     }
 
-    public int getDegree() { return degree; }
     public int getPc() { return pc; }
     public long getCyclesSoFar() { return cyclesSoFar; }
     public List<VarValueDTO> getVars() { return vars; }

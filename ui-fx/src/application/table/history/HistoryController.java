@@ -122,10 +122,6 @@ public class HistoryController {
     private Consumer<RunHistoryEntryDTO> onShow;
     public void setOnShow(Consumer<RunHistoryEntryDTO> cb) { this.onShow = cb; }
 
-    public void setEntries(List<RunHistoryEntryDTO> rows) {
-        items.setAll(rows);
-    }
-
     public int getTableSize() { return items.size(); }
 
     public void addEntry(RunHistoryEntryDTO row) {

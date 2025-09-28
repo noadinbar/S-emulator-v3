@@ -101,15 +101,6 @@ public class InstructionsController {
         return tblInstructions;
     }
 
-    public void show(DisplayDTO dto) {
-        if (dto == null || dto.getInstructions() == null) {
-            clear();
-            return;
-        }
-        expandedByNumber.clear();
-        show(dto.getInstructions());
-    }
-
     public void showExpanded(ExpandDTO dto) {
         if (dto == null) {
             clear();

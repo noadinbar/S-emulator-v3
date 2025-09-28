@@ -2,6 +2,9 @@ package screens;
 
 import api.DisplayAPI;
 import api.LoadAPI;
+import exceptions.InvalidFileExtensionException;
+import exceptions.InvalidXmlFormatException;
+import exceptions.UndefinedLabelException;
 
 import java.nio.file.Paths;
 import java.util.Scanner;
@@ -22,11 +25,7 @@ public class LoadXMLAction {
         try {
             displayAPI = loadAPI.loadFromXml(Paths.get(path)); // Path
             System.out.println("Program loaded successfully.");
-        } catch (exceptions.InvalidFileExtensionException e) {
-            System.out.println("Error: " + e.getMessage());
-        } catch (exceptions.InvalidXmlFormatException e) {
-            System.out.println("Error: " + e.getMessage());
-        } catch (exceptions.UndefinedLabelException e) {
+        } catch (InvalidFileExtensionException | UndefinedLabelException | InvalidXmlFormatException e) {
             System.out.println("Error: " + e.getMessage());
         } catch (Exception e) {
             throw new RuntimeException(e);

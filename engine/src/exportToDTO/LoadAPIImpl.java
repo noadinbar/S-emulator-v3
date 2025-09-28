@@ -9,7 +9,6 @@ import exceptions.UndefinedLabelException;
 import jakarta.xml.bind.JAXBException;
 import structure.program.ProgramImpl;
 import structure.program.SProgram;
-import utils.ParseResult;
 import utils.XMLToStructure;
 import api.XMLLoader;
 

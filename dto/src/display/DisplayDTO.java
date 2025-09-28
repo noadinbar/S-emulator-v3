@@ -6,7 +6,6 @@ import types.VarRefDTO;
 import java.util.List;
 import java.util.Objects;
 
-// command2dto
 public class DisplayDTO {
     private final String programName;
     private final List<VarRefDTO> inputsInUse;
@@ -41,5 +40,4 @@ public class DisplayDTO {
     public List<VarRefDTO> getInputsInUse() { return inputsInUse; }
     public List<LabelDTO> getLabelsInUse() { return labelsInUse; }
     public List<InstructionDTO> getInstructions() { return instructions; }
-    public List<FunctionDTO> getFunctions() { return functions; }
 }

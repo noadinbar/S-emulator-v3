@@ -98,38 +98,6 @@ public class JumpEqualFunctionInstruction extends AbstractInstruction {
         return newInstructions;
     }
 
-    private List<Long> parseFunctionInputs(String argsString, ExecutionContext ctx) {
-        List<Long> csvInputs = new ArrayList<>();
-        if (argsString == null || argsString.isBlank()) return csvInputs;
-
-        String[] parts = argsString.split(",");
-        for (String raw : parts) {
-            String token = raw.trim();
-            if (token.isEmpty()) { csvInputs.add(0L); continue; }
-
-            // מספר קבוע?
-            try {
-                csvInputs.add(Long.parseLong(token));
-                continue;
-            } catch (NumberFormatException ignore) {}
-
-            if ("y".equals(token)) {
-                csvInputs.add(ctx.getVariableValue(Variable.RESULT));
-            } else if (token.startsWith("x")) {
-                csvInputs.add(ctx.getVariableValue(
-                        new VariableImpl(VariableType.INPUT, Integer.parseInt(token.substring(1)))
-                ));
-            } else if (token.startsWith("z")) {
-                csvInputs.add(ctx.getVariableValue(
-                        new VariableImpl(VariableType.WORK, Integer.parseInt(token.substring(1)))
-                ));
-            } else {
-                csvInputs.add(0L);
-            }
-        }
-        return csvInputs;
-    }
-
     private Long evalArgVal(ArgVal a, ExecutionContext ctx, Program program) {
         if (a.getKind() == ArgKind.LONG) {
             return a.getLongValue();

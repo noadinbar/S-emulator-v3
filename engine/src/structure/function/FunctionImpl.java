@@ -24,9 +24,6 @@ public class FunctionImpl implements Function {
     public String getUserString() { return userString; }
 
     @Override
-    public void setUserString(String userString) { this.userString = userString; }
-
-    @Override
     public void addInstruction(Instruction instruction) {
         if (instruction == null) return;
         instructions.add(instruction);

@@ -5,6 +5,7 @@ import types.LabelDTO;
 import types.VarRefDTO;
 import types.VarOptionsDTO;
 
+import java.util.List;
 import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.StringJoiner;
@@ -103,7 +104,7 @@ public final class InstructionFormatter {
 
     public static String formatExpanded(ExpandedInstructionDTO row) {
         String s = formatDisplay(row.getInstruction());
-        var chain = row.getCreatedByChain();
+        List<InstructionDTO> chain = row.getCreatedByChain();
         if (chain == null || chain.isEmpty()) return s;
 
         StringBuilder sb = new StringBuilder(s);

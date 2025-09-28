@@ -1,6 +1,7 @@
 package application;
 
 import api.DebugAPI;
+import application.table.history.RowSnapshot;
 import display.*;
 import execution.*;
 import execution.debug.DebugStateDTO;
@@ -25,6 +26,7 @@ import api.ExecutionAPI;
 
 import javafx.scene.Scene;
 import javafx.scene.control.TableRow;
+import javafx.scene.control.TableView;
 import javafx.scene.control.TextArea;
 import javafx.scene.layout.VBox;
 
@@ -68,6 +70,9 @@ public class ProgramSceneController {
     private volatile boolean debugStopRequested = false;
     private Task<Void> debugResumeTask = null;
     private DebugStateDTO lastDebugState = null;
+    private final Map<String, List<RunHistoryEntryDTO>> uiHistoryByKey = new LinkedHashMap<>();
+    private final Map<String, RowSnapshot> snapshots = new LinkedHashMap<>();
+    private String currentHistoryKey = null;
 
     private String currentHighlight = null;
     private static final String HIGHLIGHT_CLASS = "hilite";
@@ -159,11 +164,13 @@ public class ProgramSceneController {
         debugStopRequested = false;
         debugResumeTask = null;
 
+        uiHistoryByKey.clear();
+        snapshots.clear();
+        currentHistoryKey = null;
+
         if (inputsController != null)  inputsController.clear();
         if (outputsController != null) outputsController.clear();
         if (historyController != null) historyController.clear();
-
-        runSnapshots.clear();
 
         if (chainTableController != null) {
             chainTableController.clear();
@@ -189,6 +196,14 @@ public class ProgramSceneController {
         if (headerController != null) {
             headerController.populateProgramFunction(display);
             headerController.setOnProgramSelected(this::onProgramComboChanged);
+        }
+
+        String firstKey = (headerController != null) ? headerController.getSelectedProgramFunction() : null;
+        if (firstKey == null && display.getCommand2() != null) {
+            firstKey = "PROGRAM: " + display.getCommand2().getProgramName();
+        }
+        if (firstKey != null) {
+            applyHistoryForKey(firstKey);
         }
 
         if (runOptionsController != null) {
@@ -241,7 +256,9 @@ public class ProgramSceneController {
                     inputs, result.getyValue(), (int) result.getTotalCycles()
             );
             historyController.addEntry(last);
-            runSnapshots.put(last.getRunNumber(), result);
+            if (currentHistoryKey != null) {
+                snapshots.put(snapKey(currentHistoryKey, last.getRunNumber()), RowSnapshot.ofExec(result));
+            }
         }
     }
 
@@ -349,9 +366,9 @@ public class ProgramSceneController {
             @Override
             protected Void call() {
                 while (!isCancelled() && !debugStopRequested) {
-                    var step  = debugApi.step();
-                    var state = step.getNewState();
-                    var prev = lastDebugState;
+                    DebugStepDTO step  = debugApi.step();
+                    DebugStateDTO state = step.getNewState();
+                    DebugStateDTO prev = lastDebugState;
                     lastDebugState = state;
 
                     Platform.runLater(() -> {
@@ -398,8 +415,11 @@ public class ProgramSceneController {
                 : Collections.emptyList();
         int degree = (headerController != null) ? headerController.getCurrentDegree() : 0;
         int entryIndex = historyController.getTableSize() + 1;
-        debugSnapshots.put(entryIndex, outputsController.getVariableLines());
         historyController.addEntry(lastDebugState, degree, inputs);
+        if (currentHistoryKey != null && outputsController != null) {
+            String sk = snapKey(currentHistoryKey, entryIndex);
+            snapshots.merge(sk, RowSnapshot.ofDebug(outputsController.getVariableLines()), RowSnapshot::merge);
+        }
     }
 
     private void showDebugState(DebugStateDTO state) {
@@ -502,17 +522,17 @@ public class ProgramSceneController {
 
     private void selectAndScrollProgramRow(int pc) {
         if (programTableController == null || programTableController.getTableView() == null) return;
-        var tv = programTableController.getTableView();
-        int n = tv.getItems().size();
+        TableView<InstructionDTO> programTableView = programTableController.getTableView();
+        int n = programTableView.getItems().size();
         if (n == 0) return;
         if (pc < 0 || pc >= n) {
-            tv.getSelectionModel().clearSelection();
+            programTableView.getSelectionModel().clearSelection();
             return;
         }
 
-        tv.getSelectionModel().clearAndSelect(pc);
-        tv.getFocusModel().focus(pc);
-        tv.scrollTo(pc);
+        programTableView.getSelectionModel().clearAndSelect(pc);
+        programTableView.getFocusModel().focus(pc);
+        programTableView.scrollTo(pc);
     }
 
     public void showInputsForEditing() {
@@ -524,8 +544,12 @@ public class ProgramSceneController {
 
     private void onProgramComboChanged(String sel) {
         if (programTableController == null || headerController == null) return;
+        if (debugMode && debugStarted) {
+            debugStop();
+        }
+        String key = (sel != null) ? sel : headerController.getSelectedProgramFunction();
 
-        if (sel == null || !sel.startsWith("FUNCTION: ")) {
+        if (key == null || !key.startsWith("FUNCTION: ")) {
             this.execute = display.execution();
             headerController.setMaxDegree(execute.getMaxDegree());
             ExpandDTO expanded = display.expand(currentDegree);
@@ -541,10 +565,12 @@ public class ProgramSceneController {
                 programTableController.getTableView().refresh();
             }
             updateChain(programTableController.getSelectedItem());
+
+            applyHistoryForKey(key);
             return;
         }
 
-        String userStr = sel.substring("FUNCTION: ".length()).trim();
+        String userStr = key.substring("FUNCTION: ".length()).trim();
         DisplayAPI fnDisplay = functionDisplays.get(userStr);
         if (fnDisplay == null) {
             onProgramComboChanged(null);
@@ -577,8 +603,8 @@ public class ProgramSceneController {
             currentHighlight = headerController.getSelectedHighlight();
             programTableController.getTableView().refresh();
         }
+        applyHistoryForKey(key);
     }
-
 
     private void onHistoryRerun(RunHistoryEntryDTO row) {
         if (row == null || display == null || programTableController == null || headerController == null) return;
@@ -596,16 +622,15 @@ public class ProgramSceneController {
 
     private void onHistoryShow(RunHistoryEntryDTO row) {
         if (row == null) return;
-        if(runSnapshots.containsKey(row.getRunNumber()))
-        {
-            ExecutionDTO snap = runSnapshots.get(row.getRunNumber());
-            String text = buildRunText(row, snap);
-            openTextPopup("Run #" + row.getRunNumber() + " ", text);
+        int runNo = row.getRunNumber();
+        String sk = snapKey(currentHistoryKey, runNo);
+        RowSnapshot s = snapshots.get(sk);
+
+        if (s != null && s.hasExec()) {
+            openTextPopup("Run #" + runNo + " ", buildRunText(row, s.getExec()));
         }
-        else {
-            List<String> snap = debugSnapshots.get(row.getRunNumber());
-            String text = buildRunText(row, snap);
-            openTextPopup("Run #" + row.getRunNumber() + " ", text);
+        else if (s != null && s.hasDebugText()) {
+            openTextPopup("Run #" + runNo + " ", buildRunText(row, s.getDebugText()));
         }
     }
 
@@ -682,41 +707,60 @@ public class ProgramSceneController {
                     return;
                 }
 
-                boolean on = false;
-                String sel = currentHighlight;
+                boolean isExit = false;
+                String selected = currentHighlight;
 
-                if (sel != null && !sel.isBlank()) {
-                    var body    = ins.getBody();
-                    LabelDTO my = ins.getLabel();
-                    LabelDTO jt = (body != null) ? body.getJumpTo() : null;
+                if (selected != null && !selected.isBlank()) {
+                    InstructionBodyDTO body    = ins.getBody();
+                    LabelDTO label = ins.getLabel();
+                    LabelDTO targetLabel = (body != null) ? body.getJumpTo() : null;
 
-                    if ("EXIT".equals(sel)) {
-                        on = (jt != null && jt.isExit());
-                    } else if (sel.startsWith("L")) {
-                        boolean isMy = (my != null && !my.isExit() && sel.equals(my.getName()));
-                        boolean j2L  = (jt != null && !jt.isExit() && sel.equals(jt.getName()));
-                        on = isMy || j2L;
+                    if ("EXIT".equals(selected)) {
+                        isExit = (targetLabel != null && targetLabel.isExit());
+                    } else if (selected.startsWith("L")) {
+                        boolean isLabelExit = (label != null && !label.isExit() && selected.equals(label.getName()));
+                        boolean isJumpToExit  = (targetLabel != null && !targetLabel.isExit() && selected.equals(targetLabel.getName()));
+                        isExit = isLabelExit || isJumpToExit;
                     } else if (body != null) {
-                        for (VarRefDTO r : new VarRefDTO[]{
+                        for (VarRefDTO var : new VarRefDTO[]{
                                body.getVariable(),
                                body.getDest(),
                                body.getSource(),
                                body.getCompare(),
                                body.getCompareWith()
                         }) {
-                            if (r == null) continue;
-                            VarOptionsDTO k = r.getVariable();
-                            int idx = r.getIndex();
-                            if ("y".equals(sel) && k == VarOptionsDTO.y) { on = true; break; }
-                            if (k == VarOptionsDTO.x && sel.equals("x" + idx)) { on = true; break; }
-                            if (k == VarOptionsDTO.z && sel.equals("z" + idx)) { on = true; break; }
+                            if (var == null) continue;
+                            VarOptionsDTO k = var.getVariable();
+                            int idx = var.getIndex();
+                            if ("y".equals(selected) && k == VarOptionsDTO.y) { isExit = true; break; }
+                            if (k == VarOptionsDTO.x && selected.equals("x" + idx)) { isExit = true; break; }
+                            if (k == VarOptionsDTO.z && selected.equals("z" + idx)) { isExit = true; break; }
                         }
                     }
                 }
                 getStyleClass().removeAll(HIGHLIGHT_CLASS);
-                if (on) getStyleClass().add(HIGHLIGHT_CLASS);
+                if (isExit) getStyleClass().add(HIGHLIGHT_CLASS);
             }
         });
+    }
+
+    private void applyHistoryForKey(String key) {
+        if (historyController == null) return;
+        if (currentHistoryKey != null && historyController.getTableView() != null) {
+            uiHistoryByKey.put(currentHistoryKey,
+                    new ArrayList<>(historyController.getTableView().getItems()));
+        }
+        currentHistoryKey = key;
+        historyController.clear();
+
+        List<RunHistoryEntryDTO> rows = uiHistoryByKey.computeIfAbsent(key, k -> new ArrayList<>());
+        for (RunHistoryEntryDTO r : rows) {
+            historyController.addEntry(r);
+        }
+    }
+
+    private static String snapKey(String key, int runNo) {
+        return key + "|" + runNo;
     }
 
     //bonus

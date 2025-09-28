@@ -4,6 +4,7 @@ import api.DisplayAPI;
 import api.LoadAPI;
 import display.DisplayDTO;
 import display.FunctionDTO;
+import display.InstructionBodyDTO;
 import display.InstructionDTO;
 import exportToDTO.LoadAPIImpl;
 import javafx.application.Platform;
@@ -59,15 +60,11 @@ public class HeaderController {
 
     @FXML
     private void initialize() {
-        // שדה הנתיב לא עריך
         txtPath.setEditable(false);
-
-        // נטרול רכיבים כשעסוקים / טרם נטען קובץ
         txtDegree.disableProperty().bind(busy.or(loaded.not()));
         cmbProgramFunction.disableProperty().bind(busy.or(loaded.not()));
         cmbHighlight.disableProperty().bind(busy.or(loaded.not()));
 
-        // פורמטער לשדה הדרגה: רק ספרות (עד 3), ריק מותר
         UnaryOperator<TextFormatter.Change> filter = c -> {
             String nt = c.getControlNewText();
             if (nt.isEmpty()) return c;
@@ -76,31 +73,25 @@ public class HeaderController {
         degreeFormatter = new TextFormatter<>(new IntegerStringConverter(), 0, filter);
         txtDegree.setTextFormatter(degreeFormatter);
 
-        // קישור דו-כיווני נכון בין הערך לבין ה-Property
         degreeFormatter.valueProperty().bindBidirectional(currentDegree.asObject());
 
-        // Enter על השדה מפעיל ולידציה+החלה
         txtDegree.setOnAction(e -> onDegreeEnter());
 
-        // שדה המקסימום מציג תמיד את הערך המחושב (לא עריך)
         if (txtMaxDegree != null) {
             txtMaxDegree.textProperty().bind(maxDegree.asString());
             txtMaxDegree.disableProperty().bind(busy.or(loaded.not()));
         }
 
-        // כש-max מתעדכן: לשמור על תחום [0..max]
         maxDegree.addListener((obs, ov, nv) -> {
             int max = (nv == null ? 0 : nv.intValue());
             if (currentDegree.get() > max) currentDegree.set(max);
             if (currentDegree.get() < 0)   currentDegree.set(0);
         });
 
-        // אם המשתמש מחק את התוכן (null) – נחשב כ-0
         degreeFormatter.valueProperty().addListener((o, ov, nv) -> {
             if (nv == null) currentDegree.set(0);
         });
 
-        // מצב כפתורי הרחבה/כיווץ
         btnCollapse.disableProperty().bind(
                 busy.or(loaded.not()).or(currentDegree.lessThanOrEqualTo(0))
         );
@@ -108,7 +99,6 @@ public class HeaderController {
                 busy.or(loaded.not()).or(currentDegree.greaterThanOrEqualTo(maxDegree))
         );
 
-        // ProgressBar מוסתר כברירת מחדל
         progressBar.setVisible(false);
 
         // Theme combobox
@@ -153,6 +143,16 @@ public class HeaderController {
     }
     public void setMaxDegree(int max) { maxDegree.set(max); }
     public int getCurrentDegree() { return currentDegree.get(); }
+    public String getSelectedProgramFunction() {
+        if (cmbProgramFunction == null) return null;
+        String selected = cmbProgramFunction.getValue();
+        if (selected == null && !cmbProgramFunction.getItems().isEmpty()) {
+            cmbProgramFunction.getSelectionModel().selectFirst();
+            selected = cmbProgramFunction.getValue();
+        }
+        return selected;
+    }
+
 
     // === Handlers ===
     @FXML
@@ -365,7 +365,7 @@ public class HeaderController {
                         try { ls.add(Integer.parseInt(name.substring(1))); } catch (Exception ignore) {}
                     }
                 }
-                var body = ins.getBody();
+                InstructionBodyDTO body = ins.getBody();
                 if (body == null) continue;
 
                 LabelDTO jt = body.getJumpTo();

@@ -53,7 +53,7 @@ public class OutputsController {
     public void highlightChanged(java.util.Set<String> changedNames) {
         if (linesBox == null) return;
 
-        for (var lbl : varLabels.values()) {
+        for (Label lbl : varLabels.values()) {
             lbl.getStyleClass().remove("var-changed");
             lbl.setStyle("");
         }
@@ -77,26 +77,17 @@ public class OutputsController {
                 .collect(Collectors.toList());
     }
 
-    /**
-     * Update the cycle count text.
-     */
     public void setCycles(long cycles) {
         if (txtCycles != null) {
             txtCycles.setText(Long.toString(cycles));
         }
     }
 
-    /**
-     * y first, then all x in ascending index, then all z in ascending index.
-     * builds a single multi-line string, which we split into labels per line.
-     */
     private static String formatFinalsForDisplay(ExecutionDTO result) {
         StringBuilder stringB = new StringBuilder();
 
-        // 1) y first
         stringB.append("y = ").append(result.getyValue()).append('\n');
 
-        // 2) all x by ascending index
         result.getFinals().stream()
                 .filter(v -> v.getVar().getVariable() == VarOptionsDTO.x)
                 .sorted(Comparator.comparingInt(v -> v.getVar().getIndex()))
@@ -106,7 +97,6 @@ public class OutputsController {
                         .append(v.getValue())
                         .append('\n'));
 
-        // 3) all z by ascending index
         result.getFinals().stream()
                 .filter(v -> v.getVar().getVariable() == VarOptionsDTO.z)
                 .sorted(Comparator.comparingInt(v -> v.getVar().getIndex()))
@@ -119,10 +109,6 @@ public class OutputsController {
         return stringB.toString().trim();
     }
 
-    /**
-     * Show execution results: cycles + variables.
-     * Uses formatting, then splits into single-label lines.
-     */
     public void showExecution(ExecutionDTO result) {
         if (txtCycles != null) {
             txtCycles.setText(Long.toString(result.getTotalCycles()));
@@ -134,9 +120,6 @@ public class OutputsController {
         }
     }
 
-    /**
-     * Clear all output.
-     */
     public void clear() {
         if (linesBox != null) linesBox.getChildren().clear();
         if (txtCycles != null) txtCycles.clear();

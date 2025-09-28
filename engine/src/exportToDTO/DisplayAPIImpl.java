@@ -110,7 +110,7 @@ public class DisplayAPIImpl implements DisplayAPI {
         if (degree < 0 || degree > max) {
             throw new InvalidDegreeException("Degree must be between 0 and " + max);
         }
-        var res = ProgramExpander.expandTo(program, degree);
+        ExpandResult res = ProgramExpander.expandTo(program, degree);
         Program expanded = res.getExpandedProgram();
         return new DebugAPIImpl(((ProgramImpl) expanded), ((ProgramImpl) program), degree);
     }

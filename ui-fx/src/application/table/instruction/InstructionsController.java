@@ -2,20 +2,19 @@ package application.table.instruction;
 
 import javafx.animation.FadeTransition;
 import javafx.animation.Interpolator;
+import javafx.animation.PauseTransition;
+import javafx.animation.SequentialTransition;
 import javafx.application.Platform;
 import javafx.beans.property.ReadOnlyIntegerWrapper;
 import javafx.beans.property.ReadOnlyObjectProperty;
+import javafx.beans.property.ReadOnlyObjectWrapper;
 import javafx.beans.property.ReadOnlyStringWrapper;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
 import javafx.scene.Node;
-import javafx.scene.control.TableCell;
-import javafx.scene.control.TableColumn;
-import javafx.scene.control.TableRow;
-import javafx.scene.control.TableView;
+import javafx.scene.control.*;
 
-import display.DisplayDTO;
 import display.ExpandDTO;
 import display.ExpandedInstructionDTO;
 import display.InstrKindDTO;
@@ -33,10 +32,12 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Consumer;
 import java.util.function.Predicate;
 
 public class InstructionsController {
 
+    @FXML private TableColumn<InstructionDTO, InstructionDTO> colBp;
     @FXML private TableView<InstructionDTO> tblInstructions;
     @FXML private TableColumn<InstructionDTO, Number> colLine;
     @FXML private TableColumn<InstructionDTO, String> colBS;
@@ -44,6 +45,8 @@ public class InstructionsController {
     @FXML private TableColumn<InstructionDTO, Number> colCycles;
     @FXML private TableColumn<InstructionDTO, String> colInstruction;
 
+    private Integer breakpointPc = null;
+    private Consumer<Integer> onBreakpointChanged = null;
     private final ObservableList<InstructionDTO> items = FXCollections.observableArrayList();
     private final Map<Integer, ExpandedInstructionDTO> expandedByNumber = new HashMap<>();
     private static final String HILITE_CLASS = "hilite";
@@ -53,11 +56,12 @@ public class InstructionsController {
     // === BONUS: Row fade-in on expand (BEGIN) ===
     private boolean animationsEnabled = true;
     private boolean animateNextPopulate = false;
-    private boolean populateStagger = true;      // true=מדורג (אחת-אחת), false=בבת אחת
+    private boolean populateStagger = true;
     private long populateStamp = 0;
     private static final int POPULATE_FADE_MS = 450;
-    private static final int POPULATE_PER_ROW_DELAY_MS = 35; // דיליי בין שורות במדורג
-// === BONUS: Row fade-in on expand (END) ===
+    private static final int POPULATE_PER_ROW_DELAY_MS = 35;
+    private static final int TOTAL_ANIM_MAX_MS = 2000;
+    // === BONUS: Row fade-in on expand (END) ===
 
     @FXML
     private void initialize() {
@@ -103,6 +107,7 @@ public class InstructionsController {
         colInstruction.setCellValueFactory(d ->
                 new ReadOnlyStringWrapper(formatBody(d.getValue().getBody())));
 
+
         //==BONUS==
         tblInstructions.setRowFactory(tv -> new TableRow<>() {
             @Override
@@ -138,7 +143,6 @@ public class InstructionsController {
                 final int delay = staggerLocal ? indexAtSchedule * POPULATE_PER_ROW_DELAY_MS : 0;
 
                 Platform.runLater(() -> {
-                    // אם בזמן הזה השורה הוחלפה/התעדכן ה-stamp – לא מריצים
                     if (stampAtSchedule != populateStamp ||
                             getIndex() != indexAtSchedule ||
                             getItem() != itemAtSchedule) {
@@ -146,16 +150,35 @@ public class InstructionsController {
                         getProperties().remove("popAnimQueuedStamp");
                         return;
                     }
+                    final String BASE_STAMP_KEY = "staggerBaseIndexStamp";
+                    final String BASE_VAL_KEY   = "staggerBaseIndexValue";
 
-                    // עכשיו בטוח: מורידים אופסיטי ומפעילים fade על התאים בלבד
+                    Object baseStampObj = tv.getProperties().get(BASE_STAMP_KEY);
+                    if (!(baseStampObj instanceof Long) || ((Long) baseStampObj) != populateStamp) {
+                        int min = Integer.MAX_VALUE;
+                        for (Node n : tv.lookupAll(".table-row-cell")) {
+                            if (n instanceof TableRow<?> tr) {
+                                int idx = tr.getIndex();
+                                if (idx >= 0) min = Math.min(min, idx);
+                            }
+                        }
+                        if (min == Integer.MAX_VALUE) min = 0;
+                        tv.getProperties().put(BASE_STAMP_KEY, populateStamp);
+                        tv.getProperties().put(BASE_VAL_KEY, min);
+                    }
+                    int baseIndex = (Integer) tv.getProperties().getOrDefault(BASE_VAL_KEY, 0);
+                    final int TOTAL_ANIM_MAX_MS = 2000;
+                    final int MAX_DELAY_MS = Math.max(0, TOTAL_ANIM_MAX_MS - POPULATE_FADE_MS);
+                    int relIndex = Math.max(0, indexAtSchedule - baseIndex);
+                    int delayMs = staggerLocal ? Math.min(relIndex * POPULATE_PER_ROW_DELAY_MS, MAX_DELAY_MS) : 0;
                     for (Node cell : lookupAll(".table-cell")) {
-                        cell.setOpacity(0.0);
+                        PauseTransition pt = new PauseTransition(Duration.millis(delayMs));
                         FadeTransition ft = new FadeTransition(Duration.millis(POPULATE_FADE_MS), cell);
                         ft.setFromValue(0.0);
                         ft.setToValue(1.0);
-                        ft.setDelay(Duration.millis(delay));
                         ft.setInterpolator(Interpolator.EASE_OUT);
-                        ft.play();
+                        SequentialTransition seq = new SequentialTransition(pt, ft);
+                        seq.play();
                     }
                     getProperties().put("popAnimDoneStamp", stampAtSchedule);
                     getProperties().remove("popAnimQueuedStamp");
@@ -163,7 +186,44 @@ public class InstructionsController {
             }
         });
         //==BONUS==
+
+        //==Bonus- breakpoint==
+        colBp.setSortable(false);
+        colBp.setReorderable(false);
+        colBp.setResizable(false);
+        colBp.setPrefWidth(24);
+
+        colBp.setCellValueFactory(cd -> new ReadOnlyObjectWrapper<>(cd.getValue()));
+        colBp.setCellFactory(col -> new TableCell<InstructionDTO, InstructionDTO>() {
+            private final Label dot = createDot();
+            private Label createDot() {
+                Label l = new Label("●");
+                l.setStyle("-fx-font-size: 13; -fx-text-fill: #ff0000;");
+                l.setMouseTransparent(true);
+                return l;
+            }
+            @Override
+            protected void updateItem(InstructionDTO item, boolean empty) {
+                super.updateItem(item, empty);
+                if (empty || item == null) {
+                    setGraphic(null); setText(null); setOnMouseClicked(null);
+                    return;
+                }
+                final int pc = getIndex();
+                setGraphic((breakpointPc != null && breakpointPc == pc) ? dot : null);
+                setText(null);
+                setStyle("-fx-alignment: CENTER;");
+
+                setOnMouseClicked(e -> {
+                    breakpointPc = (breakpointPc != null && breakpointPc == pc) ? null : pc;
+                    getTableView().refresh();
+                    if (onBreakpointChanged != null) onBreakpointChanged.accept(breakpointPc);
+                });
+            }
+        });
+        //==Bonus- breakpoint==
     }
+
 
     public long countBasic() {
         return items.stream().filter(i -> i.getKind() == InstrKindDTO.BASIC).count();
@@ -198,6 +258,7 @@ public class InstructionsController {
     }
 
     public void show(List<InstructionDTO> instructions) {
+        populateStamp++;
         boolean willAnimate = animationsEnabled && animateNextPopulate;
         items.setAll(instructions == null ? List.of() : instructions);
         tblInstructions.layout();
@@ -209,6 +270,7 @@ public class InstructionsController {
     }
 
     public void setRows(List<InstructionDTO> rows) {
+        populateStamp++;
         boolean willAnimate = animationsEnabled && animateNextPopulate;
         items.setAll(rows == null ? List.of() : rows);
         tblInstructions.layout();
@@ -221,6 +283,7 @@ public class InstructionsController {
     public void setAnimationsEnabled(boolean enabled) { this.animationsEnabled = enabled; }
 
     public void clear() {
+        populateStamp++;
         items.clear();
         expandedByNumber.clear();
     }
@@ -280,6 +343,26 @@ public class InstructionsController {
             }
         }
         return out;
+    }
+    public Integer getBreakpointPc() { return breakpointPc; }
+    public boolean hasBreakpoint() { return breakpointPc != null; }
+    public void clearBreakpoint() {
+        breakpointPc = null;
+        if (getTableView() != null) getTableView().refresh();
+        if (onBreakpointChanged != null) onBreakpointChanged.accept(null);
+    }
+    public void setOnBreakpointChanged(Consumer<Integer> l) { this.onBreakpointChanged = l; }
+
+    public void selectByLine(int line) {
+        if (tblInstructions == null) return;
+        var items = tblInstructions.getItems();
+        for (int i = 0; i < items.size(); i++) {
+            if (items.get(i).getNumber() == line) {
+                tblInstructions.getSelectionModel().select(i);
+                tblInstructions.scrollTo(i);
+                break;
+            }
+        }
     }
 
     private String formatLabel(LabelDTO lbl) {
@@ -357,8 +440,5 @@ public class InstructionsController {
         this.highlightPredicate = (pred != null) ? pred : i -> false;
         if (tblInstructions != null) tblInstructions.refresh();
     }
-
     //== BONUS==
-
-
 }

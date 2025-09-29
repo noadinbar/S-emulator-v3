@@ -1,10 +1,11 @@
 package application.run.options;
 
+import javafx.beans.property.BooleanProperty;
+import javafx.beans.property.SimpleBooleanProperty;
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
 import application.ProgramSceneController;
 import javafx.scene.control.CheckBox;
-
 
 public class RunOptionsController {
 
@@ -17,6 +18,7 @@ public class RunOptionsController {
     @FXML private Button btnExecute;
 
     private ProgramSceneController main;
+    private final BooleanProperty forceExecuteEnabled = new SimpleBooleanProperty(false);
 
     public void setMainController(ProgramSceneController main) {
         this.main = main;
@@ -24,9 +26,11 @@ public class RunOptionsController {
 
     @FXML
     private void initialize() {
+        // מצב התחלתי: Start כבוי, כפתורי דיבאג כבויים
         startEnabled(false);
         setButtonsEnabled(false);
 
+        // טוגל Run: מבטל Debug ומכבה כפתורי דיבאג
         chkRun.selectedProperty().addListener((o, was, is) -> {
             if (is) {
                 chkDebug.setSelected(false);
@@ -35,6 +39,7 @@ public class RunOptionsController {
             }
         });
 
+        // טוגל Debug: מדליק/מכבה מצב דיבאג ואת כפתורי הדיבאג
         chkDebug.selectedProperty().addListener((o, was, is) -> {
             if (is) {
                 chkRun.setSelected(false);
@@ -46,8 +51,9 @@ public class RunOptionsController {
             }
         });
 
+        // Execute זמין רק כשמסומן Run או Debug (או כשעושים override דרך forceExecuteEnabled)
         btnExecute.disableProperty().bind(
-                chkRun.selectedProperty().or(chkDebug.selectedProperty()).not()
+                chkRun.selectedProperty().or(chkDebug.selectedProperty()).or(forceExecuteEnabled).not()
         );
     }
 
@@ -55,23 +61,32 @@ public class RunOptionsController {
         if (btnStart != null) btnStart.setDisable(!enabled);
     }
 
+    /**
+     * מפעיל/מכבה את אזור הבחירה (Run/Debug) – אך משאיר את כפתורי הדיבאג כבויים
+     * עד שסימנו Debug או עד שה־ProgramSceneController ידליק אותם במפורש.
+     */
     public void setButtonsEnabled(boolean enabled) {
         boolean disable = !enabled;
-        setDebugBtnsDisabled(disable);
+
         if (chkRun != null) {
             chkRun.setDisable(disable);
-            chkRun.setSelected(false);
+            if (disable) chkRun.setSelected(false);
         }
         if (chkDebug != null) {
             chkDebug.setDisable(disable);
-            chkDebug.setSelected(false);
+            if (disable) chkDebug.setSelected(false);
         }
+
+        // חשוב: לא להדליק כאן את כפתורי הדיבאג כשהמסך "נפתח".
+        // הם יידלקו כאשר chkDebug יסומן, או ש־ProgramSceneController יקרא setDebugBtnsDisabled(false)
+        // כשנכנסים לדיבאג (למשל אחרי ריצה "שקטה" עד ה-BP).
+        setDebugBtnsDisabled(true);
     }
 
-    public void clearRunCheckBox()
-    {
-        chkDebug.setSelected(false);
-        chkDebug.setSelected(false);
+    public void clearRunCheckBox() {
+        if (chkRun  != null) chkRun.setSelected(false);
+        if (chkDebug!= null) chkDebug.setSelected(false);
+        setDebugBtnsDisabled(true);
     }
 
     public void setDebugBtnsDisabled(boolean disabled) {
@@ -80,27 +95,43 @@ public class RunOptionsController {
         if (btnStop != null)         btnStop.setDisable(disabled);
     }
 
+    public void setDebugSelected(boolean selected) {
+        if (chkDebug != null) chkDebug.setSelected(selected);
+    }
+
+    /**
+     * היסטורית שימש לנעילת בחירה כשיש BP. ב-flow הנוכחי אין שימוש – השארתי לטובת תאימות.
+     */
+    public void setDebugSelectorLocked(boolean locked) {
+        if (chkRun  != null) chkRun.setDisable(locked);
+        if (chkDebug!= null) chkDebug.setDisable(locked);
+    }
+
+    public void setForceExecuteEnabled(boolean enabled) {
+        forceExecuteEnabled.set(enabled);
+    }
+
     @FXML private void onStartAction() {
         main.showInputsForEditing();
         setButtonsEnabled(true);
+        // מוודאות שהבחירה פתוחה – אבל כפתורי דיבאג ישארו כבויים עד שיסמנו Debug
         chkRun.setDisable(false);
         chkDebug.setDisable(false);
     }
 
-    @FXML private void onRunAction() { main.runExecute(); }
-    @FXML private void onDebugAction() { main.runExecute();  }
+    @FXML private void onRunAction()   { main.runExecute(); }
+    @FXML private void onDebugAction() { main.runExecute(); }
     @FXML private void onStopAction()  { main.debugStop(); }
+
     @FXML private void onResumeAction() {
-        chkDebug.setSelected(true);
+        chkDebug.setSelected(true);   // לשמור UI מסונכרן עם מצב דיבאג
         main.debugResume();
     }
 
     @FXML private void onStepOverAction() {
-        chkDebug.setSelected(true);
+        chkDebug.setSelected(true);   // לשמור UI מסונכרן עם מצב דיבאג
         main.debugStep();
     }
-
-    //@FXML private void onStepBack()   { /* TODO */ }
 
     @FXML
     private void onExecuteAction() {
@@ -108,8 +139,10 @@ public class RunOptionsController {
             onRunAction();
             startEnabled(true);
             setButtonsEnabled(false);
-        } else if ( chkDebug.isSelected()) {
+        } else if (chkDebug.isSelected()) {
             onDebugAction();
+        } else {
+            main.runExecute();
         }
     }
 

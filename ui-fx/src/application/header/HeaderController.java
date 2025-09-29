@@ -471,7 +471,7 @@ public class HeaderController {
     }
 
     public boolean isAnimationsOn() {
-        String v = (cmbAnimations != null) ? cmbAnimations.getValue() : "On";
-        return !"Off".equalsIgnoreCase(String.valueOf(v));
+        String v = (cmbAnimations != null) ? cmbAnimations.getValue() : "Animation on";
+        return !"Animation off".equalsIgnoreCase(String.valueOf(v));
     }
 }

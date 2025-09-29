@@ -37,8 +37,7 @@ import javafx.scene.layout.Region;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
 import types.LabelDTO;
-import types.VarOptionsDTO;
-import types.VarRefDTO;
+import display.InstructionBodyDTO;
 
 import java.util.*;
 import java.util.regex.Matcher;
@@ -100,10 +99,6 @@ public class ProgramSceneController {
 
             headerController.setOnAnimationsChanged(enabled -> {
                 if (historyController != null) historyController.setAnimationsEnabled(enabled);
-            });
-
-            headerController.setOnAnimationsChanged(enabled -> {
-                if (historyController != null) historyController.setAnimationsEnabled(enabled);
                 if (programTableController != null) programTableController.setAnimationsEnabled(enabled);
             });
         }
@@ -156,8 +151,10 @@ public class ProgramSceneController {
                         }
                     });
         }
-
         wireHighlight(programTableController);
+
+        // שימי לב: לא נועלים/משנים את ה־Run/Debug כשיש BP. הבחירה נשארת אצל המשתמש.
+        // אם תרצי חיווי קל כשיש BP (ללא נעילה) אפשר להוסיף כאן בהמשך.
     }
 
     private void onProgramLoaded(DisplayAPI display) {
@@ -192,6 +189,7 @@ public class ProgramSceneController {
         if (programTableController != null) {
             ExpandDTO expanded = this.display.expand(currentDegree);
             programTableController.showExpanded(expanded);
+            if (programTableController != null) programTableController.clearBreakpoint();
             if (headerController != null && programTableController != null && programTableController.getTableView() != null) {
                 headerController.populateHighlight(programTableController.getTableView().getItems(), true);
                 wireHighlight(programTableController);
@@ -224,23 +222,39 @@ public class ProgramSceneController {
             Platform.runLater(this::runExecute);
             return;
         }
-
         if (display == null || inputsController == null) return;
 
+        // מצב Debug נבחר ע"י המשתמש (דרך הצ'קבוקס)
         if (debugMode) {
-            ensureDebugInit();
-            if (lastDebugState != null) {
-                selectAndScrollProgramRow(lastDebugState.getPc());
+            // התחלה ראשונית של Debug:
+            if (!debugStarted) {
+                Integer bpPc = (programTableController != null) ? programTableController.getBreakpointPc() : null;
+                if (bpPc != null) {
+                    // לרוץ "חלק" עד ה־BP ואז להיכנס לדיבאג שם
+                    inputsController.setInputsEditable(false);
+                    runUntilBreakpointThenEnterDebug(bpPc);
+                    return;
+                } else {
+                    // אין BP → דיבאג רגיל מהשורה הראשונה
+                    ensureDebugInit();
+                    if (lastDebugState != null) selectAndScrollProgramRow(lastDebugState.getPc());
+                    return;
+                }
             }
+            // כבר בתוך דיבאג — שומרים את ההתנהגות הקיימת
+            ensureDebugInit();
+            if (lastDebugState != null) selectAndScrollProgramRow(lastDebugState.getPc());
             return;
         }
 
+        // מצב Run רגיל
         String csv = inputsController.collectValuesCsvPadded();
-        if (outputsController != null) {
-            outputsController.setVariableLines(List.of(csv));
-        }
+        if (outputsController != null) outputsController.setVariableLines(java.util.List.of(csv));
         handleRun();
-        if (inputsController != null) inputsController.setInputsEditable(false);
+        inputsController.setInputsEditable(false);
+
+        // לפי הבקשה הקודמת: לנקות BP אחרי כל ריצה
+        clearBreakpointOnly();
     }
 
     private void handleRun() {
@@ -282,10 +296,12 @@ public class ProgramSceneController {
         int max = (execute != null) ? execute.getMaxDegree() : 0;
         int target = Math.max(0, Math.min(requestedDegree, max));
 
-        programTableController.requestPopulateAnimation(true);
+        if (headerController != null && headerController.isAnimationsOn()) {
+            programTableController.requestPopulateAnimation(true);
+        }
         ExpandDTO expanded = display.expand(target);
         programTableController.showExpanded(expanded);
-
+        if (programTableController != null) programTableController.clearBreakpoint();
         if (headerController != null && programTableController.getTableView() != null) {
             headerController.populateHighlight(programTableController.getTableView().getItems());
             wireHighlight(programTableController);
@@ -311,6 +327,11 @@ public class ProgramSceneController {
         currentDegree = target;
         if (headerController != null) {
             headerController.setCurrentDegree(currentDegree);
+        }
+
+        if (runOptionsController != null) {
+            runOptionsController.startEnabled(true);
+            runOptionsController.setButtonsEnabled(false);
         }
 
         updateChain(programTableController.getSelectedItem());
@@ -367,6 +388,7 @@ public class ProgramSceneController {
                 tv.getSelectionModel().clearSelection();
                 if (tv.getFocusModel() != null) tv.getFocusModel().focus(-1);
             }
+            clearBreakpointOnly(); // לנקות BP בסיום
         }
     }
 
@@ -446,6 +468,7 @@ public class ProgramSceneController {
                     tv.getSelectionModel().clearSelection();
                     if (tv.getFocusModel() != null) tv.getFocusModel().focus(-1);
                 }
+                clearBreakpointOnly(); // לנקות BP בסיום
             }
         });
         debugResumeTask.setOnCancelled(e -> { if (runOptionsController != null) runOptionsController.setResumeBusy(false); });
@@ -473,6 +496,7 @@ public class ProgramSceneController {
                 if (tv.getFocusModel() != null) tv.getFocusModel().focus(-1);
             }
         }
+        clearBreakpointOnly(); // לנקות BP גם ב-STOP
     }
 
     private void debugToHistory() {
@@ -500,7 +524,7 @@ public class ProgramSceneController {
                 InstructionBodyDTO body = (ins != null) ? ins.getBody() : null;
                 if (body == null) continue;
 
-                for (VarRefDTO r : new VarRefDTO[]{
+                for (types.VarRefDTO r : new types.VarRefDTO[]{
                         body.getVariable(), body.getDest(), body.getSource(),
                         body.getCompare(), body.getCompareWith()
                 }) {
@@ -512,8 +536,8 @@ public class ProgramSceneController {
                     }
                 }
                 if (body.getOp() == InstrOpDTO.QUOTE || body.getOp() == InstrOpDTO.JUMP_EQUAL_FUNCTION) {
-                        String argsText = body.getFunctionArgs();
-                        parseVariablesFromArgs(argsText, xs, zs);
+                    String argsText = body.getFunctionArgs();
+                    parseVariablesFromArgs(argsText, xs, zs);
                 }
             }
         }
@@ -533,12 +557,59 @@ public class ProgramSceneController {
             }
         }
 
-       List<String> lines = new ArrayList<>(1 + xs.size() + zs.size());
+        List<String> lines = new ArrayList<>(1 + xs.size() + zs.size());
         lines.add("y = " + values.getOrDefault("y", 0L));
         for (int i : xs) lines.add("x" + i + " = " + values.getOrDefault("x" + i, 0L));
         for (int i : zs) lines.add("z" + i + " = " + values.getOrDefault("z" + i, 0L));
 
         outputsController.setVariableLines(lines);
+    }
+
+    private void runUntilBreakpointThenEnterDebug(int bpPc) {
+        java.util.List<Long> inputs = (inputsController != null)
+                ? inputsController.collectValuesPadded()
+                : java.util.Collections.emptyList();
+        int degree = (headerController != null) ? headerController.getCurrentDegree() : 0;
+
+        DebugAPI localDebug = display.debugForDegree(degree);
+
+        Task<Void> task = new Task<>() {
+            @Override
+            protected Void call() {
+                DebugStateDTO state = localDebug.init(new ExecutionRequestDTO(degree, inputs));
+                while (!localDebug.isTerminated() && state.getPc() != bpPc) {
+                    state = localDebug.step().getNewState();
+                }
+                DebugStateDTO reached = state;
+
+                Platform.runLater(() -> {
+                    // נגמר לפני שהגענו ל-BP: מציגים תוצאה רגילה ומנקים BP
+                    if (localDebug.isTerminated() && reached.getPc() != bpPc) {
+                        handleRun(); // להציג outputs/history בפורמט הרגיל
+                        clearBreakpointOnly();
+                        return;
+                    }
+
+                    // אימוץ סשן הדיבאג והכניסה למצב דיבאג החל מה-BP
+                    debugApi = localDebug;
+                    lastDebugState = reached;
+                    debugStarted = true;
+                    setDebugMode(true);
+
+                    showDebugState(reached);
+                    outputsController.highlightChanged(java.util.Set.of());
+                    selectAndScrollProgramRow(reached.getPc());
+
+                    if (runOptionsController != null) {
+                        runOptionsController.setDebugBtnsDisabled(false); // מפעיל Resume/Step/Stop
+                    }
+                });
+                return null;
+            }
+        };
+        Thread t = new Thread(task, "bp-runner");
+        t.setDaemon(true);
+        t.start();
     }
 
     private static void parseVariablesFromArgs(String text, Set<Integer> xs, Set<Integer> zs) {
@@ -621,6 +692,9 @@ public class ProgramSceneController {
             ExpandDTO expanded = display.expand(currentDegree);
             programTableController.showExpanded(expanded);
 
+            // ניקוי BP
+            if (programTableController != null) programTableController.clearBreakpoint();
+
             fillComboboxes();
             updateChain(programTableController.getSelectedItem());
             applyHistoryForKey(key);
@@ -649,6 +723,9 @@ public class ProgramSceneController {
                 chainTableController.getTableView().setDisable(true);
             }
         }
+
+        // ניקוי BP
+        if (programTableController != null) programTableController.clearBreakpoint();
 
         fillComboboxes();
         applyHistoryForKey(key);
@@ -688,7 +765,6 @@ public class ProgramSceneController {
             runOptionsController.setButtonsEnabled(true);
         }
     }
-
 
     private void onHistoryShow(RunHistoryEntryDTO row) {
         if (row == null) return;
@@ -773,38 +849,38 @@ public class ProgramSceneController {
             String selected = currentHighlight;
             if (selected == null || selected.isBlank()) return false;
 
-                InstructionBodyDTO body = ins.getBody();
-                LabelDTO label = ins.getLabel();
-                LabelDTO targetLabel = (body != null) ? body.getJumpTo() : null;
+            InstructionBodyDTO body = ins.getBody();
+            LabelDTO label = ins.getLabel();
+            LabelDTO targetLabel = (body != null) ? body.getJumpTo() : null;
 
-                if ("EXIT".equals(selected)) {
-                    return (targetLabel != null && targetLabel.isExit());
-                } else if (selected.startsWith("L")) {
-                    boolean isLabelMatch  = (label != null && !label.isExit() && selected.equals(label.getName()));
-                    boolean isJumpToMatch = (targetLabel != null && !targetLabel.isExit() && selected.equals(targetLabel.getName()));
-                    return isLabelMatch || isJumpToMatch;
-                } else if (body != null) {
-                    for (types.VarRefDTO var : new types.VarRefDTO[]{
-                            body.getVariable(),
-                            body.getDest(),
-                            body.getSource(),
-                            body.getCompare(),
-                            body.getCompareWith()
-                    }) {
-                        if (var == null) continue;
-                        types.VarOptionsDTO k = var.getVariable();
-                        int idx = var.getIndex();
-                        if ("y".equals(selected) && k == types.VarOptionsDTO.y) return true;
-                        if (k == types.VarOptionsDTO.x && selected.equals("x" + idx)) return true;
-                        if (k == types.VarOptionsDTO.z && selected.equals("z" + idx)) return true;
-                    }
-                    if (body.getOp() == InstrOpDTO.QUOTE || body.getOp() == InstrOpDTO.JUMP_EQUAL_FUNCTION) {
-                        String argsText = body.getFunctionArgs();
-                        if (argsContainSelectedVar(selected, argsText)) return true;
-                    }
+            if ("EXIT".equals(selected)) {
+                return (targetLabel != null && targetLabel.isExit());
+            } else if (selected.startsWith("L")) {
+                boolean isLabelMatch  = (label != null && !label.isExit() && selected.equals(label.getName()));
+                boolean isJumpToMatch = (targetLabel != null && !targetLabel.isExit() && selected.equals(targetLabel.getName()));
+                return isLabelMatch || isJumpToMatch;
+            } else if (body != null) {
+                for (types.VarRefDTO var : new types.VarRefDTO[]{
+                        body.getVariable(),
+                        body.getDest(),
+                        body.getSource(),
+                        body.getCompare(),
+                        body.getCompareWith()
+                }) {
+                    if (var == null) continue;
+                    types.VarOptionsDTO k = var.getVariable();
+                    int idx = var.getIndex();
+                    if ("y".equals(selected) && k == types.VarOptionsDTO.y) return true;
+                    if (k == types.VarOptionsDTO.x && selected.equals("x" + idx)) return true;
+                    if (k == types.VarOptionsDTO.z && selected.equals("z" + idx)) return true;
                 }
-                return false;
-            });
+                if (body.getOp() == InstrOpDTO.QUOTE || body.getOp() == InstrOpDTO.JUMP_EQUAL_FUNCTION) {
+                    String argsText = body.getFunctionArgs();
+                    if (argsContainSelectedVar(selected, argsText)) return true;
+                }
+            }
+            return false;
+        });
     }
 
     private void applyHistoryForKey(String key) {
@@ -855,4 +931,8 @@ public class ProgramSceneController {
         return p.matcher(argsText).find();
     }
 
+    // מנקה רק את ה-BP (בלי לגעת ב-toolbar)
+    private void clearBreakpointOnly() {
+        if (programTableController != null) programTableController.clearBreakpoint();
+    }
 }

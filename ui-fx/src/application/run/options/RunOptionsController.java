@@ -44,27 +44,34 @@ public class RunOptionsController {
             if (is) {
                 chkRun.setSelected(false);
                 if (main != null) main.setDebugMode(true);
-                setDebugBtnsDisabled(false);
+                // לא מדליקים כאן את כפתורי הדיבאג!
+                setDebugBtnsDisabled(true);
             } else {
                 if (main != null) main.setDebugMode(false);
                 setDebugBtnsDisabled(true);
             }
         });
 
+
         // Execute זמין רק כשמסומן Run או Debug (או כשעושים override דרך forceExecuteEnabled)
         btnExecute.disableProperty().bind(
                 chkRun.selectedProperty().or(chkDebug.selectedProperty()).or(forceExecuteEnabled).not()
         );
+
+        // לכבות Start כל עוד מסומן Debug
+        chkDebug.selectedProperty().addListener((o, was, is) -> {
+            if (btnStart != null) btnStart.setDisable(is);
+        });
+// סנכרון התחלתי (למקרה שה־FXML מסמן Debug כברירת מחדל)
+        if (btnStart != null) btnStart.setDisable(chkDebug.isSelected());
+
     }
 
     public void startEnabled(boolean enabled) {
         if (btnStart != null) btnStart.setDisable(!enabled);
     }
 
-    /**
-     * מפעיל/מכבה את אזור הבחירה (Run/Debug) – אך משאיר את כפתורי הדיבאג כבויים
-     * עד שסימנו Debug או עד שה־ProgramSceneController ידליק אותם במפורש.
-     */
+
     public void setButtonsEnabled(boolean enabled) {
         boolean disable = !enabled;
 
@@ -114,7 +121,6 @@ public class RunOptionsController {
     @FXML private void onStartAction() {
         main.showInputsForEditing();
         setButtonsEnabled(true);
-        // מוודאות שהבחירה פתוחה – אבל כפתורי דיבאג ישארו כבויים עד שיסמנו Debug
         chkRun.setDisable(false);
         chkDebug.setDisable(false);
     }
@@ -124,12 +130,12 @@ public class RunOptionsController {
     @FXML private void onStopAction()  { main.debugStop(); }
 
     @FXML private void onResumeAction() {
-        chkDebug.setSelected(true);   // לשמור UI מסונכרן עם מצב דיבאג
+        chkDebug.setSelected(true);
         main.debugResume();
     }
 
     @FXML private void onStepOverAction() {
-        chkDebug.setSelected(true);   // לשמור UI מסונכרן עם מצב דיבאג
+        chkDebug.setSelected(true);
         main.debugStep();
     }
 

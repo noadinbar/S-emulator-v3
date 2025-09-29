@@ -357,6 +357,7 @@ public class ProgramSceneController {
         debugApi = display.debugForDegree(degree);
         DebugStateDTO state = debugApi.init(new ExecutionRequestDTO(degree, inputs));
         debugStarted = true;
+        if (runOptionsController != null) runOptionsController.setDebugBtnsDisabled(false);
         lastDebugState = state;
         showDebugState(state);
         if (inputsController != null) inputsController.setInputsEditable(false);
@@ -382,13 +383,16 @@ public class ProgramSceneController {
             debugToHistory();
             if (runOptionsController != null) runOptionsController.setDebugBtnsDisabled(true);
             debugMode = false;
+            runOptionsController.startEnabled(true);
+            runOptionsController.setButtonsEnabled(false);
+            runOptionsController.clearRunCheckBox();
 
             if (programTableController != null && programTableController.getTableView() != null) {
                 TableView<InstructionDTO> tv = programTableController.getTableView();
                 tv.getSelectionModel().clearSelection();
                 if (tv.getFocusModel() != null) tv.getFocusModel().focus(-1);
             }
-            clearBreakpointOnly(); // לנקות BP בסיום
+            clearBreakpointOnly();
         }
     }
 
@@ -462,6 +466,9 @@ public class ProgramSceneController {
                 debugToHistory();
                 if (runOptionsController != null) runOptionsController.setDebugBtnsDisabled(true);
                 debugMode = false;
+                runOptionsController.startEnabled(true);
+                runOptionsController.setButtonsEnabled(false);
+                runOptionsController.clearRunCheckBox();
 
                 if (programTableController != null && programTableController.getTableView() != null) {
                     TableView<InstructionDTO> tv = programTableController.getTableView();
@@ -486,7 +493,6 @@ public class ProgramSceneController {
         if (lastDebugState != null && historyController != null) {
 
             if (outputsController != null) outputsController.highlightChanged(Set.of());
-
             debugToHistory();
             if (runOptionsController != null) runOptionsController.setDebugBtnsDisabled(true);
             debugMode = false;
@@ -496,7 +502,10 @@ public class ProgramSceneController {
                 if (tv.getFocusModel() != null) tv.getFocusModel().focus(-1);
             }
         }
-        clearBreakpointOnly(); // לנקות BP גם ב-STOP
+        clearBreakpointOnly();
+        runOptionsController.startEnabled(true);
+        runOptionsController.setButtonsEnabled(false);
+        runOptionsController.clearRunCheckBox();
     }
 
     private void debugToHistory() {
@@ -597,7 +606,7 @@ public class ProgramSceneController {
                     setDebugMode(true);
 
                     showDebugState(reached);
-                    outputsController.highlightChanged(java.util.Set.of());
+                    outputsController.highlightChanged(Set.of());
                     selectAndScrollProgramRow(reached.getPc());
 
                     if (runOptionsController != null) {

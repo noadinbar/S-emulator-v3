@@ -266,18 +266,18 @@
     -fx-background-radius: 3, 2, 1;
 }
 
-/* ====== HIGHLIGHT (מוחלף לספציפיות גבוהה) ====== */
-/* הדגשה רגילה */
+/* ====== HIGHLIGHT  ====== */
+
 .skin-default .content-root .table-row-cell.hilite { -fx-background-color: #c5abab !important; }
 .skin-rose    .content-root .table-row-cell.hilite { -fx-background-color: #ffffff !important; }
 .skin-sky     .content-root .table-row-cell.hilite { -fx-background-color: #ffffff !important; }
 
-/* תאים בתוך שורה מודגשת יהיו שקופים כדי שהרקע של השורה ייראה */
+
 .skin-default .content-root .table-row-cell.hilite .table-cell,
 .skin-rose    .content-root .table-row-cell.hilite .table-cell,
 .skin-sky     .content-root .table-row-cell.hilite .table-cell { -fx-background-color: transparent !important; }
 
-/* טקסט ב-Bold בכל שורה עם hilite (בלי לשנות צבעים) */
+
 .skin-default .content-root .table-row-cell.hilite .table-cell,
 .skin-default .content-root .table-row-cell.hilite .text,
 .skin-rose    .content-root .table-row-cell.hilite .table-cell,

@@ -13,7 +13,7 @@ public class SaveAction {
 
     public void run() {
         try {
-            api.getHistory(); // או api.getCommand2(); שתיהן זורקות אם לא נטען XML
+            api.getHistory();
         } catch (ProgramNotLoadedException e) {
             System.out.println(e.getMessage());
             return;

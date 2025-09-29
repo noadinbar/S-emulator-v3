@@ -307,7 +307,7 @@ public class QuotationInstruction extends AbstractInstruction {
                     JumpEqualConstantInstruction jec = (JumpEqualConstantInstruction) ins;
                     Variable v = convertToZ.get(jec.getVariable());
                     Label target = newLabelMap.get(jec.getTargetLabel());
-                    int k = jec.getConstant(); // או getNumber() אם כך אצלך
+                    int k = jec.getConstant();
                     newInstructions.add(new JumpEqualConstantInstruction(v, target, k, myLabel));
                     break;
                 }

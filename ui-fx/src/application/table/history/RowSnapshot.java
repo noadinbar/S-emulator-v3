@@ -26,7 +26,6 @@ public final class RowSnapshot {
         return new RowSnapshot(EnumSet.of(Kind.DEBUG_TEXT), null, t);
     }
 
-    /** מאחד שני צילומים של אותה שורה (למשל קודם Run ואז Debug). */
     public RowSnapshot merge(RowSnapshot other) {
         if (other == null) return this;
         EnumSet<Kind> k = EnumSet.copyOf(this.kinds);

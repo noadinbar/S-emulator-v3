@@ -98,7 +98,14 @@ public class ProgramSceneController {
                     chainTableController.getTableView().refresh();
             });
 
+            headerController.setOnAnimationsChanged(enabled -> {
+                if (historyController != null) historyController.setAnimationsEnabled(enabled);
+            });
 
+            headerController.setOnAnimationsChanged(enabled -> {
+                if (historyController != null) historyController.setAnimationsEnabled(enabled);
+                if (programTableController != null) programTableController.setAnimationsEnabled(enabled);
+            });
         }
 
         if (summaryController != null && programTableController != null) {
@@ -111,6 +118,7 @@ public class ProgramSceneController {
 
         if (programTableController != null) {
             programTableController.showLineColumn();
+            programTableController.setAnimationsEnabled(headerController.isAnimationsOn());
         }
         if (chainTableController != null) {
             chainTableController.hideLineColumn();
@@ -119,6 +127,7 @@ public class ProgramSceneController {
         if (historyController != null) {
             historyController.setOnRerun(this::onHistoryRerun);
             historyController.setOnShow(this::onHistoryShow);
+            historyController.setAnimationsEnabled(headerController.isAnimationsOn());
         }
 
         rootScroll.setFitToWidth(false);
@@ -184,15 +193,14 @@ public class ProgramSceneController {
             ExpandDTO expanded = this.display.expand(currentDegree);
             programTableController.showExpanded(expanded);
             if (headerController != null && programTableController != null && programTableController.getTableView() != null) {
-                headerController.populateHighlight(programTableController.getTableView().getItems(), true); // ← לאפס ל-NONE
+                headerController.populateHighlight(programTableController.getTableView().getItems(), true);
                 wireHighlight(programTableController);
                 currentHighlight = headerController.getSelectedHighlight();
                 programTableController.getTableView().refresh();
             }
         }
-
         if (headerController != null) {
-            headerController.populateProgramFunction(display);
+            headerController.populateProgramFunction(display, true);
             headerController.setOnProgramSelected(this::onProgramComboChanged);
         }
 
@@ -274,6 +282,7 @@ public class ProgramSceneController {
         int max = (execute != null) ? execute.getMaxDegree() : 0;
         int target = Math.max(0, Math.min(requestedDegree, max));
 
+        programTableController.requestPopulateAnimation(true);
         ExpandDTO expanded = display.expand(target);
         programTableController.showExpanded(expanded);
 
@@ -758,51 +767,44 @@ public class ProgramSceneController {
 
     private void wireHighlight(InstructionsController ic) {
         if (ic == null || ic.getTableView() == null) return;
-        ic.getTableView().setRowFactory(tv -> new TableRow<InstructionDTO>() {
-            @Override
-            protected void updateItem(InstructionDTO ins, boolean empty) {
-                super.updateItem(ins, empty);
 
-                if (empty || ins == null) {
-                    getStyleClass().removeAll(HIGHLIGHT_CLASS);
-                    return;
-                }
+        ic.setHighlightPredicate(ins -> {
+            if (ins == null) return false;
+            String selected = currentHighlight;
+            if (selected == null || selected.isBlank()) return false;
 
-                boolean isExit = false;
-                String selected = currentHighlight;
+                InstructionBodyDTO body = ins.getBody();
+                LabelDTO label = ins.getLabel();
+                LabelDTO targetLabel = (body != null) ? body.getJumpTo() : null;
 
-                if (selected != null && !selected.isBlank()) {
-                    InstructionBodyDTO body    = ins.getBody();
-                    LabelDTO label = ins.getLabel();
-                    LabelDTO targetLabel = (body != null) ? body.getJumpTo() : null;
-
-                    if ("EXIT".equals(selected)) {
-                        isExit = (targetLabel != null && targetLabel.isExit());
-                    } else if (selected.startsWith("L")) {
-                        boolean isLabelExit = (label != null && !label.isExit() && selected.equals(label.getName()));
-                        boolean isJumpToExit  = (targetLabel != null && !targetLabel.isExit() && selected.equals(targetLabel.getName()));
-                        isExit = isLabelExit || isJumpToExit;
-                    } else if (body != null) {
-                        for (VarRefDTO var : new VarRefDTO[]{
-                               body.getVariable(),
-                               body.getDest(),
-                               body.getSource(),
-                               body.getCompare(),
-                               body.getCompareWith()
-                        }) {
-                            if (var == null) continue;
-                            VarOptionsDTO k = var.getVariable();
-                            int idx = var.getIndex();
-                            if ("y".equals(selected) && k == VarOptionsDTO.y) { isExit = true; break; }
-                            if (k == VarOptionsDTO.x && selected.equals("x" + idx)) { isExit = true; break; }
-                            if (k == VarOptionsDTO.z && selected.equals("z" + idx)) { isExit = true; break; }
-                        }
+                if ("EXIT".equals(selected)) {
+                    return (targetLabel != null && targetLabel.isExit());
+                } else if (selected.startsWith("L")) {
+                    boolean isLabelMatch  = (label != null && !label.isExit() && selected.equals(label.getName()));
+                    boolean isJumpToMatch = (targetLabel != null && !targetLabel.isExit() && selected.equals(targetLabel.getName()));
+                    return isLabelMatch || isJumpToMatch;
+                } else if (body != null) {
+                    for (types.VarRefDTO var : new types.VarRefDTO[]{
+                            body.getVariable(),
+                            body.getDest(),
+                            body.getSource(),
+                            body.getCompare(),
+                            body.getCompareWith()
+                    }) {
+                        if (var == null) continue;
+                        types.VarOptionsDTO k = var.getVariable();
+                        int idx = var.getIndex();
+                        if ("y".equals(selected) && k == types.VarOptionsDTO.y) return true;
+                        if (k == types.VarOptionsDTO.x && selected.equals("x" + idx)) return true;
+                        if (k == types.VarOptionsDTO.z && selected.equals("z" + idx)) return true;
+                    }
+                    if (body.getOp() == InstrOpDTO.QUOTE || body.getOp() == InstrOpDTO.JUMP_EQUAL_FUNCTION) {
+                        String argsText = body.getFunctionArgs();
+                        if (argsContainSelectedVar(selected, argsText)) return true;
                     }
                 }
-                getStyleClass().removeAll(HIGHLIGHT_CLASS);
-                if (isExit) getStyleClass().add(HIGHLIGHT_CLASS);
-            }
-        });
+                return false;
+            });
     }
 
     private void applyHistoryForKey(String key) {
@@ -845,4 +847,12 @@ public class ProgramSceneController {
         }
         rootScroll.applyCss();
     }
+
+    private static boolean argsContainSelectedVar(String selected, String argsText) {
+        if (argsText == null || selected == null || selected.isBlank()) return false;
+        java.util.regex.Pattern p =
+                java.util.regex.Pattern.compile("\\b" + java.util.regex.Pattern.quote(selected) + "\\b");
+        return p.matcher(argsText).find();
+    }
+
 }

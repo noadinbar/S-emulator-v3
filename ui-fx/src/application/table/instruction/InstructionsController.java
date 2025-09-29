@@ -1,13 +1,18 @@
 package application.table.instruction;
 
+import javafx.animation.FadeTransition;
+import javafx.animation.Interpolator;
+import javafx.application.Platform;
 import javafx.beans.property.ReadOnlyIntegerWrapper;
 import javafx.beans.property.ReadOnlyObjectProperty;
 import javafx.beans.property.ReadOnlyStringWrapper;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
+import javafx.scene.Node;
 import javafx.scene.control.TableCell;
 import javafx.scene.control.TableColumn;
+import javafx.scene.control.TableRow;
 import javafx.scene.control.TableView;
 
 import display.DisplayDTO;
@@ -18,6 +23,7 @@ import display.InstrOpDTO;
 import display.InstructionBodyDTO;
 import display.InstructionDTO;
 
+import javafx.util.Duration;
 import types.LabelDTO;
 import types.VarRefDTO;
 
@@ -27,6 +33,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Predicate;
 
 public class InstructionsController {
 
@@ -39,6 +46,18 @@ public class InstructionsController {
 
     private final ObservableList<InstructionDTO> items = FXCollections.observableArrayList();
     private final Map<Integer, ExpandedInstructionDTO> expandedByNumber = new HashMap<>();
+    private static final String HILITE_CLASS = "hilite";
+    private Predicate<InstructionDTO> highlightPredicate = i -> false;
+
+
+    // === BONUS: Row fade-in on expand (BEGIN) ===
+    private boolean animationsEnabled = true;
+    private boolean animateNextPopulate = false;
+    private boolean populateStagger = true;      // true=מדורג (אחת-אחת), false=בבת אחת
+    private long populateStamp = 0;
+    private static final int POPULATE_FADE_MS = 450;
+    private static final int POPULATE_PER_ROW_DELAY_MS = 35; // דיליי בין שורות במדורג
+// === BONUS: Row fade-in on expand (END) ===
 
     @FXML
     private void initialize() {
@@ -83,6 +102,67 @@ public class InstructionsController {
 
         colInstruction.setCellValueFactory(d ->
                 new ReadOnlyStringWrapper(formatBody(d.getValue().getBody())));
+
+        //==BONUS==
+        tblInstructions.setRowFactory(tv -> new TableRow<>() {
+            @Override
+            protected void updateItem(InstructionDTO item, boolean empty) {
+                super.updateItem(item, empty);
+
+                // --- היילייט: תמיד מעדכנים ---
+                getStyleClass().remove(InstructionsController.HILITE_CLASS);
+                if (empty || item == null) {
+                    return; // חשוב: לאחר הסרה, אין עוד עבודה
+                }
+                if (highlightPredicate != null && highlightPredicate.test(item)) {
+                    getStyleClass().add(InstructionsController.HILITE_CLASS);
+                }
+
+                // --- אנימציה: רק אם ביקשנו לפעם הזו ---
+                if (!(animationsEnabled && animateNextPopulate)) {
+                    return;
+                }
+
+                // guard כפול נגד reuse/מרצוד
+                Object done   = getProperties().get("popAnimDoneStamp");
+                Object queued = getProperties().get("popAnimQueuedStamp");
+                if (Long.valueOf(populateStamp).equals(done) || Long.valueOf(populateStamp).equals(queued)) {
+                    return;
+                }
+                getProperties().put("popAnimQueuedStamp", populateStamp);
+
+                final long stampAtSchedule = populateStamp;
+                final int indexAtSchedule = getIndex();
+                final InstructionDTO itemAtSchedule = item;
+                final boolean staggerLocal = populateStagger;
+                final int delay = staggerLocal ? indexAtSchedule * POPULATE_PER_ROW_DELAY_MS : 0;
+
+                Platform.runLater(() -> {
+                    // אם בזמן הזה השורה הוחלפה/התעדכן ה-stamp – לא מריצים
+                    if (stampAtSchedule != populateStamp ||
+                            getIndex() != indexAtSchedule ||
+                            getItem() != itemAtSchedule) {
+                        getProperties().put("popAnimDoneStamp", stampAtSchedule);
+                        getProperties().remove("popAnimQueuedStamp");
+                        return;
+                    }
+
+                    // עכשיו בטוח: מורידים אופסיטי ומפעילים fade על התאים בלבד
+                    for (Node cell : lookupAll(".table-cell")) {
+                        cell.setOpacity(0.0);
+                        FadeTransition ft = new FadeTransition(Duration.millis(POPULATE_FADE_MS), cell);
+                        ft.setFromValue(0.0);
+                        ft.setToValue(1.0);
+                        ft.setDelay(Duration.millis(delay));
+                        ft.setInterpolator(Interpolator.EASE_OUT);
+                        ft.play();
+                    }
+                    getProperties().put("popAnimDoneStamp", stampAtSchedule);
+                    getProperties().remove("popAnimQueuedStamp");
+                });
+            }
+        });
+        //==BONUS==
     }
 
     public long countBasic() {
@@ -118,12 +198,27 @@ public class InstructionsController {
     }
 
     public void show(List<InstructionDTO> instructions) {
+        boolean willAnimate = animationsEnabled && animateNextPopulate;
         items.setAll(instructions == null ? List.of() : instructions);
+        tblInstructions.layout();
+        if (willAnimate) {
+            Platform.runLater(() -> animateNextPopulate = false);
+        } else {
+            animateNextPopulate = false;
+        }
     }
 
     public void setRows(List<InstructionDTO> rows) {
+        boolean willAnimate = animationsEnabled && animateNextPopulate;
         items.setAll(rows == null ? List.of() : rows);
+        tblInstructions.layout();
+        if (willAnimate) {
+            Platform.runLater(() -> animateNextPopulate = false);
+        } else {
+            animateNextPopulate = false;
+        }
     }
+    public void setAnimationsEnabled(boolean enabled) { this.animationsEnabled = enabled; }
 
     public void clear() {
         items.clear();
@@ -180,7 +275,6 @@ public class InstructionsController {
                 out.add(parent);
                 ExpandedInstructionDTO parentEi = expandedByNumber.get(num);
                 if (parentEi != null) {
-                    // ואז האבות שלו
                     out.addAll(buildChainDepthFirst(parentEi, seen));
                 }
             }
@@ -251,4 +345,20 @@ public class InstructionsController {
         }
         return base + idx;
     }
+
+    //== BONUS==
+    public void requestPopulateAnimation(boolean stagger) {
+        this.animateNextPopulate = true;
+        this.populateStagger = stagger;
+        this.populateStamp++;
+    }
+
+    public void setHighlightPredicate(Predicate<InstructionDTO> pred) {
+        this.highlightPredicate = (pred != null) ? pred : i -> false;
+        if (tblInstructions != null) tblInstructions.refresh();
+    }
+
+    //== BONUS==
+
+
 }

@@ -3,6 +3,7 @@ package application.header;
 import api.DisplayAPI;
 import api.LoadAPI;
 import display.DisplayDTO;
+import display.InstrOpDTO;
 import display.InstructionBodyDTO;
 import display.InstructionDTO;
 import exportToDTO.LoadAPIImpl;
@@ -24,8 +25,6 @@ import java.util.function.Consumer;
 import java.util.function.UnaryOperator;
 
 public class HeaderController {
-
-
     @FXML private Label Title;
     @FXML private Button btnLoad;
     @FXML private TextField txtPath;
@@ -37,23 +36,31 @@ public class HeaderController {
     @FXML private Button btnExpand;
     @FXML private ComboBox<String> cmbHighlight;
     @FXML private ComboBox<String> cmbSkin;
+    @FXML private ComboBox<String> cmbAnimations;
     @FXML private Button helpButton;
 
     private Path lastValidXmlPath;
     private File lastDir;
-    private final BooleanProperty busy   = new SimpleBooleanProperty(false); // בזמן טעינה
-    private final BooleanProperty loaded = new SimpleBooleanProperty(false); // האם נטען תוכנית
+    private final BooleanProperty busy   = new SimpleBooleanProperty(false);
+    private final BooleanProperty loaded = new SimpleBooleanProperty(false);
     private final IntegerProperty currentDegree = new SimpleIntegerProperty(0);
     private final IntegerProperty maxDegree     = new SimpleIntegerProperty(0);
     private final ObjectProperty<Runnable> onExpand   = new SimpleObjectProperty<>();
     private final ObjectProperty<Runnable> onCollapse = new SimpleObjectProperty<>();
     private final ObjectProperty<Consumer<DisplayAPI>> onLoaded = new SimpleObjectProperty<>();
     private final ObjectProperty<Runnable> onApplyDegree = new SimpleObjectProperty<>();
+    private Consumer<Boolean> onAnimationsChanged;
     private TextFormatter<Integer> degreeFormatter;
 
     private Consumer<String> onSkinChanged;
     private Consumer<String> onHighlightChangedCb;
     private Consumer<String> onProgramSelectedCb;
+    private static final java.util.regex.Pattern X_IN_ARGS =
+            java.util.regex.Pattern.compile("\\bx(\\d+)\\b");
+    private static final java.util.regex.Pattern Z_IN_ARGS =
+            java.util.regex.Pattern.compile("\\bz(\\d+)\\b");
+
+
 
     @FXML
     private void initialize() {
@@ -119,6 +126,15 @@ public class HeaderController {
                 }
             });
         }
+
+        if (cmbAnimations != null) {
+            cmbAnimations.getItems().setAll("Animation off", "Animation on");
+            cmbAnimations.getSelectionModel().select("Animation off"); //
+            cmbAnimations.getSelectionModel().selectedItemProperty().addListener((obs, o, v) -> {
+                boolean enabled = !"Animation off".equalsIgnoreCase(String.valueOf(v));
+                if (onAnimationsChanged != null) onAnimationsChanged.accept(enabled);
+            });
+        }
     }
 
     public String getSelectedHighlight() {
@@ -131,6 +147,7 @@ public class HeaderController {
     }
     public void setOnSkinChanged(Consumer<String> cb) { this.onSkinChanged = cb; }
     public void setOnProgramSelected(Consumer<String> cb) { this.onProgramSelectedCb = cb; }
+    public void setOnAnimationsChanged(Consumer<Boolean> cb) { this.onAnimationsChanged = cb; }
     public void setOnApplyDegree(Runnable r) { onApplyDegree.set(r); }
     public void setOnExpand(Runnable r)   { onExpand.set(r); }
     public void setOnCollapse(Runnable r) { onCollapse.set(r); }
@@ -257,7 +274,6 @@ public class HeaderController {
         String raw = txtDegree.getText();
         int max = maxDegree.get();
 
-        // לא מספר שלם?
         if (raw == null || raw.isBlank() || !raw.matches("\\d+")) {
             showError("Invalid degree", "Please enter an integer between 0 and " + max + ".");
             Platform.runLater(() -> { txtDegree.requestFocus(); txtDegree.selectAll(); });
@@ -273,16 +289,13 @@ public class HeaderController {
             return;
         }
 
-        // אכיפת טווח [0..max] + הודעה
         if (d < 0 || d > max) {
             showError("Out of range", "Degree must be between 0 and " + max + ". Setting to the nearest allowed value.");
             d = Math.max(0, Math.min(d, max));
         }
 
-        // עדכון הערך (יעדכן גם את הטקסט דרך ה-bind)
         if (d != currentDegree.get()) currentDegree.set(d);
 
-        // “החלה” חיצונית (אם חיברתם callback)
         Runnable apply = onApplyDegree.get();
         if (apply != null) apply.run();
     }
@@ -290,12 +303,11 @@ public class HeaderController {
     private void syncDegreeField() {
         int v = currentDegree.get();
         if (degreeFormatter != null && !Objects.equals(degreeFormatter.getValue(), v)) {
-            degreeFormatter.setValue(v); // דוחף את הערך גם לטקסט בפועל
+            degreeFormatter.setValue(v);
         } else if (txtDegree != null && (txtDegree.getText() == null || !txtDegree.getText().equals(Integer.toString(v)))) {
             txtDegree.setText(Integer.toString(v));
         }
     }
-
 
     @FXML
     private void onHelp() {
@@ -347,14 +359,14 @@ public class HeaderController {
     public void setOnHighlightChanged(Consumer<String> cb) { this.onHighlightChangedCb= cb; }
 
     public void populateHighlight(List<InstructionDTO> rows) {
-        populateHighlight(rows, false); // ברירת מחדל: לא לאפס
+        populateHighlight(rows, false);
     }
 
     public void populateHighlight(List<InstructionDTO> rows, boolean resetToNone) {
         if (cmbHighlight == null) return;
 
         String prev = cmbHighlight.getValue();
-        if (resetToNone) prev = null; // ← מבטל שימור בחירה קודמת
+        if (resetToNone) prev = null;
 
         boolean hasY = false;
         boolean jumpToExit = false;
@@ -373,6 +385,10 @@ public class HeaderController {
                 }
                 InstructionBodyDTO body = ins.getBody();
                 if (body == null) continue;
+                if (body.getOp() == InstrOpDTO.QUOTE || body.getOp() == InstrOpDTO.JUMP_EQUAL_FUNCTION) {
+                    parseVarsFromArgs(body.getFunctionArgs(), xs, zs);
+                }
+
 
                 LabelDTO jt = body.getJumpTo();
                 if (jt != null && jt.isExit()) jumpToExit = true;
@@ -408,8 +424,22 @@ public class HeaderController {
     }
 
     public void populateProgramFunction(DisplayAPI display) {
+        populateProgramFunction(display, false);
+    }
+
+    private static void parseVarsFromArgs(String text,
+                                          java.util.SortedSet<Integer> xs,
+                                          java.util.SortedSet<Integer> zs) {
+        if (text == null || text.isBlank()) return;
+        var mx = X_IN_ARGS.matcher(text);
+        while (mx.find()) { try { xs.add(Integer.parseInt(mx.group(1))); } catch (Exception ignore) {} }
+        var mz = Z_IN_ARGS.matcher(text);
+        while (mz.find()) { try { zs.add(Integer.parseInt(mz.group(1))); } catch (Exception ignore) {} }
+    }
+
+    public void populateProgramFunction(DisplayAPI display, boolean resetToProgram) {
         if (cmbProgramFunction == null) return;
-        String prev = cmbProgramFunction.getValue();
+        String prev = resetToProgram ? null : cmbProgramFunction.getValue();
         List<String> items = new ArrayList<>();
 
         DisplayDTO cmd2 = (display != null) ? display.getCommand2() : null;
@@ -438,5 +468,10 @@ public class HeaderController {
             alert.getDialogPane().setContent(area);
             alert.showAndWait();
         });
+    }
+
+    public boolean isAnimationsOn() {
+        String v = (cmbAnimations != null) ? cmbAnimations.getValue() : "On";
+        return !"Off".equalsIgnoreCase(String.valueOf(v));
     }
 }

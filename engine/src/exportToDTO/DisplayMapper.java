@@ -373,7 +373,7 @@ class DisplayMapper {
                 String rawName = args.substring(nameStart, j).trim();
                 if (!rawName.isEmpty()) {
                     String pretty = nameToUserString.getOrDefault(rawName, rawName);
-                    out.append(pretty); // מוסיפים רק את ה-userString, בלי למחוק כלום
+                    out.append(pretty);
                 }
                 i = j - 1;
             }

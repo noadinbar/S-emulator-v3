@@ -41,7 +41,6 @@ public class XMLToStructure {
             String name = f.getName();
             if (name == null || name.isBlank()) continue;
             String us = f.getUserString();
-            // אם user-string ריק/חסר – ניפול חזרה לשם הפורמלי
             map.put(name, (us == null || us.isBlank()) ? name : us.trim());
         }
         this.functionDisplayMap = java.util.Collections.unmodifiableMap(map);

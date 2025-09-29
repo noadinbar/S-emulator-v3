@@ -3,7 +3,6 @@ out/
 !**/src/main/**/out/
 !**/src/test/**/out/
 
-# שתפי את הגדרות הספריות והארטיפקטים
 .idea/*
 !.idea/libraries
 !.idea/artifacts

@@ -103,7 +103,7 @@ public class DisplayAPIImpl implements DisplayAPI {
     public DebugAPI debugForDegree(int degree) {
         if (degree == 0) {
             ((ProgramImpl) program).setCurrentRunDegree(0);
-            // expanded=original כשה-degree 0
+            // expanded=original degree 0
             return new DebugAPIImpl(((ProgramImpl) program), ((ProgramImpl) program), 0);
         }
         int max = program.calculateMaxDegree();

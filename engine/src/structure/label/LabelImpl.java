@@ -22,7 +22,7 @@ public class LabelImpl implements Label, Serializable {
         LabelImpl other = (LabelImpl) o;
         if (this.label == null && other.label == null) return true;
         if (this.label == null || other.label == null) return false;
-        return this.label.equals(other.label); // השוואה רגישה לאותיות
+        return this.label.equals(other.label);
     }
 
     @Override

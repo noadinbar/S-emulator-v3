@@ -43,7 +43,7 @@ public final class ExecutionFormatter {
 
         if (!xs.isEmpty() && !zs.isEmpty()) return xs + System.lineSeparator() + zs;
         if (!xs.isEmpty()) return xs;
-        return zs; // ייתכן שאין z בכלל
+        return zs;
     }
 
     public static String formatCycles(ExecutionDTO dto) {

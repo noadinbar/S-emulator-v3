@@ -10,7 +10,7 @@ import display.InstructionDTO;
 
 import exceptions.InvalidInputException;
 import exceptions.ProgramNotLoadedException;
-import exceptions.InvalidDegreeException; // ← חדש
+import exceptions.InvalidDegreeException;
 import execution.ExecutionDTO;
 import execution.ExecutionRequestDTO;
 
@@ -79,7 +79,6 @@ public class ExecuteAction {
                 }
             }
 
-            // הדפסת תוכנית מורחבת אם בחרו דרגה > 0 (השתמשנו ב-expandedDto שכבר אושר)
             if (degree > 0 && expandedDto != null) {
                 System.out.println();
                 System.out.println(String.format("Program: %s", expandedDto.getProgramName()));
@@ -121,7 +120,7 @@ public class ExecuteAction {
             System.out.println("Error: " + e.getMessage());
         } catch (InvalidInputException e) {
             System.out.println("Error: " + e.getMessage());
-        } // לא חייבים לתפוס כאן InvalidDegreeException כי היא נתפסת בלולאה
+        }
     }
 
 
@@ -137,7 +136,7 @@ public class ExecuteAction {
             String t = p.trim().toLowerCase(Locale.ROOT);
             if (t.isEmpty()) continue;
             try { list.add(Long.parseLong(t)); }
-            catch (NumberFormatException ignore) { /* מתעלמים מערכים לא חוקיים */ }
+            catch (NumberFormatException ignore) { }
         }
         return list;
     }

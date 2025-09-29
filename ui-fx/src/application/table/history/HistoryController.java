@@ -35,9 +35,12 @@ public class HistoryController {
     @FXML private Button btnShow;
 
     private final ObservableList<RunHistoryEntryDTO> items = FXCollections.observableArrayList();
+    private Consumer<RunHistoryEntryDTO> onRerun;
+    private Consumer<RunHistoryEntryDTO> onShow;
 
     // === BONUS: Row fade-in on new history entry (BEGIN) ===
     // Which row should animate now + a unique "stamp" per addition to avoid double-runs
+    private boolean animationsEnabled = true;
     private int  animateIndex = -1;
     private long animateStamp = 0;
     // === BONUS: Row fade-in on new history entry (END) ===
@@ -74,23 +77,31 @@ public class HistoryController {
                 if (empty || item == null) return;
 
                 if (getIndex() == animateIndex) {
-                    // guard: run at most once per stamp, even if updateItem fires again
                     Object done   = getProperties().get("animDoneStamp");
                     Object queued = getProperties().get("animQueuedStamp");
                     if (Long.valueOf(animateStamp).equals(done) || Long.valueOf(animateStamp).equals(queued)) {
                         return;
                     }
                     getProperties().put("animQueuedStamp", animateStamp);
+                    applyCss();
+                    layout();
+                    for (Node cell : lookupAll(".table-cell")) {
+                        cell.setOpacity(0.0);
+                    }
 
-                    // Defer to next pulse so cells exist (handles virtualization + scroll)
                     Platform.runLater(() -> {
-                        // If the row scrolled/reused, bail out cleanly
                         if (getIndex() != animateIndex) {
                             getProperties().put("animDoneStamp", animateStamp);
                             getProperties().remove("animQueuedStamp");
                             return;
                         }
-                        animateCellsOnce(this  /*ms*/  /*from opacity*/);
+                        for (Node cell : lookupAll(".table-cell")) {
+                            FadeTransition ft = new FadeTransition(Duration.millis(1200), cell);
+                            ft.setFromValue(0.0);
+                            ft.setToValue(1.0);
+                            ft.setInterpolator(Interpolator.EASE_OUT);
+                            ft.play();
+                        }
                         getProperties().put("animDoneStamp", animateStamp);
                         getProperties().remove("animQueuedStamp");
                         if (getIndex() == animateIndex) {
@@ -117,24 +128,26 @@ public class HistoryController {
     }
     // === BONUS: Row fade-in on new history entry (END) ===
 
-    private Consumer<RunHistoryEntryDTO> onRerun;
     public void setOnRerun(Consumer<RunHistoryEntryDTO> cb) { this.onRerun = cb; }
-    private Consumer<RunHistoryEntryDTO> onShow;
     public void setOnShow(Consumer<RunHistoryEntryDTO> cb) { this.onShow = cb; }
-
+    public void setAnimationsEnabled(boolean enabled) { this.animationsEnabled = enabled; }
     public int getTableSize() { return items.size(); }
 
     public void addEntry(RunHistoryEntryDTO row) {
+        addEntry(row, animationsEnabled);
+    }
+
+    public void addEntry(RunHistoryEntryDTO row, boolean animate) {
         items.add(row);
-        if (tblHistory != null) {
-            // === BONUS: Row fade-in on new history entry (BEGIN) ===
+        // === BONUS: Row fade-in on new history entry (BEGIN) ===
+        if (animate && tblHistory != null) {
             int index = items.size() - 1;
             animateIndex = index;
-            animateStamp++;              // new "stamp" for this addition
-            tblHistory.scrollTo(index);  // ensure the row is realized
-            tblHistory.layout();         // stabilize VirtualFlow to avoid white flashes
-            // === BONUS: Row fade-in on new history entry (END) ===
+            animateStamp++;
+            tblHistory.scrollTo(index);
+            tblHistory.layout();
         }
+        // === BONUS: Row fade-in on new history entry (END) ===
     }
 
     public void addEntry(DebugStateDTO state, int degree, List<Long> inputs) {
@@ -144,7 +157,7 @@ public class HistoryController {
                 .filter(v -> v.getVar().getVariable() == types.VarOptionsDTO.y)
                 .mapToLong(execution.VarValueDTO::getValue)
                 .findFirst().orElse(0L);
-        addDebugSnapshot(degree, inputs, y, cycles); // משתמשים ב־API קצר פנימי להצגת "צילום"
+        addDebugSnapshot(degree, inputs, y, cycles);
     }
 
     public void addDebugSnapshot(int degree, List<Long> inputs, long yValue, long cycles) {
@@ -156,14 +169,14 @@ public class HistoryController {
                 yValue,
                 (int) cycles
         );
-        addEntry(row);
+        addEntry(row, animationsEnabled);
+
     }
 
     public void clear() {
         items.clear();
     }
     public TableView<RunHistoryEntryDTO> getTableView() { return tblHistory; }
-
     private static String toCsv(List<Long> xs) {
         if (xs == null || xs.isEmpty()) return "";
         return xs.stream().map(String::valueOf).collect(Collectors.joining(","));

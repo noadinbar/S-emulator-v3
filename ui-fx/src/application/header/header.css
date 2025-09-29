@@ -1,4 +1,4 @@
-.header-root { /* ProgressBar – גובה+צבעים */
+.header-root { /* ProgressBar – height+colors */
     .skin-default .progress-bar,
     .skin-rose    .progress-bar,
     .skin-sky     .progress-bar {
@@ -19,3 +19,5 @@
     .skin-rose    .progress-bar:indeterminate > .bar { -fx-background-color: #c44b73; }
     .skin-sky     .progress-bar:indeterminate > .bar { -fx-background-color: #2563eb; }
 }
+
+.app-title { -fx-font-weight: bold; -fx-font-size: 20px !important; }

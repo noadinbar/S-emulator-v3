@@ -17,7 +17,6 @@
     </stylesheets>
 
     <items>
-        <!-- למעלה: תצוגת משתנים כטקסט חופשי -->
         <AnchorPane prefHeight="120.0" prefWidth="153.0">
             <children>
                 <HBox prefHeight="102.0" prefWidth="143.0" spacing="8.0" AnchorPane.bottomAnchor="10.0" AnchorPane.leftAnchor="10.0" AnchorPane.rightAnchor="10.0" AnchorPane.topAnchor="10.0">
@@ -35,7 +34,6 @@
             </children>
         </AnchorPane>
 
-        <!-- למטה: תצוגת Cycles בשורת טקסט (TextField) -->
         <AnchorPane prefHeight="57.0" prefWidth="233.0">
             <children>
                 <HBox spacing="8.0" AnchorPane.bottomAnchor="10.0" AnchorPane.leftAnchor="10.0" AnchorPane.rightAnchor="10.0" AnchorPane.topAnchor="10.0">

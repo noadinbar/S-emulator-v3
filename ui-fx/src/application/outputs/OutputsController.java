@@ -50,7 +50,7 @@ public class OutputsController {
         }
     }
 
-    public void highlightChanged(java.util.Set<String> changedNames) {
+    public void highlightChanged(Set<String> changedNames) {
         if (linesBox == null) return;
 
         for (Label lbl : varLabels.values()) {

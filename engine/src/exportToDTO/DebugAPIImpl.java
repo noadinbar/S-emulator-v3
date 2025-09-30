@@ -111,27 +111,20 @@ public class DebugAPIImpl implements DebugAPI {
 
     @Override
     public void restore(final DebugStateDTO snapshot) {
-        // 1) בונים ExecutionContext חדש מה-snapshot
         ExecutionContext newCtx = new ExecutionContextImpl();
         for (VarValueDTO vv : snapshot.getVars()) {
             Variable var = toVariable(vv);
             newCtx.updateVariable(var, vv.getValue());
         }
         this.context = newCtx;
-
-        // 2) pc + terminated
         this.pc = snapshot.getPc();
         this.terminated = (pc < 0 || pc >= instructions.size());
         this.logicalCyclesSoFar = snapshot.getCyclesSoFar();
-        // 3) בסיס לחישוב דלתא המחזורים בצעד הבא:
-        // אין לנו setter ל-cycles ב-runner, לכן מיישרים את "baseline"
-        // למחזורי ה-runner הנוכחיים, כדי שה-delta בצעד הבא יהיה מדויק לצעד אחד.
         this.cyclesBeforeStep = runner.getCycles();
     }
 
     // ===== utils =====
 
-    // ממפה VarValueDTO → Variable (y/x/z) לפי המבנים שלך
     private static Variable toVariable(VarValueDTO vv) {
         VarOptionsDTO kind = vv.getVar().getVariable();
         int idx = vv.getVar().getIndex();

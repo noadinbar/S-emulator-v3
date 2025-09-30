@@ -20,6 +20,7 @@ import structure.variable.VariableImpl;
 import structure.variable.VariableType;
 
 import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 public class XMLToStructure {
@@ -28,22 +29,22 @@ public class XMLToStructure {
 
     public void buildFunctionDisplayMap(SProgram sProgram) {
         if (sProgram == null) {
-            this.functionDisplayMap = java.util.Collections.emptyMap();
+            this.functionDisplayMap = Collections.emptyMap();
             return;
         }
         SFunctions sFunctions = sProgram.getSFunctions();
         if (sFunctions == null || sFunctions.getSFunction() == null) {
-            this.functionDisplayMap = java.util.Collections.emptyMap();
+            this.functionDisplayMap = Collections.emptyMap();
             return;
         }
-        java.util.Map<String, String> map = new java.util.LinkedHashMap<>();
+        Map<String, String> map = new LinkedHashMap<>();
         for (SFunction f : sFunctions.getSFunction()) {
             String name = f.getName();
             if (name == null || name.isBlank()) continue;
             String us = f.getUserString();
             map.put(name, (us == null || us.isBlank()) ? name : us.trim());
         }
-        this.functionDisplayMap = java.util.Collections.unmodifiableMap(map);
+        this.functionDisplayMap = Collections.unmodifiableMap(map);
     }
 
 

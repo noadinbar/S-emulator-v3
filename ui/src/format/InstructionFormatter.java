@@ -26,7 +26,7 @@ public final class InstructionFormatter {
         return String.format("%s %s %s %s %s", num, kind, label, body, cyc);
     }
 
-    public static String joinInputs(java.util.List<VarRefDTO> xs){
+    public static String joinInputs(List<VarRefDTO> xs){
         if (xs == null || xs.isEmpty()) return "-";
         SortedSet<Integer> set = new TreeSet<>();
         for (VarRefDTO v : xs) {
@@ -40,7 +40,7 @@ public final class InstructionFormatter {
         return sj.toString();
     }
 
-    public static String joinLabels(java.util.List<LabelDTO> ls){
+    public static String joinLabels(List<LabelDTO> ls){
         if (ls == null || ls.isEmpty()) return "-";
         boolean hasExit = false;
         SortedSet<Integer> nums = new TreeSet<>();

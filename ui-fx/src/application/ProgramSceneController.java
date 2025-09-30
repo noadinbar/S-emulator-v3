@@ -40,6 +40,7 @@ import javafx.scene.layout.Region;
 import javafx.stage.Modality;
 import javafx.stage.Popup;
 import javafx.stage.Stage;
+import javafx.stage.Window;
 import javafx.util.Duration;
 import types.LabelDTO;
 import display.InstructionBodyDTO;
@@ -158,9 +159,6 @@ public class ProgramSceneController {
                     });
         }
         wireHighlight(programTableController);
-
-        // שימי לב: לא נועלים/משנים את ה־Run/Debug כשיש BP. הבחירה נשארת אצל המשתמש.
-        // אם תרצי חיווי קל כשיש BP (ללא נעילה) אפשר להוסיף כאן בהמשך.
     }
 
     private void onProgramLoaded(DisplayAPI display) {
@@ -231,37 +229,27 @@ public class ProgramSceneController {
             return;
         }
         if (display == null || inputsController == null) return;
-
-        // מצב Debug נבחר ע"י המשתמש (דרך הצ'קבוקס)
         if (debugMode) {
-            // התחלה ראשונית של Debug:
             if (!debugStarted) {
                 Integer bpPc = (programTableController != null) ? programTableController.getBreakpointPc() : null;
                 if (bpPc != null) {
-                    // לרוץ "חלק" עד ה־BP ואז להיכנס לדיבאג שם
                     inputsController.setInputsEditable(false);
                     runUntilBreakpointThenEnterDebug(bpPc);
                     return;
                 } else {
-                    // אין BP → דיבאג רגיל מהשורה הראשונה
                     ensureDebugInit();
                     if (lastDebugState != null) selectAndScrollProgramRow(lastDebugState.getPc());
                     return;
                 }
             }
-            // כבר בתוך דיבאג — שומרים את ההתנהגות הקיימת
             ensureDebugInit();
             if (lastDebugState != null) selectAndScrollProgramRow(lastDebugState.getPc());
             return;
         }
-
-        // מצב Run רגיל
         String csv = inputsController.collectValuesCsvPadded();
-        if (outputsController != null) outputsController.setVariableLines(java.util.List.of(csv));
+        if (outputsController != null) outputsController.setVariableLines(List.of(csv));
         handleRun();
         inputsController.setInputsEditable(false);
-
-        // לפי הבקשה הקודמת: לנקות BP אחרי כל ריצה
         clearBreakpointOnly();
     }
 
@@ -387,7 +375,7 @@ public class ProgramSceneController {
         DebugStepDTO step = debugApi.step();
         DebugStateDTO state = step.getNewState();
         if (dbgCursor < dbgTimeline.size() - 1) {
-            dbgTimeline.subList(dbgCursor + 1, dbgTimeline.size()).clear(); // חתוך "עתיד" אם חזרנו אחורה
+            dbgTimeline.subList(dbgCursor + 1, dbgTimeline.size()).clear();
         }
         dbgTimeline.add(state);
         dbgCursor++;
@@ -494,7 +482,7 @@ public class ProgramSceneController {
                     tv.getSelectionModel().clearSelection();
                     if (tv.getFocusModel() != null) tv.getFocusModel().focus(-1);
                 }
-                clearBreakpointOnly(); // לנקות BP בסיום
+                clearBreakpointOnly();
             }
         });
         debugResumeTask.setOnCancelled(e -> { if (runOptionsController != null) runOptionsController.setResumeBusy(false); });
@@ -529,21 +517,16 @@ public class ProgramSceneController {
 
     public void debugStepBack() {
         if (!debugMode || !debugStarted || debugApi == null) return;
-        if (dbgCursor <= 0) {                       // ← לאפשר 1→0
+        if (dbgCursor <= 0) {
             runOptionsController.setStepBackDisabled(true);
             return;
         }
 
-        DebugStateDTO from = dbgTimeline.get(dbgCursor); // מזה אנו חוזרים
+        DebugStateDTO from = dbgTimeline.get(dbgCursor);
         dbgCursor--;
-        DebugStateDTO to   = dbgTimeline.get(dbgCursor); // לזה חוזרים
-
-        // משחזר ב-Engine (כבר מימשת restore(void))
+        DebugStateDTO to   = dbgTimeline.get(dbgCursor);
         debugApi.restore(to);
-
-        // הדגשת ערכים שהשתנו אחורה (diff בין from -> to)
         Set<String> changedBack = computeChangedVarNames(from, to);
-
         lastDebugState = to;
         showDebugState(to);
         if (outputsController != null) outputsController.highlightChanged(changedBack);
@@ -633,15 +616,12 @@ public class ProgramSceneController {
                 DebugStateDTO reached = state;
 
                 Platform.runLater(() -> {
-                    // נגמר לפני שהגענו ל-BP: מציגים תוצאה רגילה ומנקים BP
                     if (localDebug.isTerminated() && reached.getPc() != bpPc) {
-                        handleRun(); // להציג outputs/history בפורמט הרגיל
+                        handleRun();
                         clearBreakpointOnly();
                         showBreakpointMessage();
                         return;
                     }
-
-                    // אימוץ סשן הדיבאג והכניסה למצב דיבאג החל מה-BP
                     debugApi = localDebug;
                     lastDebugState = reached;
                     debugStarted = true;
@@ -653,7 +633,7 @@ public class ProgramSceneController {
                     outputsController.highlightChanged(Set.of());
                     selectAndScrollProgramRow(reached.getPc());
                     if (runOptionsController != null) {
-                        runOptionsController.setDebugBtnsDisabled(false); // מפעיל Resume/Step/Stop
+                        runOptionsController.setDebugBtnsDisabled(false);
                     }
                 });
                 return null;
@@ -743,10 +723,7 @@ public class ProgramSceneController {
             headerController.setMaxDegree(execute.getMaxDegree());
             ExpandDTO expanded = display.expand(currentDegree);
             programTableController.showExpanded(expanded);
-
-            // ניקוי BP
             if (programTableController != null) programTableController.clearBreakpoint();
-
             fillComboboxes();
             updateChain(programTableController.getSelectedItem());
             applyHistoryForKey(key);
@@ -775,8 +752,6 @@ public class ProgramSceneController {
                 chainTableController.getTableView().setDisable(true);
             }
         }
-
-        // ניקוי BP
         if (programTableController != null) programTableController.clearBreakpoint();
 
         fillComboboxes();
@@ -872,7 +847,6 @@ public class ProgramSceneController {
         stage.show();
     }
 
-    // טוסט לא חוסם במרכז החלון
     private void showBreakpointMessage() {
         Popup popup = new Popup();
         Label msg = new Label("Run finished — breakpoint not reached");
@@ -885,29 +859,22 @@ public class ProgramSceneController {
         );
         msg.setMouseTransparent(true);
         msg.setOpacity(0);
-
         popup.getContent().add(msg);
-
-        var win = rootScroll.getScene().getWindow();
-        // מציגים ואז מרכזים לפי הגודל האמיתי של התוכן
+        Window win = rootScroll.getScene().getWindow();
         popup.show(win);
         Platform.runLater(() -> {
             double x = win.getX() + (win.getWidth()  - msg.getWidth())  / 2.0;
             double y = win.getY() + (win.getHeight() - msg.getHeight()) / 2.0;
             popup.setX(x);
             popup.setY(y);
-
-            var fadeIn = new FadeTransition(Duration.millis(150), msg);
+            FadeTransition fadeIn = new FadeTransition(Duration.millis(150), msg);
             fadeIn.setFromValue(0);
             fadeIn.setToValue(1);
-
-            var stay = new PauseTransition(Duration.seconds(1.7));
-
-            var fadeOut = new FadeTransition(Duration.millis(220), msg);
+            PauseTransition stay = new PauseTransition(Duration.seconds(1.7));
+            FadeTransition fadeOut = new FadeTransition(Duration.millis(220), msg);
             fadeOut.setFromValue(1);
             fadeOut.setToValue(0);
-
-            var seq = new SequentialTransition(fadeIn, stay, fadeOut);
+            SequentialTransition seq = new SequentialTransition(fadeIn, stay, fadeOut);
             seq.setOnFinished(e -> popup.hide());
             seq.play();
         });
@@ -1019,12 +986,10 @@ public class ProgramSceneController {
 
     private static boolean argsContainSelectedVar(String selected, String argsText) {
         if (argsText == null || selected == null || selected.isBlank()) return false;
-        java.util.regex.Pattern p =
-                java.util.regex.Pattern.compile("\\b" + java.util.regex.Pattern.quote(selected) + "\\b");
+        Pattern p = Pattern.compile("\\b" + Pattern.quote(selected) + "\\b");
         return p.matcher(argsText).find();
     }
 
-    // מנקה רק את ה-BP (בלי לגעת ב-toolbar)
     private void clearBreakpointOnly() {
         if (programTableController != null) programTableController.clearBreakpoint();
     }

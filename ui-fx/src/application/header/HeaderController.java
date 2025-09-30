@@ -23,6 +23,7 @@ import java.nio.file.Path;
 import java.util.*;
 import java.util.function.Consumer;
 import java.util.function.UnaryOperator;
+import java.util.regex.Matcher;
 
 public class HeaderController {
     @FXML private Label Title;
@@ -431,9 +432,9 @@ public class HeaderController {
                                           java.util.SortedSet<Integer> xs,
                                           java.util.SortedSet<Integer> zs) {
         if (text == null || text.isBlank()) return;
-        var mx = X_IN_ARGS.matcher(text);
+        Matcher mx = X_IN_ARGS.matcher(text);
         while (mx.find()) { try { xs.add(Integer.parseInt(mx.group(1))); } catch (Exception ignore) {} }
-        var mz = Z_IN_ARGS.matcher(text);
+        Matcher mz = Z_IN_ARGS.matcher(text);
         while (mz.find()) { try { zs.add(Integer.parseInt(mz.group(1))); } catch (Exception ignore) {} }
     }
 

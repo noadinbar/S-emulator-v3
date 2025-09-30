@@ -113,22 +113,16 @@ public class InstructionsController {
             @Override
             protected void updateItem(InstructionDTO item, boolean empty) {
                 super.updateItem(item, empty);
-
-                // --- היילייט: תמיד מעדכנים ---
                 getStyleClass().remove(InstructionsController.HILITE_CLASS);
                 if (empty || item == null) {
-                    return; // חשוב: לאחר הסרה, אין עוד עבודה
+                    return;
                 }
                 if (highlightPredicate != null && highlightPredicate.test(item)) {
                     getStyleClass().add(InstructionsController.HILITE_CLASS);
                 }
-
-                // --- אנימציה: רק אם ביקשנו לפעם הזו ---
                 if (!(animationsEnabled && animateNextPopulate)) {
                     return;
                 }
-
-                // guard כפול נגד reuse/מרצוד
                 Object done   = getProperties().get("popAnimDoneStamp");
                 Object queued = getProperties().get("popAnimQueuedStamp");
                 if (Long.valueOf(populateStamp).equals(done) || Long.valueOf(populateStamp).equals(queued)) {
@@ -140,7 +134,6 @@ public class InstructionsController {
                 final int indexAtSchedule = getIndex();
                 final InstructionDTO itemAtSchedule = item;
                 final boolean staggerLocal = populateStagger;
-                final int delay = staggerLocal ? indexAtSchedule * POPULATE_PER_ROW_DELAY_MS : 0;
 
                 Platform.runLater(() -> {
                     if (stampAtSchedule != populateStamp ||
@@ -185,6 +178,7 @@ public class InstructionsController {
                 });
             }
         });
+
         //==BONUS==
 
         //==Bonus- breakpoint==
@@ -345,24 +339,10 @@ public class InstructionsController {
         return out;
     }
     public Integer getBreakpointPc() { return breakpointPc; }
-    public boolean hasBreakpoint() { return breakpointPc != null; }
     public void clearBreakpoint() {
         breakpointPc = null;
         if (getTableView() != null) getTableView().refresh();
         if (onBreakpointChanged != null) onBreakpointChanged.accept(null);
-    }
-    public void setOnBreakpointChanged(Consumer<Integer> l) { this.onBreakpointChanged = l; }
-
-    public void selectByLine(int line) {
-        if (tblInstructions == null) return;
-        var items = tblInstructions.getItems();
-        for (int i = 0; i < items.size(); i++) {
-            if (items.get(i).getNumber() == line) {
-                tblInstructions.getSelectionModel().select(i);
-                tblInstructions.scrollTo(i);
-                break;
-            }
-        }
     }
 
     private String formatLabel(LabelDTO lbl) {

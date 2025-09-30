@@ -71,10 +71,11 @@ public class ProgramSceneController {
     private volatile boolean debugStopRequested = false;
     private Task<Void> debugResumeTask = null;
     private DebugStateDTO lastDebugState = null;
+    private final List<DebugStateDTO> dbgTimeline = new ArrayList<>();
+    private int dbgCursor = -1;
     private final Map<String, List<RunHistoryEntryDTO>> uiHistoryByKey = new LinkedHashMap<>();
     private final Map<String, RowSnapshot> snapshots = new LinkedHashMap<>();
     private String currentHistoryKey = null;
-
     private String currentHighlight = null;
     private static final String HIGHLIGHT_CLASS = "hilite";
     private static final Pattern X_VAR_PATTERN = Pattern.compile("\\bx(\\d+)\\b");
@@ -172,6 +173,8 @@ public class ProgramSceneController {
         debugStarted = false;
         debugStopRequested = false;
         debugResumeTask = null;
+        dbgTimeline.clear();
+        dbgCursor = -1;
 
         uiHistoryByKey.clear();
         snapshots.clear();
@@ -328,6 +331,8 @@ public class ProgramSceneController {
             debugResumeTask.cancel();
             debugResumeTask = null;
         }
+        dbgTimeline.clear();
+        dbgCursor = -1;
 
         currentDegree = target;
         if (headerController != null) {
@@ -365,6 +370,10 @@ public class ProgramSceneController {
         if (runOptionsController != null) runOptionsController.setDebugBtnsDisabled(false);
         lastDebugState = state;
         showDebugState(state);
+        dbgTimeline.clear();
+        dbgTimeline.add(state);
+        dbgCursor = 0;
+        runOptionsController.setStepBackDisabled(true);
         if (inputsController != null) inputsController.setInputsEditable(false);
         outputsController.highlightChanged(Set.of());
     }
@@ -373,11 +382,16 @@ public class ProgramSceneController {
         if (!debugMode) return;
         ensureDebugInit();
         if (debugApi == null) return;
+        runOptionsController.setStepBackDisabled(false);
         DebugStateDTO prev = lastDebugState;
         DebugStepDTO step = debugApi.step();
         DebugStateDTO state = step.getNewState();
+        if (dbgCursor < dbgTimeline.size() - 1) {
+            dbgTimeline.subList(dbgCursor + 1, dbgTimeline.size()).clear(); // חתוך "עתיד" אם חזרנו אחורה
+        }
+        dbgTimeline.add(state);
+        dbgCursor++;
         Set<String> changed = computeChangedVarNames(prev, state);
-
         lastDebugState = state;
         showDebugState(state);
         outputsController.highlightChanged(changed);
@@ -513,6 +527,30 @@ public class ProgramSceneController {
         runOptionsController.clearRunCheckBox();
     }
 
+    public void debugStepBack() {
+        if (!debugMode || !debugStarted || debugApi == null) return;
+        if (dbgCursor <= 0) {                       // ← לאפשר 1→0
+            runOptionsController.setStepBackDisabled(true);
+            return;
+        }
+
+        DebugStateDTO from = dbgTimeline.get(dbgCursor); // מזה אנו חוזרים
+        dbgCursor--;
+        DebugStateDTO to   = dbgTimeline.get(dbgCursor); // לזה חוזרים
+
+        // משחזר ב-Engine (כבר מימשת restore(void))
+        debugApi.restore(to);
+
+        // הדגשת ערכים שהשתנו אחורה (diff בין from -> to)
+        Set<String> changedBack = computeChangedVarNames(from, to);
+
+        lastDebugState = to;
+        showDebugState(to);
+        if (outputsController != null) outputsController.highlightChanged(changedBack);
+        selectAndScrollProgramRow(to.getPc());
+        runOptionsController.setStepBackDisabled(dbgCursor <= 0);
+    }
+
     private void debugToHistory() {
         List<Long> inputs = (inputsController != null)
                 ? inputsController.collectValuesPadded()
@@ -580,13 +618,11 @@ public class ProgramSceneController {
     }
 
     private void runUntilBreakpointThenEnterDebug(int bpPc) {
-        java.util.List<Long> inputs = (inputsController != null)
+        List<Long> inputs = (inputsController != null)
                 ? inputsController.collectValuesPadded()
-                : java.util.Collections.emptyList();
+                : Collections.emptyList();
         int degree = (headerController != null) ? headerController.getCurrentDegree() : 0;
-
         DebugAPI localDebug = display.debugForDegree(degree);
-
         Task<Void> task = new Task<>() {
             @Override
             protected Void call() {
@@ -610,11 +646,12 @@ public class ProgramSceneController {
                     lastDebugState = reached;
                     debugStarted = true;
                     setDebugMode(true);
-
                     showDebugState(reached);
+                    dbgTimeline.clear();
+                    dbgTimeline.add(reached);
+                    dbgCursor = 0;
                     outputsController.highlightChanged(Set.of());
                     selectAndScrollProgramRow(reached.getPc());
-
                     if (runOptionsController != null) {
                         runOptionsController.setDebugBtnsDisabled(false); // מפעיל Resume/Step/Stop
                     }

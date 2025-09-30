@@ -34,7 +34,7 @@
             <CheckBox fx:id="chkDebug" mnemonicParsing="false" text="Debug" />
          </children>
       </VBox>
-      <Button mnemonicParsing="false" text="Step Back" GridPane.columnIndex="3" GridPane.rowIndex="1" />
+      <Button fx:id="btnStepBack" mnemonicParsing="false" onAction="#onStepBackAction" text="Step Back" GridPane.columnIndex="3" GridPane.rowIndex="1" />
    </children>
    <opaqueInsets>
       <Insets left="10.0" />

@@ -98,9 +98,14 @@ public class RunOptionsController {
     }
 
     public void setDebugBtnsDisabled(boolean disabled) {
-        if (btnStepOver != null)     btnStepOver.setDisable(disabled);
-        if (btnResume != null)       btnResume.setDisable(disabled);
-        if (btnStop != null)         btnStop.setDisable(disabled);
+        if (btnStepOver != null) btnStepOver.setDisable(disabled);
+        if (btnResume != null) btnResume.setDisable(disabled);
+        if (btnStop != null) btnStop.setDisable(disabled);
+        if (btnStepBack != null) btnStepBack.setDisable(disabled);
+    }
+
+    public void setStepBackDisabled(boolean disabled) {
+        if (btnStepBack != null) btnStepBack.setDisable(disabled);
     }
 
     public void setDebugSelected(boolean selected) {
@@ -138,6 +143,12 @@ public class RunOptionsController {
     @FXML private void onStepOverAction() {
         chkDebug.setSelected(true);
         main.debugStep();
+    }
+
+    @FXML
+    private void onStepBackAction() {
+        chkDebug.setSelected(true);
+        main.debugStepBack();
     }
 
     @FXML

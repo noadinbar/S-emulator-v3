@@ -31,6 +31,7 @@ public class DebugAPIImpl implements DebugAPI {
     private ExecutionContext context;
     private int pc;
     private long cyclesBeforeStep;
+    private long logicalCyclesSoFar;
     private boolean terminated;
     private ProgramExecutorImpl runner;
 
@@ -60,11 +61,12 @@ public class DebugAPIImpl implements DebugAPI {
         this.terminated = (instructions.isEmpty());
         this.runner = new ProgramExecutorImpl(expanded, original);
         this.cyclesBeforeStep = runner.getCycles();
+        this.logicalCyclesSoFar = 0L;
 
         return new DebugStateDTO(
                 degree,
                 pc,
-                runner.getCycles(),
+                logicalCyclesSoFar,
                 snapshotVars(context),
                 terminated
         );
@@ -76,7 +78,7 @@ public class DebugAPIImpl implements DebugAPI {
             return new DebugStepDTO(
                     Math.max(pc, 0),
                     0L,
-                    new DebugStateDTO(degree, pc, runner.getCycles(), snapshotVars(context), true),
+                    new DebugStateDTO(degree, pc, logicalCyclesSoFar, snapshotVars(context), true),
                     List.of()
             );
         }
@@ -90,15 +92,15 @@ public class DebugAPIImpl implements DebugAPI {
         long cyclesAfter = runner.getCycles();
         long delta = cyclesAfter - cyclesBeforeStep;
         cyclesBeforeStep = cyclesAfter;
+        logicalCyclesSoFar += delta;
 
         DebugStateDTO newState = new DebugStateDTO(
                 degree,
-                Math.max(pc, executedPc),
-                cyclesAfter,
+                pc,
+                logicalCyclesSoFar,
                 snapshotVars(context),
                 terminated
         );
-
         return new DebugStepDTO(executedPc, delta, newState, List.of());
     }
 
@@ -120,7 +122,7 @@ public class DebugAPIImpl implements DebugAPI {
         // 2) pc + terminated
         this.pc = snapshot.getPc();
         this.terminated = (pc < 0 || pc >= instructions.size());
-
+        this.logicalCyclesSoFar = snapshot.getCyclesSoFar();
         // 3) בסיס לחישוב דלתא המחזורים בצעד הבא:
         // אין לנו setter ל-cycles ב-runner, לכן מיישרים את "baseline"
         // למחזורי ה-runner הנוכחיים, כדי שה-delta בצעד הבא יהיה מדויק לצעד אחד.

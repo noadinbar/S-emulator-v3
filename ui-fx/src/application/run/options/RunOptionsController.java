@@ -13,6 +13,7 @@ public class RunOptionsController {
     @FXML private Button btnStop;
     @FXML private Button btnResume;
     @FXML private Button btnStepOver;
+    @FXML private Button btnStepBack;
     @FXML private CheckBox chkRun;
     @FXML private CheckBox chkDebug;
     @FXML private Button btnExecute;

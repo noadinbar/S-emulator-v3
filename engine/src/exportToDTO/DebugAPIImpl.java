@@ -32,7 +32,6 @@ public class DebugAPIImpl implements DebugAPI {
     private int pc;
     private long cyclesBeforeStep;
     private boolean terminated;
-
     private ProgramExecutorImpl runner;
 
     public DebugAPIImpl(ProgramImpl expanded, ProgramImpl original, int degree) {
@@ -108,7 +107,36 @@ public class DebugAPIImpl implements DebugAPI {
         return terminated;
     }
 
+    @Override
+    public void restore(final DebugStateDTO snapshot) {
+        // 1) בונים ExecutionContext חדש מה-snapshot
+        ExecutionContext newCtx = new ExecutionContextImpl();
+        for (VarValueDTO vv : snapshot.getVars()) {
+            Variable var = toVariable(vv);
+            newCtx.updateVariable(var, vv.getValue());
+        }
+        this.context = newCtx;
+
+        // 2) pc + terminated
+        this.pc = snapshot.getPc();
+        this.terminated = (pc < 0 || pc >= instructions.size());
+
+        // 3) בסיס לחישוב דלתא המחזורים בצעד הבא:
+        // אין לנו setter ל-cycles ב-runner, לכן מיישרים את "baseline"
+        // למחזורי ה-runner הנוכחיים, כדי שה-delta בצעד הבא יהיה מדויק לצעד אחד.
+        this.cyclesBeforeStep = runner.getCycles();
+    }
+
     // ===== utils =====
+
+    // ממפה VarValueDTO → Variable (y/x/z) לפי המבנים שלך
+    private static Variable toVariable(VarValueDTO vv) {
+        VarOptionsDTO kind = vv.getVar().getVariable();
+        int idx = vv.getVar().getIndex();
+        if (kind == VarOptionsDTO.y) return Variable.RESULT;                 // y
+        if (kind == VarOptionsDTO.x) return new VariableImpl(VariableType.INPUT, idx); // x_i
+        /* kind == z */ return new VariableImpl(VariableType.WORK, idx);              // z_i
+    }
 
     private static Map<String,Integer> buildLabelIndex(List<Instruction> instructions) {
         Map<String,Integer> map = new HashMap<>();

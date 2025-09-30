@@ -8,4 +8,5 @@ public interface DebugAPI {
     DebugStateDTO init(ExecutionRequestDTO req);
     DebugStepDTO step();
     boolean isTerminated();
+    void restore(DebugStateDTO snapshot);
 }

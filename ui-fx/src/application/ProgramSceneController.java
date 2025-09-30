@@ -6,6 +6,9 @@ import display.*;
 import execution.*;
 import execution.debug.DebugStateDTO;
 import execution.debug.DebugStepDTO;
+import javafx.animation.FadeTransition;
+import javafx.animation.PauseTransition;
+import javafx.animation.SequentialTransition;
 import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
 import javafx.concurrent.Task;
@@ -25,7 +28,7 @@ import api.DisplayAPI;
 import api.ExecutionAPI;
 
 import javafx.scene.Scene;
-import javafx.scene.control.TableRow;
+import javafx.scene.control.Label;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TextArea;
 import javafx.scene.layout.VBox;
@@ -35,7 +38,9 @@ import javafx.beans.binding.DoubleBinding;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.layout.Region;
 import javafx.stage.Modality;
+import javafx.stage.Popup;
 import javafx.stage.Stage;
+import javafx.util.Duration;
 import types.LabelDTO;
 import display.InstructionBodyDTO;
 
@@ -596,6 +601,7 @@ public class ProgramSceneController {
                     if (localDebug.isTerminated() && reached.getPc() != bpPc) {
                         handleRun(); // להציג outputs/history בפורמט הרגיל
                         clearBreakpointOnly();
+                        showBreakpointMessage();
                         return;
                     }
 
@@ -827,6 +833,47 @@ public class ProgramSceneController {
         stage.initModality(Modality.NONE);
         stage.setScene(new Scene(area, 250, 200));
         stage.show();
+    }
+
+    // טוסט לא חוסם במרכז החלון
+    private void showBreakpointMessage() {
+        Popup popup = new Popup();
+        Label msg = new Label("Run finished — breakpoint not reached");
+        msg.setStyle(
+                "-fx-background-color: rgba(40,40,40,0.92);" +
+                        "-fx-text-fill: white;" +
+                        "-fx-padding: 8 12;" +
+                        "-fx-background-radius: 10;" +
+                        "-fx-font-size: 12px;"
+        );
+        msg.setMouseTransparent(true);
+        msg.setOpacity(0);
+
+        popup.getContent().add(msg);
+
+        var win = rootScroll.getScene().getWindow();
+        // מציגים ואז מרכזים לפי הגודל האמיתי של התוכן
+        popup.show(win);
+        Platform.runLater(() -> {
+            double x = win.getX() + (win.getWidth()  - msg.getWidth())  / 2.0;
+            double y = win.getY() + (win.getHeight() - msg.getHeight()) / 2.0;
+            popup.setX(x);
+            popup.setY(y);
+
+            var fadeIn = new FadeTransition(Duration.millis(150), msg);
+            fadeIn.setFromValue(0);
+            fadeIn.setToValue(1);
+
+            var stay = new PauseTransition(Duration.seconds(1.7));
+
+            var fadeOut = new FadeTransition(Duration.millis(220), msg);
+            fadeOut.setFromValue(1);
+            fadeOut.setToValue(0);
+
+            var seq = new SequentialTransition(fadeIn, stay, fadeOut);
+            seq.setOnFinished(e -> popup.hide());
+            seq.play();
+        });
     }
 
     private void wireAncestry() {

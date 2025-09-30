@@ -427,9 +427,7 @@ public class HeaderController {
         populateProgramFunction(display, false);
     }
 
-    private static void parseVarsFromArgs(String text,
-                                          java.util.SortedSet<Integer> xs,
-                                          java.util.SortedSet<Integer> zs) {
+    private static void parseVarsFromArgs(String text, SortedSet<Integer> xs, SortedSet<Integer> zs) {
         if (text == null || text.isBlank()) return;
         Matcher mx = X_IN_ARGS.matcher(text);
         while (mx.find()) { try { xs.add(Integer.parseInt(mx.group(1))); } catch (Exception ignore) {} }

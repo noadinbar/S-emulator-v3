@@ -24,6 +24,7 @@ import java.util.*;
 import java.util.function.Consumer;
 import java.util.function.UnaryOperator;
 import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class HeaderController {
     @FXML private Label Title;
@@ -56,10 +57,8 @@ public class HeaderController {
     private Consumer<String> onSkinChanged;
     private Consumer<String> onHighlightChangedCb;
     private Consumer<String> onProgramSelectedCb;
-    private static final java.util.regex.Pattern X_IN_ARGS =
-            java.util.regex.Pattern.compile("\\bx(\\d+)\\b");
-    private static final java.util.regex.Pattern Z_IN_ARGS =
-            java.util.regex.Pattern.compile("\\bz(\\d+)\\b");
+    private static final Pattern X_IN_ARGS = Pattern.compile("\\bx(\\d+)\\b");
+    private static final Pattern Z_IN_ARGS = Pattern.compile("\\bz(\\d+)\\b");
 
 
 

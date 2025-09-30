@@ -2,9 +2,11 @@ package structure.execution;
 
 import structure.variable.Variable;
 
+import java.util.Map;
+
 public interface ExecutionContext {
 
     long getVariableValue(Variable v);
     void updateVariable(Variable v, long value);
-    java.util.Map<String, Long> snapshot();
+    Map<String, Long> snapshot();
 }

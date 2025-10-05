@@ -60,8 +60,6 @@ public class HeaderController {
     private static final Pattern X_IN_ARGS = Pattern.compile("\\bx(\\d+)\\b");
     private static final Pattern Z_IN_ARGS = Pattern.compile("\\bz(\\d+)\\b");
 
-
-
     @FXML
     private void initialize() {
         txtPath.setEditable(false);

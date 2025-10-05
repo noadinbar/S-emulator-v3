@@ -1,0 +1,14 @@
+<component name="libraryTable">
+  <library name="okhttp">
+    <CLASSES>
+      <root url="jar://$PROJECT_DIR$/dist/lib/okhttp/annotations-13.0.jar!/" />
+      <root url="jar://$PROJECT_DIR$/dist/lib/okhttp/kotlin-stdlib-1.4.10.jar!/" />
+      <root url="jar://$PROJECT_DIR$/dist/lib/okhttp/okhttp-4.9.1.jar!/" />
+      <root url="jar://$PROJECT_DIR$/dist/lib/okhttp/okio-2.8.0.jar!/" />
+      <root url="jar://$PROJECT_DIR$/dist/lib/okhttp/kotlin-stdlib-common-1.4.10.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+    <jarDirectory url="jar://$PROJECT_DIR$/dist/lib/okhttp/kotlin-stdlib-common-1.4.10.jar!/" recursive="false" />
+  </library>
+</component>

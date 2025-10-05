@@ -7,6 +7,8 @@
       <module fileurl="file://$PROJECT_DIR$/engine/engine.iml" filepath="$PROJECT_DIR$/engine/engine.iml" />
       <module fileurl="file://$PROJECT_DIR$/ui/ui.iml" filepath="$PROJECT_DIR$/ui/ui.iml" />
       <module fileurl="file://$PROJECT_DIR$/ui-fx/ui-fx.iml" filepath="$PROJECT_DIR$/ui-fx/ui-fx.iml" />
+      <module fileurl="file://$PROJECT_DIR$/ui-serverclient/ui-serverclient.iml" filepath="$PROJECT_DIR$/ui-serverclient/ui-serverclient.iml" />
+      <module fileurl="file://$PROJECT_DIR$/web/web.iml" filepath="$PROJECT_DIR$/web/web.iml" />
     </modules>
   </component>
 </project>

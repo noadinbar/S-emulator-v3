@@ -66,6 +66,8 @@ public class LoadServlet extends HttpServlet {
             if (getServletContext().getAttribute(ATTR_MODE) == null) {
                 getServletContext().setAttribute(ATTR_MODE, MODE_IDLE);
             }
+            getServletContext().setAttribute("execBusy", Boolean.FALSE);
+            getServletContext().setAttribute("dbgBusy",  Boolean.FALSE);
 
             // 5) Return DisplayDTO as JSON (DTO -> JSON)
             DisplayDTO dto = display.getCommand2(); // "as-is" program

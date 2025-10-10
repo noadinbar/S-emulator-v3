@@ -4,6 +4,7 @@ import okhttp3.MediaType;
 public class Constants {
     public static final String BASE_URL = "http://localhost:8080/server_Web_exploded";
     public static final String API_LOAD  = "/api/load-file";
+    public static final String API_STATUS = "/api/status";
 
     public static final String HEADER_ACCEPT = "Accept";
     public static final String CONTENT_TYPE_JSON = "application/json";

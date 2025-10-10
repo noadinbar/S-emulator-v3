@@ -220,6 +220,19 @@ public class HeaderController {
             DisplayDTO dto = task.getValue();
             Consumer<DisplayDTO> consumer = onLoaded.get();
             if (consumer != null) consumer.accept(dto);
+
+            // === NEW: fetch /api/status to get maxDegree from server ===
+            new Thread(() -> {
+                try {
+                    com.google.gson.JsonObject status = client.responses.StatusResponder.get();
+                    int max = (status.has("maxDegree") && !status.get("maxDegree").isJsonNull())
+                            ? status.get("maxDegree").getAsInt()
+                            : 0;
+                    javafx.application.Platform.runLater(() -> setMaxDegree(max));
+                } catch (Exception ignored) {
+                    // אם הקריאה ל־status נכשלה — נשאיר maxDegree=0 ולא נציק עם פופאפ
+                }
+            }, "status-fetch").start();
         });
 
         task.setOnFailed(ev -> {

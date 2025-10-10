@@ -40,4 +40,5 @@ public class DisplayDTO {
     public List<VarRefDTO> getInputsInUse() { return inputsInUse; }
     public List<LabelDTO> getLabelsInUse() { return labelsInUse; }
     public List<InstructionDTO> getInstructions() { return instructions; }
+    public List<FunctionDTO> getFunctions() { return functions; }
 }

@@ -59,7 +59,7 @@ public class DisplayAPIImpl implements DisplayAPI {
         if (degree == 0) {
             return execution();
         }
-        int max = ((ProgramImpl) program).calculateMaxDegree();
+        int max = program.calculateMaxDegree();
         if (degree < 0 || degree > max) {
             throw new InvalidDegreeException(
                     "Degree must be between 0 and " + max

@@ -2,10 +2,8 @@ package application.header;
 
 import api.DisplayAPI;
 import api.LoadAPI;
-import display.DisplayDTO;
-import display.InstrOpDTO;
-import display.InstructionBodyDTO;
-import display.InstructionDTO;
+import client.responses.LoadFileResponder;
+import display.*;
 import exportToDTO.LoadAPIImpl;
 import javafx.application.Platform;
 import javafx.beans.property.*;
@@ -49,7 +47,7 @@ public class HeaderController {
     private final IntegerProperty maxDegree     = new SimpleIntegerProperty(0);
     private final ObjectProperty<Runnable> onExpand   = new SimpleObjectProperty<>();
     private final ObjectProperty<Runnable> onCollapse = new SimpleObjectProperty<>();
-    private final ObjectProperty<Consumer<DisplayAPI>> onLoaded = new SimpleObjectProperty<>();
+    private final ObjectProperty<Consumer<DisplayDTO>> onLoaded = new SimpleObjectProperty<>();
     private final ObjectProperty<Runnable> onApplyDegree = new SimpleObjectProperty<>();
     private Consumer<Boolean> onAnimationsChanged;
     private TextFormatter<Integer> degreeFormatter;
@@ -140,9 +138,7 @@ public class HeaderController {
         return (v == null || "NONE".equals(v)) ? null : v;
     }
 
-    public void setOnLoaded(Consumer<DisplayAPI> consumer) {
-        onLoaded.set(consumer);
-    }
+    public void setOnLoaded(Consumer<DisplayDTO> c) { onLoaded.set(c); }
     public void setOnSkinChanged(Consumer<String> cb) { this.onSkinChanged = cb; }
     public void setOnProgramSelected(Consumer<String> cb) { this.onProgramSelectedCb = cb; }
     public void setOnAnimationsChanged(Consumer<Boolean> cb) { this.onAnimationsChanged = cb; }
@@ -198,24 +194,19 @@ public class HeaderController {
             return;
         }
         final Path chosenXml = file.toPath();
-        Task<DisplayAPI> task = new Task<>() {
+        Task<DisplayDTO> task = new Task<>() {
             @Override
-            protected DisplayAPI call() throws Exception {
-                updateProgress(0, 1);
+            protected DisplayDTO call() throws Exception {
+                updateProgress(0,1);
                 Thread.sleep(300);
-                updateProgress(0.3, 1);
-                LoadAPI loader = new LoadAPIImpl();
-                DisplayAPI display = loader.loadFromXml(chosenXml);
-                updateProgress(0.9, 1);
+                updateProgress(0.3,1);
+                DisplayDTO dto = LoadFileResponder.execute(chosenXml);
+                updateProgress(0.9,1);
                 Thread.sleep(300);
-                updateProgress(1, 1);
-                return display;
+                updateProgress(1,1);
+                return dto;
             }
         };
-
-        busy.set(true);
-        progressBar.setVisible(true);
-        progressBar.progressProperty().bind(task.progressProperty());
 
         task.setOnSucceeded(ev -> {
             progressBar.progressProperty().unbind();
@@ -226,29 +217,20 @@ public class HeaderController {
             lastValidXmlPath = chosenXml;
             txtPath.setText(chosenXml.toString());
 
-            DisplayAPI display = task.getValue();
-            Consumer<DisplayAPI> apiConsumer = onLoaded.get();
-            if (apiConsumer != null) apiConsumer.accept(display);
+            DisplayDTO dto = task.getValue();
+            Consumer<DisplayDTO> consumer = onLoaded.get();
+            if (consumer != null) consumer.accept(dto);
         });
 
         task.setOnFailed(ev -> {
             progressBar.progressProperty().unbind();
             progressBar.setVisible(false);
             busy.set(false);
-
-            if (lastValidXmlPath != null) {
-                txtPath.setText(lastValidXmlPath.toString());
-            } else {
-                txtPath.clear();
-            }
-
             Throwable ex = task.getException();
             showError("XML load failed",
                     (ex != null && ex.getMessage() != null) ? ex.getMessage() : "Unknown error");
         });
-
-
-        new Thread(task, "xml-loader").start();
+        new Thread(task, "load-xml").start();
     }
     @FXML private void onExpandClicked() {
         int next = Math.min(currentDegree.get() + 1, maxDegree.get());
@@ -421,10 +403,6 @@ public class HeaderController {
         }
     }
 
-    public void populateProgramFunction(DisplayAPI display) {
-        populateProgramFunction(display, false);
-    }
-
     private static void parseVarsFromArgs(String text, SortedSet<Integer> xs, SortedSet<Integer> zs) {
         if (text == null || text.isBlank()) return;
         Matcher mx = X_IN_ARGS.matcher(text);
@@ -433,24 +411,42 @@ public class HeaderController {
         while (mz.find()) { try { zs.add(Integer.parseInt(mz.group(1))); } catch (Exception ignore) {} }
     }
 
-    public void populateProgramFunction(DisplayAPI display, boolean resetToProgram) {
+    public void populateProgramFunction(DisplayDTO dto) {
+        populateProgramFunction(dto, /*resetToProgram*/ false);
+    }
+
+    public void populateProgramFunction(DisplayDTO dto, boolean resetToProgram) {
         if (cmbProgramFunction == null) return;
+
         String prev = resetToProgram ? null : cmbProgramFunction.getValue();
         List<String> items = new ArrayList<>();
 
-        DisplayDTO cmd2 = (display != null) ? display.getCommand2() : null;
-        String programName = cmd2.getProgramName();
+        if (dto != null) {
+            // Program row
+            String programName = dto.getProgramName();
+            items.add("PROGRAM: " + (programName != null ? programName : "Unnamed"));
 
-        items.add("PROGRAM: " + programName);
-
-        Map<String, DisplayAPI> fnMap =
-                (display != null) ? display.functionDisplaysByUserString() : Collections.emptyMap();
-        for (String userStr : fnMap.keySet()) items.add("FUNCTION: " + userStr);
+            // Functions rows
+            if (dto.getFunctions() != null) {
+                for (FunctionDTO f : dto.getFunctions()) {
+                    String user = (f.getUserString() != null && !f.getUserString().isBlank())
+                            ? f.getUserString()
+                            : f.getName();
+                    if (user != null && !user.isBlank()) {
+                        items.add("FUNCTION: " + user);
+                    }
+                }
+            }
+        }
 
         cmbProgramFunction.getItems().setAll(items);
-        if (prev != null && items.contains(prev)) cmbProgramFunction.setValue(prev);
-        else if (!items.isEmpty()) cmbProgramFunction.getSelectionModel().selectFirst();
+        if (prev != null && items.contains(prev)) {
+            cmbProgramFunction.setValue(prev);
+        } else if (!items.isEmpty()) {
+            cmbProgramFunction.getSelectionModel().selectFirst();
+        }
     }
+
 
     // === Utils ===
     private void showError(String title, String msg) {

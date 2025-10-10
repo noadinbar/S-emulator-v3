@@ -5,9 +5,13 @@
       <element id="directory" name="WEB-INF">
         <element id="directory" name="classes">
           <element id="module-output" name="server" />
+          <element id="module-output" name="engine" />
+          <element id="module-output" name="dto" />
         </element>
         <element id="directory" name="lib">
           <element id="file-copy" path="$USER_HOME$/Downloads/gson-2.11.0.jar" />
+          <element id="library" level="project" name="jaxb" />
+          <element id="library" level="project" name="jfx" />
         </element>
       </element>
       <element id="javaee-facet-resources" facet="server/web/Web" />

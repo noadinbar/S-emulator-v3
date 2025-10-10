@@ -27,7 +27,6 @@ public class LoadAPIImpl implements LoadAPI {
         }
 
         final SProgram s;
-
         try {
             s = new XMLLoader().loadFromXml(xmlPath);
         } catch (JAXBException e) {

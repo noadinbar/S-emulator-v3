@@ -49,7 +49,6 @@ public class DisplayAPIImpl implements DisplayAPI {
     public ExecutionAPI execution() {
         ((ProgramImpl) program).setCurrentRunDegree(0);
         return new ExecutionAPIImpl(((ProgramImpl) program), ((ProgramImpl) program));
-
     }
 
     @Override

@@ -4,7 +4,7 @@ import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.SimpleBooleanProperty;
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
-import application.ProgramSceneController;
+import application.ExecutionSceneController;
 import javafx.scene.control.CheckBox;
 
 public class RunOptionsController {
@@ -18,10 +18,10 @@ public class RunOptionsController {
     @FXML private CheckBox chkDebug;
     @FXML private Button btnExecute;
 
-    private ProgramSceneController main;
+    private ExecutionSceneController main;
     private final BooleanProperty forceExecuteEnabled = new SimpleBooleanProperty(false);
 
-    public void setMainController(ProgramSceneController main) {
+    public void setMainController(ExecutionSceneController main) {
         this.main = main;
     }
 

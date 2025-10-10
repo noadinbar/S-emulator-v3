@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.CheckBox?>
+<?import javafx.scene.layout.ColumnConstraints?>
+<?import javafx.scene.layout.GridPane?>
+<?import javafx.scene.layout.RowConstraints?>
+<?import javafx.scene.layout.VBox?>
+
+<GridPane alignment="CENTER" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="57.0" prefWidth="302.0" xmlns="http://javafx.com/javafx/24.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="application.run.options.RunOptionsController">
+  <columnConstraints>
+      <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="100.0" />
+    <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="100.0" />
+    <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="100.0" />
+      <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="100.0" />
+  </columnConstraints>
+  <rowConstraints>
+    <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
+    <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
+  </rowConstraints>
+   <children>
+      <Button fx:id="btnResume" mnemonicParsing="false" onAction="#onResumeAction" prefHeight="25.0" prefWidth="67.0" text="Resume" GridPane.columnIndex="3" />
+      <Button fx:id="btnStepOver" mnemonicParsing="false" onAction="#onStepOverAction" prefHeight="25.0" prefWidth="74.0" text="Step Over" GridPane.columnIndex="2" GridPane.rowIndex="1" />
+      <Button fx:id="btnStop" mnemonicParsing="false" onAction="#onStopAction" prefHeight="25.0" prefWidth="60.0" text="Stop" GridPane.columnIndex="2" />
+      <Button fx:id="btnStart" contentDisplay="CENTER" mnemonicParsing="false" onAction="#onStartAction" prefHeight="25.0" prefWidth="59.0" text="Start">
+         <opaqueInsets>
+            <Insets />
+         </opaqueInsets></Button>
+      <Button fx:id="btnExecute" mnemonicParsing="false" onAction="#onExecuteAction" text="Execute" GridPane.columnIndex="1" />
+      <VBox prefHeight="200.0" prefWidth="100.0" GridPane.columnIndex="1" GridPane.rowIndex="1">
+         <children>
+            <CheckBox fx:id="chkRun" mnemonicParsing="false" text="Run" />
+            <CheckBox fx:id="chkDebug" mnemonicParsing="false" text="Debug" />
+         </children>
+      </VBox>
+      <Button fx:id="btnStepBack" mnemonicParsing="false" onAction="#onStepBackAction" text="Step Back" GridPane.columnIndex="3" GridPane.rowIndex="1" />
+   </children>
+   <opaqueInsets>
+      <Insets left="10.0" />
+   </opaqueInsets>
+</GridPane>

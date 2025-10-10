@@ -1,6 +1,0 @@
-Manifest-Version: 1.0
-Main-Class: application.MainApp
-Class-Path: engine.jar dto.jar lib/angus-activation.jar lib/jakarta.acti
- vation-api.jar lib/jakarta.xml.bind-api.jar lib/jaxb-core.jar lib/jaxb-
- impl.jar
-

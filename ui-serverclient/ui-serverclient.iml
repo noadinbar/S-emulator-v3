@@ -11,5 +11,6 @@
     <orderEntry type="module" module-name="dto" />
     <orderEntry type="module" module-name="engine" />
     <orderEntry type="library" name="jfx" level="project" />
+    <orderEntry type="library" name="gson-2.11.0" level="project" />
   </component>
 </module>

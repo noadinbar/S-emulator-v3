@@ -1,10 +1,9 @@
 package application.header;
 
-import api.DisplayAPI;
-import api.LoadAPI;
 import client.responses.LoadFileResponder;
+import client.responses.StatusResponder;
+import com.google.gson.JsonObject;
 import display.*;
-import exportToDTO.LoadAPIImpl;
 import javafx.application.Platform;
 import javafx.beans.property.*;
 import javafx.concurrent.Task;
@@ -137,7 +136,9 @@ public class HeaderController {
         String v = (cmbHighlight != null) ? cmbHighlight.getValue() : null;
         return (v == null || "NONE".equals(v)) ? null : v;
     }
-
+    public int getMaxDegree() {
+        return maxDegree.get();
+    }
     public void setOnLoaded(Consumer<DisplayDTO> c) { onLoaded.set(c); }
     public void setOnSkinChanged(Consumer<String> cb) { this.onSkinChanged = cb; }
     public void setOnProgramSelected(Consumer<String> cb) { this.onProgramSelectedCb = cb; }
@@ -221,16 +222,15 @@ public class HeaderController {
             Consumer<DisplayDTO> consumer = onLoaded.get();
             if (consumer != null) consumer.accept(dto);
 
-            // === NEW: fetch /api/status to get maxDegree from server ===
+            // fetch /api/status to get maxDegree from server
             new Thread(() -> {
                 try {
-                    com.google.gson.JsonObject status = client.responses.StatusResponder.get();
+                    JsonObject status = StatusResponder.get();
                     int max = (status.has("maxDegree") && !status.get("maxDegree").isJsonNull())
                             ? status.get("maxDegree").getAsInt()
                             : 0;
                     javafx.application.Platform.runLater(() -> setMaxDegree(max));
                 } catch (Exception ignored) {
-                    // אם הקריאה ל־status נכשלה — נשאיר maxDegree=0 ולא נציק עם פופאפ
                 }
             }, "status-fetch").start();
         });

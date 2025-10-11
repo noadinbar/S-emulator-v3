@@ -19,7 +19,7 @@ public class UninitializedDisplayAPI implements DisplayAPI {
     }
 
     @Override
-    public DisplayDTO getCommand2() {
+    public DisplayDTO getDisplay() {
         throw notLoaded();
     }
 

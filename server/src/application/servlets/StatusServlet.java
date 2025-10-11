@@ -19,19 +19,17 @@ public class StatusServlet extends HttpServlet {
         resp.setContentType("application/json");
 
         JsonObject json = new JsonObject();
-
-        // ★ לקרוא עם אותו מפתח ששמרנו בו ב-LoadServlet
         DisplayAPI display = (DisplayAPI) getServletContext().getAttribute(ATTR_DISPLAY_API);
 
-        boolean loaded = (display != null && display.getCommand2() != null);
+        boolean loaded = (display != null && display.getDisplay() != null);
         json.addProperty("loaded", loaded);
 
         if (loaded) {
-            String programName = display.getCommand2().getProgramName();
+            String programName = display.getDisplay().getProgramName();
             int maxDegree = 0;
             try {
                 maxDegree = display.execution().getMaxDegree();
-            } catch (Exception ignore) { /* נשאיר 0 אם לא זמין */ }
+            } catch (Exception ignore) {  }
 
             json.addProperty("programName", programName);
             json.addProperty("maxDegree", maxDegree);
@@ -40,7 +38,6 @@ public class StatusServlet extends HttpServlet {
             json.addProperty("maxDegree", 0);
         }
 
-        // אותם שמות כמו ב-LoadServlet
         Boolean execBusy = (Boolean) getServletContext().getAttribute("execBusy");
         Boolean dbgBusy  = (Boolean) getServletContext().getAttribute("dbgBusy");
         boolean eb = execBusy != null && execBusy;

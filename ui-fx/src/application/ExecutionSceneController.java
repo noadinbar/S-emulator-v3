@@ -153,7 +153,7 @@ public class ExecutionSceneController {
                     .getItems()
                     .addListener((ListChangeListener<InstructionDTO>) change -> {
                         if (display != null) {
-                            DisplayDTO cmd2 = display.getCommand2();
+                            DisplayDTO cmd2 = display.getDisplay();
                             headerController.populateHighlight(cmd2.getInstructions());
                         }
                     });
@@ -209,8 +209,8 @@ public class ExecutionSceneController {
         }
 
         String firstKey = (headerController != null) ? headerController.getSelectedProgramFunction() : null;
-        if (firstKey == null && display.getCommand2() != null) {
-            firstKey = "PROGRAM: " + display.getCommand2().getProgramName();
+        if (firstKey == null && display.getDisplay() != null) {
+            firstKey = "PROGRAM: " + display.getDisplay().getProgramName();
         }
         if (firstKey != null) {
             applyHistoryForKey(firstKey);
@@ -704,7 +704,7 @@ public class ExecutionSceneController {
 
     public void showInputsForEditing() {
         if (display == null || inputsController == null) return;
-        DisplayDTO dto = display.getCommand2();
+        DisplayDTO dto = display.getDisplay();
         inputsController.show(dto);
         Platform.runLater(inputsController::focusFirstField);
     }
@@ -779,7 +779,7 @@ public class ExecutionSceneController {
         programTableController.showExpanded(expanded);
         updateChain(programTableController.getSelectedItem());
 
-        inputsController.show(display.getCommand2());
+        inputsController.show(display.getDisplay());
         inputsController.fillInputs(row.getInputs());
         Platform.runLater(inputsController::focusFirstField);
 

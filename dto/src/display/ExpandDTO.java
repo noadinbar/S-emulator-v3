@@ -11,19 +11,22 @@ public final class ExpandDTO {
     private final List<VarRefDTO> inputsInUse;
     private final List<LabelDTO> labelsInUse;
     private final List<ExpandedInstructionDTO> instructions;
+    private int maxDegree;
 
     public ExpandDTO(String programName,
                      List<VarRefDTO> inputsInUse,
                      List<LabelDTO> labelsInUse,
-                     List<ExpandedInstructionDTO> instructions) {
+                     List<ExpandedInstructionDTO> instructions, int maxDegree) {
         this.programName = programName;
         this.inputsInUse = List.copyOf(inputsInUse);
         this.labelsInUse = List.copyOf(labelsInUse);
         this.instructions = List.copyOf(instructions);
+        this.maxDegree = maxDegree;
     }
 
     public String getProgramName() { return programName; }
     public List<VarRefDTO> getInputsInUse() { return inputsInUse; }
     public List<LabelDTO> getLabelsInUse() { return labelsInUse; }
     public List<ExpandedInstructionDTO> getInstructions() { return instructions; }
+    public int getMaxDegree() { return maxDegree; }
 }

@@ -9,7 +9,7 @@ import java.util.Collections;
 import java.util.Map;
 
 public interface DisplayAPI {
-    DisplayDTO getCommand2();
+    DisplayDTO getDisplay();
     ExpandDTO expand(int degree);
     ExecutionAPI execution();
     ExecutionAPI executionForDegree(int degree);

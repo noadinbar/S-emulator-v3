@@ -2,6 +2,8 @@ package application;
 
 import api.DebugAPI;
 import application.table.history.RowSnapshot;
+import client.responses.ExpandResponder;
+import client.responses.FunctionsResponder;
 import display.*;
 import execution.*;
 import execution.debug.DebugStateDTO;
@@ -24,7 +26,6 @@ import application.run.options.RunOptionsController;
 import application.outputs.OutputsController;
 import application.inputs.InputsController;
 
-import api.DisplayAPI;
 import api.ExecutionAPI;
 
 import javafx.scene.Scene;
@@ -63,7 +64,6 @@ public class ExecutionSceneController {
 
     private DisplayDTO display;
     private DisplayDTO rootDisplay;
-    private Map<String, DisplayDTO> functionDisplays = Collections.emptyMap();
     private ExecutionAPI execute;
     private int currentDegree = 0;
     private DebugAPI debugApi = null;
@@ -74,6 +74,7 @@ public class ExecutionSceneController {
     private DebugStateDTO lastDebugState = null;
     private final List<DebugStateDTO> dbgTimeline = new ArrayList<>();
     private int dbgCursor = -1;
+    private Map<String, DisplayDTO> functionDisplays = Collections.emptyMap();
     private final Map<String, List<RunHistoryEntryDTO>> uiHistoryByKey = new LinkedHashMap<>();
     private final Map<String, RowSnapshot> snapshots = new LinkedHashMap<>();
     private String currentHistoryKey = null;
@@ -163,8 +164,7 @@ public class ExecutionSceneController {
     private void onProgramLoaded(DisplayDTO dto) {
         this.display = dto;
         this.rootDisplay = dto;
-        this.functionDisplays = buildFunctionDisplays(dto); // מפה userString/name -> DisplayDTO
-
+        this.functionDisplays = buildFunctionDisplays(dto);
         debugApi = null;
         debugMode = false;
         debugStarted = false;
@@ -186,7 +186,6 @@ public class ExecutionSceneController {
             chainTableController.getTableView().setDisable(true);
         }
 
-        // בשלב הטעינה בלבד אין לנו maxDegree מהשרת → 0
         currentDegree = 0;
         if (headerController != null) {
             headerController.setMaxDegree(0);
@@ -194,9 +193,12 @@ public class ExecutionSceneController {
         }
 
         if (programTableController != null) {
-            ExpandDTO expanded = expandLocally(display, currentDegree); // degree 0 מתוך ה-DTO
+            ExpandDTO expanded;
+            try { expanded = ExpandResponder.execute(currentDegree);}
+            catch (Exception e) { return; }
             programTableController.showExpanded(expanded);
             programTableController.clearBreakpoint();
+
 
             if (headerController != null && programTableController.getTableView() != null) {
                 headerController.populateHighlight(programTableController.getTableView().getItems(), true);
@@ -289,14 +291,28 @@ public class ExecutionSceneController {
 
     private void doApply(int requestedDegree) {
         if (display == null || programTableController == null) return;
-        int max = 0;
+        int max = (headerController != null) ? headerController.getMaxDegree() : 0;
         int target = Math.max(0, Math.min(requestedDegree, max));
 
         if (headerController != null && headerController.isAnimationsOn()) {
             programTableController.requestPopulateAnimation(true);
         }
-        ExpandDTO expanded = expandLocally(display, target);
+        ExpandDTO expanded;
+        try {
+            String sel  = (headerController != null) ? headerController.getSelectedProgramFunction() : null;
+            String func = (sel != null && sel.startsWith("FUNCTION: "))
+                    ? sel.substring("FUNCTION: ".length()).trim()
+                    : null;
+
+            expanded = (func == null)
+                    ? ExpandResponder.execute(target)
+                    : ExpandResponder.execute(func, target);
+        } catch (Exception e) {
+            return;
+        }
         programTableController.showExpanded(expanded);
+        headerController.setMaxDegree(expanded.getMaxDegree());
+        headerController.setCurrentDegree(target);
         if (programTableController != null) programTableController.clearBreakpoint();
         if (headerController != null && programTableController.getTableView() != null) {
             headerController.populateHighlight(programTableController.getTableView().getItems());
@@ -726,40 +742,40 @@ public class ExecutionSceneController {
                 headerController.setCurrentDegree(0);
             }
 
-            ExpandDTO expanded = expandLocally(display, currentDegree);
+            ExpandDTO expanded;
+            try { expanded = ExpandResponder.execute(currentDegree);}
+            catch (Exception e) { return; }
             programTableController.showExpanded(expanded);
             programTableController.clearBreakpoint();
-
             fillComboboxes();
             updateChain(programTableController.getSelectedItem());
             applyHistoryForKey(key);
             return;
         }
         String userStr = key.substring("FUNCTION: ".length()).trim();
-        DisplayDTO fnDisplay = functionDisplays.get(userStr);
-        if (fnDisplay == null) {
-            onProgramComboChanged(null);
-            return;
-        }
-        this.display = fnDisplay;
-        currentDegree = 0;
-        if (headerController != null) {
-            headerController.setCurrentDegree(currentDegree);
-            headerController.setMaxDegree(0);
-        }
-        ExpandDTO expanded = expandLocally(display, currentDegree);
-        programTableController.showExpanded(expanded);
-        if (chainTableController != null) {
-            chainTableController.clear();
-            if (chainTableController.getTableView() != null) {
-                chainTableController.getTableView().setDisable(true);
+        try {
+            this.display = functionDisplays.get(userStr);
+            currentDegree = 0;
+            ExpandDTO expanded = ExpandResponder.execute(userStr, 0);
+            if (headerController != null) {
+                headerController.setCurrentDegree(0);
+                headerController.setMaxDegree(expanded.getMaxDegree());
             }
-        }
-        programTableController.clearBreakpoint();
-        fillComboboxes();
-        applyHistoryForKey(key);
-    }
+            programTableController.showExpanded(expanded);
 
+            if (chainTableController != null) {
+                chainTableController.clear();
+                if (chainTableController.getTableView() != null) {
+                    chainTableController.getTableView().setDisable(true);
+                }
+            }
+            programTableController.clearBreakpoint();
+            fillComboboxes();
+            applyHistoryForKey(key);
+        } catch (Exception e) {
+            onProgramComboChanged(null);
+        }
+    }
 
     private void fillComboboxes() {
         if (inputsController != null)  inputsController.clear();
@@ -778,10 +794,11 @@ public class ExecutionSceneController {
 
         currentDegree = row.getDegree();
         headerController.setCurrentDegree(currentDegree);
-        ExpandDTO expanded = expandLocally(display, currentDegree);
+        ExpandDTO expanded;
+        try { expanded = ExpandResponder.execute(currentDegree);}
+        catch (Exception e) { return; }
         programTableController.showExpanded(expanded);
         updateChain(programTableController.getSelectedItem());
-
         inputsController.show(display);
         inputsController.fillInputs(row.getInputs());
         Platform.runLater(inputsController::focusFirstField);
@@ -1004,41 +1021,15 @@ public class ExecutionSceneController {
                 String key = (f.getUserString() != null && !f.getUserString().isBlank())
                         ? f.getUserString() : f.getName();
                 DisplayDTO child = new DisplayDTO(
-                        f.getName(),                 // programName for the function view
+                        f.getName(),
                         root.getInputsInUse(),
                         root.getLabelsInUse(),
-                        f.getInstructions(),         // only function instructions
-                        root.getFunctions()          // or null if you want isolation
+                        f.getInstructions(),
+                        root.getFunctions()
                 );
                 map.put(key, child);
             }
         }
         return map;
     }
-    /**
-     * Build a simple degree-0 ExpandDTO directly from a DisplayDTO.
-     * This keeps the UI working before we wire a real /api/expand on the server.
-     */
-    private ExpandDTO expandLocally(DisplayDTO dto, int degree) {
-        if (dto == null) {
-            return new ExpandDTO(null, List.of(), List.of(), List.of());
-        }
-
-        List<ExpandedInstructionDTO> rows = new ArrayList<>();
-        List<InstructionDTO> ins = dto.getInstructions();
-        if (ins != null) {
-            for (InstructionDTO i : ins) {
-                // No creation-chain yet: wrap each instruction as-is
-                rows.add(new ExpandedInstructionDTO(i, List.of()));
-            }
-        }
-
-        return new ExpandDTO(
-                dto.getProgramName(),
-                dto.getInputsInUse(),
-                dto.getLabelsInUse(),
-                rows
-        );
-    }
-
 }

@@ -34,7 +34,7 @@ public class ExecutionAPIImpl implements ExecutionAPI {
 
     @Override
     public int getMaxDegree() {
-        return ((ProgramImpl) program).calculateMaxDegree();
+        return program.calculateMaxDegree();
     }
 
     @Override

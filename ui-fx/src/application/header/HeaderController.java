@@ -165,7 +165,6 @@ public class HeaderController {
         return selected;
     }
 
-
     // === Handlers ===
     @FXML
     private void onLoadClicked() {
@@ -438,7 +437,7 @@ public class HeaderController {
         String prev = resetToProgram ? null : cmbProgramFunction.getValue();
         List<String> items = new ArrayList<>();
 
-        DisplayDTO cmd2 = (display != null) ? display.getCommand2() : null;
+        DisplayDTO cmd2 = (display != null) ? display.getDisplay() : null;
         String programName = cmd2.getProgramName();
 
         items.add("PROGRAM: " + programName);

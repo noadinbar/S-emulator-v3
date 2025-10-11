@@ -70,7 +70,7 @@ public class LoadServlet extends HttpServlet {
             getServletContext().setAttribute("dbgBusy",  Boolean.FALSE);
 
             // 5) Return DisplayDTO as JSON (DTO -> JSON)
-            DisplayDTO dto = display.getCommand2(); // "as-is" program
+            DisplayDTO dto = display.getDisplay(); // "as-is" program
             writeJson(resp, HttpServletResponse.SC_CREATED, dto);
 
         } catch (Exception e) {

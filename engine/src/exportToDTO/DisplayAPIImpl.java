@@ -32,7 +32,7 @@ public class DisplayAPIImpl implements DisplayAPI {
     public DisplayAPIImpl(Program program) { this.program = program; }
 
     @Override
-    public DisplayDTO getCommand2() { return DisplayMapper.toCommand2(program); }
+    public DisplayDTO getDisplay() { return DisplayMapper.toCommand2(program); }
 
     @Override
     public ExpandDTO expand(int degree) {
@@ -42,7 +42,7 @@ public class DisplayAPIImpl implements DisplayAPI {
                     "Degree must be between 0 and " + max
             );
         }
-        return ExpandMapper.toCommand3(program,degree);
+        return ExpandMapper.toCommand3(program,degree, max);
     }
 
     @Override

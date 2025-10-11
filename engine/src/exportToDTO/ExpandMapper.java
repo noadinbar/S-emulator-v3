@@ -20,7 +20,7 @@ import java.util.Map;
 public final class ExpandMapper {
     private ExpandMapper(){}
 
-    public static ExpandDTO toCommand3(Program program, int degree) {
+    public static ExpandDTO toCommand3(Program program, int degree, int maxDegree) {
         ExpandResult res = ProgramExpander.expandTo(program, degree);
 
         Program finalProg = res.getExpandedProgram();
@@ -71,7 +71,8 @@ public final class ExpandMapper {
                 finalC2.getProgramName(),
                 finalC2.getInputsInUse(),
                 finalC2.getLabelsInUse(),
-                out
+                out,
+                maxDegree
         );
     }
 }

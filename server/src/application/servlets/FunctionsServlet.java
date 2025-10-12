@@ -2,7 +2,6 @@ package application.servlets;
 
 import api.DisplayAPI;
 import display.DisplayDTO;
-import display.FunctionDTO;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
@@ -13,6 +12,7 @@ import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import static utils.Constants.ATTR_DISPLAY_API;
 import static utils.Constants.API_FUNCTIONS;   // "/api/functions"
@@ -55,51 +55,31 @@ public class FunctionsServlet extends HttpServlet {
     }
 
     private void handleList(DisplayAPI display, HttpServletResponse resp) throws IOException {
-        DisplayDTO root = getRootDisplay(display);
+        // חשוב: קחי את המפתחות מהמפה של ה-engine כדי שתהיה התאמה 1:1 ל-User String
         List<String> keys = new ArrayList<>();
-        if (root != null && root.getFunctions() != null) {
-            for (FunctionDTO f : root.getFunctions()) {
-                String k = (f.getUserString() != null && !f.getUserString().isBlank())
-                        ? f.getUserString() : f.getName();
-                if (k != null && !k.isBlank()) keys.add(k);
-            }
-        }
+        try {
+            Map<String, DisplayAPI> map = display.functionDisplaysByUserString();
+            if (map != null) keys.addAll(map.keySet());
+        } catch (Exception ignore) { /* נשאיר רשימה ריקה */ }
         writeJson(resp, HttpServletResponse.SC_OK, keys);
     }
 
     private void handleProgram(DisplayAPI display, String key, HttpServletResponse resp) throws IOException {
-        DisplayDTO root = getRootDisplay(display);
-        if (root == null || root.getFunctions() == null) {
-            writeJsonError(resp, HttpServletResponse.SC_BAD_REQUEST, "No functions.");
-            return;
-        }
-        for (FunctionDTO f : root.getFunctions()) {
-            String k = (f.getUserString() != null && !f.getUserString().isBlank())
-                    ? f.getUserString() : f.getName();
-            if (key.equals(k)) {
-                DisplayDTO dto = new DisplayDTO(
-                        f.getName(),
-                        root.getInputsInUse(),
-                        root.getLabelsInUse(),
-                        f.getInstructions(),
-                        root.getFunctions()
-                );
-                writeJson(resp, HttpServletResponse.SC_OK, dto);
+        try {
+            Map<String, DisplayAPI> map = display.functionDisplaysByUserString();
+            if (map == null || !map.containsKey(key)) {
+                writeJsonError(resp, HttpServletResponse.SC_NOT_FOUND, "Function not found: " + key);
                 return;
             }
+            DisplayAPI func = map.get(key);
+            DisplayDTO dto = func.getDisplay(); // ← זה העיקר: DTO אמיתי של הפונקציה (כולל inputs שלה)
+            writeJson(resp, HttpServletResponse.SC_OK, dto);
+        } catch (Exception e) {
+            writeJsonError(resp, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Failed to load function: " + e.getMessage());
         }
-        writeJsonError(resp, HttpServletResponse.SC_NOT_FOUND, "Function not found: " + key);
     }
 
     private static String urlDecode(String s) {
         return URLDecoder.decode(s, StandardCharsets.UTF_8);
-    }
-
-    private static DisplayDTO getRootDisplay(DisplayAPI display) {
-        try {
-            return display.getDisplay();
-        } catch (Throwable ignore) {
-            return null;
-        }
     }
 }

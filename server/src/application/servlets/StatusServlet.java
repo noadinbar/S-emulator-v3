@@ -4,13 +4,14 @@ import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import jakarta.servlet.http.*;
 import jakarta.servlet.annotation.*;
+
 import java.io.IOException;
+import java.util.Map;
 
 import api.DisplayAPI;
 
-import static utils.Constants.*; // כדי להשתמש ב-ATTR_DISPLAY_API, MODE וכו'
-
-@WebServlet(name = "StatusServlet", urlPatterns = {"/api/status"})
+import static utils.Constants.*;
+@WebServlet(name = "StatusServlet", urlPatterns = {API_STATUS})
 public class StatusServlet extends HttpServlet {
     private final Gson gson = new Gson();
 
@@ -33,9 +34,28 @@ public class StatusServlet extends HttpServlet {
 
             json.addProperty("programName", programName);
             json.addProperty("maxDegree", maxDegree);
+
+            // === חדש: מחזירים מקס' דרגה לכל פונקציה ===
+            JsonObject functionsMax = new JsonObject();
+            try {
+                Map<String, DisplayAPI> funcs = display.functionDisplaysByUserString();
+                if (funcs != null) {
+                    for (Map.Entry<String, DisplayAPI> e : funcs.entrySet()) {
+                        int fMax = 0;
+                        try {
+                            fMax = e.getValue().execution().getMaxDegree();
+                        } catch (Exception ignore) { /* נשאיר 0 */ }
+                        functionsMax.addProperty(e.getKey(), fMax);
+                    }
+                }
+            } catch (Exception ignore) { /* נשאיר אובייקט ריק */ }
+            json.add("functionsMaxDegrees", functionsMax);
+            // === סוף חדש ===
+
         } else {
             json.addProperty("programName", (String) null);
             json.addProperty("maxDegree", 0);
+            json.add("functionsMaxDegrees", new JsonObject()); // אובייקט ריק כשלא נטען
         }
 
         Boolean execBusy = (Boolean) getServletContext().getAttribute("execBusy");

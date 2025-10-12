@@ -6,10 +6,10 @@ public class Constants {
     public static final String MODE_IDLE  = "idle";
     public static final String MODE_RUN   = "run";
     public static final String MODE_DEBUG = "debug";
+    public static final String API_STATUS                = "/api/status";
     public static final String API_LOAD                  = "/api/load-file";
-    public static final String API_PROGRAM               = "/api/program";
-    public static final String API_MAX_DEGREE            = "/api/max-degree";
     public static final String API_EXPAND                = "/api/expand";
+    public static final String API_EXECUTE               = "/api/execute";
     public static final String API_HISTORY               = "/api/history";
     public static final String API_MODE                  = "/api/mode";
     public static final String API_DEBUG_INIT            = "/api/debug/init";

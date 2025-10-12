@@ -6,7 +6,9 @@ public class Constants {
     public static final String API_LOAD  = "/api/load-file";
     public static final String API_STATUS = "/api/status";
     public static final String API_EXPAND = "/api/expand";
+    public static final String API_EXECUTE = "/api/execute";
     public static final String API_FUNCTIONS = "/api/functions";
+    public static final String API_HISTORY = "/api/history";
 
     public static final String HEADER_ACCEPT = "Accept";
     public static final String CONTENT_TYPE_JSON = "application/json";

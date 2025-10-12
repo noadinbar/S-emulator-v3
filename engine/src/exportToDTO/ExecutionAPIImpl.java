@@ -64,9 +64,7 @@ public class ExecutionAPIImpl implements ExecutionAPI {
 
         ProgramExecutorImpl runner = new ProgramExecutorImpl(program, originalProgram);
         long y = runner.run(inputs);
-
         Map<Variable, Long> state = runner.variableState();
-
         List<VarValueDTO> finals = new ArrayList<>();
         finals.add(new VarValueDTO(new VarRefDTO(VarOptionsDTO.y, 0), y));
 
@@ -87,10 +85,8 @@ public class ExecutionAPIImpl implements ExecutionAPI {
         }
 
         long cycles = runner.getCycles();
-
         return new ExecutionDTO(y, cycles, finals, executed);
     }
-
 
     private static void collectXFromInputs(DisplayDTO dto, SortedSet<Integer> xs) {
         if (dto.getInputsInUse() == null) return;

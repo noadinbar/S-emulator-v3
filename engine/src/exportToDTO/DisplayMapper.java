@@ -23,7 +23,6 @@ import static java.lang.Integer.parseInt;
 
 
 class DisplayMapper {
-
     private static Map<String, String> nameToUserString = Collections.emptyMap();
 
     static DisplayDTO toCommand2(Program program) {
@@ -53,8 +52,6 @@ class DisplayMapper {
             }
             functionDTOs.add(new FunctionDTO(func.getName(), func.getUserString(), fdtoList));
         }
-
-
         return new DisplayDTO(programName, inputsInUse, labelsInUse, dtoList,functionDTOs);
     }
 

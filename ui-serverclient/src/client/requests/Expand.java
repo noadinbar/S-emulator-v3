@@ -5,8 +5,6 @@ import okhttp3.Request;
 import utils.Constants;
 
 public class Expand {
-
-    /** Build GET /api/expand?degree=N */
     public static Request build(int degree) {
         HttpUrl base = HttpUrl.parse(Constants.BASE_URL + Constants.API_EXPAND);
         if (base == null) {

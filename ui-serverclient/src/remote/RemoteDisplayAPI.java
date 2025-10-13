@@ -9,6 +9,7 @@ import client.responses.FunctionsResponder;
 import client.responses.HistoryResponder;
 import display.DisplayDTO;
 import display.ExpandDTO;
+import execution.HistoryDTO;
 import okhttp3.Request;
 
 import java.nio.file.Path;
@@ -68,11 +69,11 @@ public class RemoteDisplayAPI implements DisplayAPI {
 
     @Override
     public ExecutionAPI executionForDegree(int degree) {
-        return new RemoteExecutionAPI(name, degree);
+        return new RemoteExecutionAPI(name);
     }
 
     @Override
-    public execution.HistoryDTO getHistory() {
+    public HistoryDTO getHistory() {
         try {
             Request req = History.build(name);
             return HistoryResponder.get(req);
@@ -83,5 +84,9 @@ public class RemoteDisplayAPI implements DisplayAPI {
 
     @Override public void saveState(Path path) { }
     @Override public DisplayAPI loadState(Path path) { return this; }
-    @Override public DebugAPI debugForDegree(int degree) { throw new UnsupportedOperationException("debug not implemented yet"); }
+    @Override
+    public DebugAPI debugForDegree(int degree) {
+        return new RemoteDebugAPI(name);
+    }
+
 }

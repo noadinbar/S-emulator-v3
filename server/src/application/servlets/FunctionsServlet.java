@@ -30,8 +30,7 @@ public class FunctionsServlet extends HttpServlet {
             return;
         }
         DisplayAPI display = (DisplayAPI) obj;
-
-        String path = req.getPathInfo(); // null, "/", or "/{key}/program"
+        String path = req.getPathInfo();
         if (path == null || "/".equals(path)) {
             // 1) list
             handleList(display, resp);
@@ -55,7 +54,6 @@ public class FunctionsServlet extends HttpServlet {
     }
 
     private void handleList(DisplayAPI display, HttpServletResponse resp) throws IOException {
-        // חשוב: קחי את המפתחות מהמפה של ה-engine כדי שתהיה התאמה 1:1 ל-User String
         List<String> keys = new ArrayList<>();
         try {
             Map<String, DisplayAPI> map = display.functionDisplaysByUserString();
@@ -72,7 +70,7 @@ public class FunctionsServlet extends HttpServlet {
                 return;
             }
             DisplayAPI func = map.get(key);
-            DisplayDTO dto = func.getDisplay(); // ← זה העיקר: DTO אמיתי של הפונקציה (כולל inputs שלה)
+            DisplayDTO dto = func.getDisplay();
             writeJson(resp, HttpServletResponse.SC_OK, dto);
         } catch (Exception e) {
             writeJsonError(resp, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Failed to load function: " + e.getMessage());

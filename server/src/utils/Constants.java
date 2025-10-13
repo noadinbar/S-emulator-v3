@@ -11,11 +11,10 @@ public class Constants {
     public static final String API_EXPAND                = "/api/expand";
     public static final String API_EXECUTE               = "/api/execute";
     public static final String API_HISTORY               = "/api/history";
-    public static final String API_MODE                  = "/api/mode";
-    public static final String API_DEBUG_INIT            = "/api/debug/init";
-    public static final String API_DEBUG_STEP            = "/api/debug/step";
-    public static final String API_DEBUG_TERMINATED      = "/api/debug/terminated";
-    public static final String API_DEBUG_STOP            = "/api/debug/stop";
+    public static final String API_DEBUG_INIT      = "/api/debug/init";
+    public static final String API_DEBUG_STEP      = "/api/debug/step";
+    public static final String API_DEBUG_RESUME   = "/api/debug/resume";  // POST
+    public static final String API_DEBUG_STOP = "/api/debug/stop";
     public static final String API_FUNCTIONS             = "/api/functions";
     public static final String API_FUNCTION_PROGRAM      = "/api/functions/%s/program";
     public static final String API_FUNCTION_EXPAND       = "/api/functions/%s/expand";

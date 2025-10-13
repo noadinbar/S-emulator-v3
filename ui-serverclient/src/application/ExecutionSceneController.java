@@ -44,6 +44,7 @@ import javafx.stage.Window;
 import javafx.util.Duration;
 import types.LabelDTO;
 import display.InstructionBodyDTO;
+import types.VarRefDTO;
 
 import java.util.*;
 import java.util.regex.Matcher;
@@ -153,8 +154,8 @@ public class ExecutionSceneController {
                     .getItems()
                     .addListener((ListChangeListener<InstructionDTO>) change -> {
                         if (display != null) {
-                            DisplayDTO cmd2 = display.getDisplay();
-                            headerController.populateHighlight(cmd2.getInstructions());
+                            DisplayDTO displayDTO = display.getDisplay();
+                            headerController.populateHighlight(displayDTO.getInstructions());
                         }
                     });
         }
@@ -257,8 +258,6 @@ public class ExecutionSceneController {
 
         List<Long> inputs = inputsController.collectValuesPadded();
         int degree = headerController.getCurrentDegree();
-
-        execute = display.executionForDegree(degree);
         ExecutionRequestDTO req = new ExecutionRequestDTO(degree, inputs);
         ExecutionDTO result = execute.execute(req);
 
@@ -267,6 +266,7 @@ public class ExecutionSceneController {
         HistoryDTO history = display.getHistory();
         List<RunHistoryEntryDTO> entries = (history != null) ? history.getEntries() : null;
         if (historyController != null && entries != null && !entries.isEmpty()) {
+            //TODO
             RunHistoryEntryDTO last = new RunHistoryEntryDTO(
                     historyController.getTableSize()+1, degree,
                     inputs, result.getyValue(), (int) result.getTotalCycles()
@@ -557,8 +557,8 @@ public class ExecutionSceneController {
             for (InstructionDTO ins : programTableController.getTableView().getItems()) {
                 InstructionBodyDTO body = (ins != null) ? ins.getBody() : null;
                 if (body == null) continue;
-
-                for (types.VarRefDTO r : new types.VarRefDTO[]{
+                //TODO
+                for (VarRefDTO r : new VarRefDTO[]{
                         body.getVariable(), body.getDest(), body.getSource(),
                         body.getCompare(), body.getCompareWith()
                 }) {
@@ -919,7 +919,7 @@ public class ExecutionSceneController {
                 boolean isJumpToMatch = (targetLabel != null && !targetLabel.isExit() && selected.equals(targetLabel.getName()));
                 return isLabelMatch || isJumpToMatch;
             } else if (body != null) {
-                for (types.VarRefDTO var : new types.VarRefDTO[]{
+                for (VarRefDTO var : new VarRefDTO[]{
                         body.getVariable(),
                         body.getDest(),
                         body.getSource(),

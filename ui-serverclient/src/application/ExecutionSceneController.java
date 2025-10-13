@@ -430,6 +430,7 @@ public class ExecutionSceneController {
         selectAndScrollProgramRow(targetIndex);
     }
 
+    // ui-fx/src/application/ExecutionSceneController.java
     public void debugResume() {
         if (!debugMode) return;
         ensureDebugInit();
@@ -438,37 +439,24 @@ public class ExecutionSceneController {
         debugStopRequested = false;
         if (runOptionsController != null) runOptionsController.setResumeBusy(true);
 
-        debugResumeTask = new Task<>() {
-            @Override
-            protected Void call() {
-                while (!isCancelled() && !debugStopRequested) {
-                    DebugStepDTO step  = debugApi.step();
-                    DebugStateDTO state = step.getNewState();
-                    DebugStateDTO prev = lastDebugState;
-                    lastDebugState = state;
-
-                    Platform.runLater(() -> {
-                        showDebugState(state);
-                        outputsController.highlightChanged(computeChangedVarNames(prev, state));
-
-                        rowToHighlight(prev, state);
-                        if (debugApi != null && debugApi.isTerminated() && outputsController != null) {
-                            outputsController.highlightChanged(Set.of());
-                        }
-                    });
-
-                    if (debugApi.isTerminated()) break;
+        Task<DebugStateDTO> t = new Task<>() {
+            @Override protected DebugStateDTO call() {
+                try {
+                    return debugApi.resumeAndGetLastState();
+                } catch (Throwable ex) {
+                    return null;
                 }
-                return null;
             }
         };
 
-        debugResumeTask.setOnSucceeded(e -> {
+        t.setOnSucceeded(e -> {
             if (runOptionsController != null) runOptionsController.setResumeBusy(false);
-            if (!debugStopRequested && debugApi != null && debugApi.isTerminated() &&
-                    lastDebugState != null && historyController != null) {
-                if (outputsController != null) outputsController.highlightChanged(Set.of());
+            DebugStateDTO finished = t.getValue();
 
+            if (finished != null) {
+                lastDebugState = finished;
+                showDebugState(finished);
+                if (outputsController != null) outputsController.highlightChanged(Set.of());
                 debugToHistory();
                 if (runOptionsController != null) runOptionsController.setDebugBtnsDisabled(true);
                 debugMode = false;
@@ -484,20 +472,34 @@ public class ExecutionSceneController {
                 clearBreakpointOnly();
             }
         });
-        debugResumeTask.setOnCancelled(e -> { if (runOptionsController != null) runOptionsController.setResumeBusy(false); });
-        debugResumeTask.setOnFailed(e -> { if (runOptionsController != null) runOptionsController.setResumeBusy(false); });
+        t.setOnFailed(e -> { if (runOptionsController != null) runOptionsController.setResumeBusy(false); });
 
-        Thread t = new Thread(debugResumeTask, "debug-resume");
-        t.setDaemon(true);
-        t.start();
+        Thread th = new Thread(t, "debug-resume-server");
+        th.setDaemon(true);
+        th.start();
     }
 
     public void debugStop() {
+        if (debugApi != null) {
+            Task<Void> serverStopTask = new Task<>() {
+                @Override
+                protected Void call() {
+                    try { debugApi.stop(); } catch (Throwable ignored) {}
+                    return null;
+                }
+            };
+            Thread th = new Thread(serverStopTask, "debug-stop");
+            th.setDaemon(true);
+            th.start();
+        }
         debugStopRequested = true;
-        if (debugResumeTask != null) debugResumeTask.cancel();
+        if (debugResumeTask != null) {
+            debugResumeTask.cancel();
+            debugResumeTask = null;
+        }
         if (runOptionsController != null) runOptionsController.setResumeBusy(false);
-        if (lastDebugState != null && historyController != null) {
 
+        if (lastDebugState != null && historyController != null) {
             if (outputsController != null) outputsController.highlightChanged(Set.of());
             debugToHistory();
             if (runOptionsController != null) runOptionsController.setDebugBtnsDisabled(true);
@@ -509,10 +511,13 @@ public class ExecutionSceneController {
             }
         }
         clearBreakpointOnly();
-        runOptionsController.startEnabled(true);
-        runOptionsController.setButtonsEnabled(false);
-        runOptionsController.clearRunCheckBox();
+        if (runOptionsController != null) {
+            runOptionsController.startEnabled(true);
+            runOptionsController.setButtonsEnabled(false);
+            runOptionsController.clearRunCheckBox();
+        }
     }
+
 
     public void debugStepBack() {
         if (!debugMode || !debugStarted || debugApi == null) return;

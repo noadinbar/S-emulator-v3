@@ -15,6 +15,7 @@ public class Constants {
     public static final String API_DEBUG_STEP      = "/api/debug/step";
     public static final String API_DEBUG_RESUME   = "/api/debug/resume";  // POST
     public static final String API_DEBUG_STOP = "/api/debug/stop";
+    public static final String API_DEBUG_TERMINATED = "/api/debug/terminated";
     public static final String API_FUNCTIONS             = "/api/functions";
     public static final String API_FUNCTION_PROGRAM      = "/api/functions/%s/program";
     public static final String API_FUNCTION_EXPAND       = "/api/functions/%s/expand";

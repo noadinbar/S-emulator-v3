@@ -26,10 +26,11 @@ import static utils.ServletUtils.writeJsonError;
 @WebServlet(
         name = "DebugServlet",
         urlPatterns = {
-                API_DEBUG_INIT,     // POST /api/debug/init
-                API_DEBUG_STEP,     // POST /api/debug/step
-                API_DEBUG_RESUME,   // POST /api/debug/resume
-                API_DEBUG_STOP      // POST /api/debug/stop
+                API_DEBUG_INIT,
+                API_DEBUG_STEP,
+                API_DEBUG_RESUME,
+                API_DEBUG_STOP,
+                API_DEBUG_TERMINATED
         }
 )
 public class DebugServlet extends HttpServlet {
@@ -44,10 +45,11 @@ public class DebugServlet extends HttpServlet {
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException {
         String route = req.getServletPath(); // כי מיפוי מלא
         switch (route) {
-            case API_DEBUG_INIT   -> handleInit(req, resp);    // ממומש
-            case API_DEBUG_STEP   -> handleStep(req, resp);    // שלד (501)
-            case API_DEBUG_RESUME -> handleResume(req, resp);  // שלד (501)
-            case API_DEBUG_STOP   -> handleStop(req, resp);    // שלד (501)
+            case API_DEBUG_INIT   -> handleInit(req, resp);
+            case API_DEBUG_STEP   -> handleStep(req, resp);
+            case API_DEBUG_RESUME -> handleResume(req, resp);
+            case API_DEBUG_STOP   -> handleStop(req, resp);
+            case API_DEBUG_TERMINATED  -> handleTerminated(req, resp);
             default -> writeJsonError(resp, HttpServletResponse.SC_NOT_FOUND,
                     "Unknown debug route: " + route);
         }
@@ -143,15 +145,120 @@ public class DebugServlet extends HttpServlet {
         }
     }
 
-
-    /** POST /api/debug/resume — שלד לעכשיו */
     private void handleResume(HttpServletRequest req, HttpServletResponse resp) throws IOException {
-        writeJsonError(resp, HttpServletResponse.SC_NOT_IMPLEMENTED, "TODO: resume");
+        String debugId = req.getParameter("debugId");
+        JsonObject in = null;
+        if (debugId == null || debugId.isBlank()) {
+            in = readJson(req);
+            if (in != null && in.has("debugId") && !in.get("debugId").isJsonNull()) {
+                debugId = in.get("debugId").getAsString();
+            }
+        }
+        if (debugId == null || debugId.isBlank()) {
+            writeJsonError(resp, HttpServletResponse.SC_BAD_REQUEST, "Missing debugId");
+            return;
+        }
+
+        DebugAPI dbg = getSessions().get(debugId);
+        if (dbg == null) {
+            writeJsonError(resp, HttpServletResponse.SC_NOT_FOUND, "Unknown debugId");
+            return;
+        }
+
+        try {
+            int steps = 0;
+            DebugStepDTO last = null;
+
+            // ריצה עד סיום (ללא תקרה)
+            while (!dbg.isTerminated()) {
+                last = dbg.step();
+                steps++;
+            }
+
+            getSessions().remove(debugId);
+            boolean anyLeft = !getSessions().isEmpty();
+            getServletContext().setAttribute(ATTR_DBG_BUSY, anyLeft ? Boolean.TRUE : Boolean.FALSE);
+
+            JsonObject out = new JsonObject();
+            out.addProperty("terminated", true);
+            out.addProperty("steps", steps);
+            out.add("lastState", gson.toJsonTree(last != null ? last.getNewState() : null));
+            writeJson(resp, HttpServletResponse.SC_OK, out);
+        } catch (Exception e) {
+            writeJsonError(resp, HttpServletResponse.SC_INTERNAL_SERVER_ERROR,
+                    "Debug resume failed: " + e.getMessage());
+        }
     }
 
-    /** POST /api/debug/stop — שלד לעכשיו */
+    /** POST /api/debug/stop  – עוצר *רק* סשן ספציפי לפי debugId */
     private void handleStop(HttpServletRequest req, HttpServletResponse resp) throws IOException {
-        writeJsonError(resp, HttpServletResponse.SC_NOT_IMPLEMENTED, "TODO: stop");
+        // קורא debugId או מה-query או מגוף ה-JSON
+        String debugId = req.getParameter("debugId");
+        if (debugId == null || debugId.isBlank()) {
+            JsonObject in = readJson(req);
+            if (in != null && in.has("debugId") && !in.get("debugId").isJsonNull()) {
+                debugId = in.get("debugId").getAsString();
+            }
+        }
+
+        if (debugId == null || debugId.isBlank()) {
+            writeJsonError(resp, HttpServletResponse.SC_BAD_REQUEST, "Missing debugId");
+            return;
+        }
+
+        DebugAPI dbg = getSessions().remove(debugId);
+        if (dbg == null) {
+            writeJsonError(resp, HttpServletResponse.SC_NOT_FOUND, "Unknown debugId");
+            return;
+        }
+
+        // עדכון dbgBusy לפי האם נשארו סשנים פתוחים
+        boolean anyLeft = !getSessions().isEmpty();
+        getServletContext().setAttribute(ATTR_DBG_BUSY, anyLeft ? Boolean.TRUE : Boolean.FALSE);
+
+        JsonObject out = new JsonObject();
+        out.addProperty("stopped", true);
+        out.addProperty("debugId", debugId);
+        out.addProperty("remaining", getSessions().size());
+        writeJson(resp, HttpServletResponse.SC_OK, out);
+    }
+
+    /** POST /api/debug/terminated (body/query: debugId) → { "terminated": boolean } */
+    private void handleTerminated(HttpServletRequest req, HttpServletResponse resp) throws IOException {
+        // קורא debugId מה-query או מה-JSON body
+        String debugId = req.getParameter("debugId");
+        if (debugId == null || debugId.isBlank()) {
+            JsonObject in = readJson(req);
+            if (in != null && in.has("debugId") && !in.get("debugId").isJsonNull()) {
+                debugId = in.get("debugId").getAsString();
+            }
+        }
+        if (debugId == null || debugId.isBlank()) {
+            writeJsonError(resp, HttpServletResponse.SC_BAD_REQUEST, "Missing debugId");
+            return;
+        }
+
+        boolean term;
+        DebugAPI dbg = getSessions().get(debugId);
+
+        if (dbg == null) {
+            // אם אין סשן – מבחינת הלקוח זה "נגמר"
+            term = true;
+        } else {
+            boolean t = false;
+            try { t = dbg.isTerminated(); } catch (Throwable ignore) { /* שקט */ }
+            term = t;
+            if (term) {
+                // ניקוי כמו ב-step/resume
+                getSessions().remove(debugId);
+                boolean anyLeft = !getSessions().isEmpty();
+                getServletContext().setAttribute(ATTR_DBG_BUSY, anyLeft ? Boolean.TRUE : Boolean.FALSE);
+            }
+        }
+
+        JsonObject out = new JsonObject();
+        out.addProperty("terminated", term);
+        writeJson(resp, HttpServletResponse.SC_OK, out);
     }
 
     // -------- Helpers --------

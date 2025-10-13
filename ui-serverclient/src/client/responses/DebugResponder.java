@@ -1,6 +1,7 @@
 package client.responses;
 
 import com.google.gson.JsonObject;
+import execution.debug.DebugStateDTO;
 import execution.debug.DebugStepDTO;
 import okhttp3.Request;
 import okhttp3.Response;
@@ -11,7 +12,7 @@ public final class DebugResponder {
 
     private DebugResponder() {}
 
-    /** קריאת init — מחזיר DebugResults.Init */
+    /** init → מחזיר DebugResults.Init */
     public static DebugResults.Init init(Request req) throws Exception {
         try (Response res = HttpClientUtil.runSync(req)) {
             String body = (res.body() != null) ? res.body().string() : "";
@@ -33,7 +34,7 @@ public final class DebugResponder {
         }
     }
 
-    /** קריאת step — מחזיר DebugStepDTO כמו שהוא */
+    /** step → מחזיר DebugStepDTO כמו שהוא */
     public static DebugStepDTO step(Request req) throws Exception {
         try (Response res = HttpClientUtil.runSync(req)) {
             String body = (res.body() != null) ? res.body().string() : "";
@@ -44,7 +45,49 @@ public final class DebugResponder {
         }
     }
 
-    // כשנוסיף endpoins ל-stop/terminate, נוסיף כאן:
-    // public static DebugResults.Stop stop(Request req) { ... }
-    // public static DebugResults.Terminated terminated(Request req) { ... }
+    /** stop → מחזיר DebugResults.Stop (expect: { "stopped": true, "debugId": "..." }) */
+    public static DebugResults.Stop stop(Request req) throws Exception {
+        try (Response res = HttpClientUtil.runSync(req)) {
+            String body = (res.body() != null) ? res.body().string() : "";
+            if (res.code() != 200) {
+                throw new RuntimeException("DEBUG stop failed: HTTP " + res.code() + " | " + body);
+            }
+            JsonObject obj = JsonUtils.GSON.fromJson(body, JsonObject.class);
+            boolean stopped = obj.has("stopped") && obj.get("stopped").getAsBoolean();
+            String debugId  = (obj.has("debugId") && !obj.get("debugId").isJsonNull())
+                    ? obj.get("debugId").getAsString()
+                    : null;
+            return new DebugResults.Stop(stopped, debugId);
+        }
+    }
+
+    public static DebugResults.Terminated terminated(Request req) throws Exception {
+        try (Response res = HttpClientUtil.runSync(req)) {
+            String body = (res.body() != null) ? res.body().string() : "";
+            if (res.code() != 200) {
+                return new DebugResults.Terminated(false);
+            }
+            JsonObject obj = JsonUtils.GSON.fromJson(body, JsonObject.class);
+            boolean term = obj.has("terminated") && obj.get("terminated").getAsBoolean();
+            return new DebugResults.Terminated(term);
+        }
+    }
+
+    public static DebugResults.Resume resume(Request req) throws Exception {
+        try (Response res = HttpClientUtil.runSync(req)) {
+            String body = (res.body() != null) ? res.body().string() : "";
+            if (res.code() != 200) {
+                return new DebugResults.Resume(false, 0, null, null);
+            }
+            JsonObject obj = JsonUtils.GSON.fromJson(body, JsonObject.class);
+            boolean terminated = obj.has("terminated") && obj.get("terminated").getAsBoolean();
+            int steps = obj.has("steps") ? obj.get("steps").getAsInt() : 0;
+            DebugStateDTO last = (obj.has("lastState") && !obj.get("lastState").isJsonNull())
+                    ? JsonUtils.GSON.fromJson(obj.get("lastState"), DebugStateDTO.class)
+                    : null;
+            String debugId = (obj.has("debugId") && !obj.get("debugId").isJsonNull())
+                    ? obj.get("debugId").getAsString() : null;
+            return new DebugResults.Resume(terminated, steps, last, debugId);
+        }
+    }
 }

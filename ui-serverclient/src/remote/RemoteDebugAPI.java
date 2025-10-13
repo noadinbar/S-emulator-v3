@@ -11,8 +11,9 @@ import okhttp3.Request;
 
 public class RemoteDebugAPI implements DebugAPI {
 
-    private final String userString; // null => תוכנית ראשית; אחרת userString של פונקציה
-    private String debugId;          // מתקבל מ-init
+    private final String userString;
+    private String debugId;
+    private volatile boolean terminated = false;
 
     public RemoteDebugAPI() { this(null); }
     public RemoteDebugAPI(String functionUserString) { this.userString = functionUserString; }
@@ -45,11 +46,43 @@ public class RemoteDebugAPI implements DebugAPI {
         throw new UnsupportedOperationException("Step Back is disabled (no /api/debug/restore endpoint).");
     }
 
+
     @Override
     public boolean isTerminated() {
+        if (terminated) return true;
+        if (debugId == null || debugId.isBlank()) return true;
+        try {
+            Request r = Debug.terminated(debugId);                   // <<< שם חדש
+            DebugResults.Terminated s = DebugResponder.terminated(r); // <<< שם חדש
+            this.terminated = s.terminated();
+        } catch (Exception ignored) {}
+        return this.terminated;
+    }
+
+
+    @Override
+    public void stop() {
+        if (debugId == null || debugId.isBlank()) return;
+        try {
+            Request req = Debug.stop(debugId);
+            DebugResults.Stop res = DebugResponder.stop(req);
+            if (res != null && res.debugId() != null && !res.debugId().isBlank()) {
+                this.debugId = res.debugId();
+            }
+        } catch (Exception ignore) {
+        }
+    }
+
+    @Override
+    public DebugStateDTO resumeAndGetLastState() {
         ensureId();
-        // TODO: כשנוסיף /api/debug/terminate או שדה 'terminated' בתגובה של step, נעדכן.
-        return false;
+        try {
+            var res = DebugResponder.resume(Debug.resume(debugId));
+            this.terminated = res.terminated();
+            return res.lastState(); // מגיע מהסרבלט שלך
+        } catch (Exception e) {
+            throw new RuntimeException("Remote debug resume failed", e);
+        }
     }
 
     private void ensureId() {

@@ -14,10 +14,11 @@ public class Constants {
     public static final String API_HISTORY  = "/api/history";
 
     // === Debug endpoints ===
-    public static final String API_DEBUG_INIT       = "/api/debug/init";        // POST
-    public static final String API_DEBUG_STEP       = "/api/debug/step";        // POST
-    public static final String API_DEBUG_TERMINATE  = "/api/debug/terminate";   // GET
-    public static final String API_DEBUG_STOP       = "/api/debug/stop";        // POST
+    public static final String API_DEBUG_INIT       = "/api/debug/init";
+    public static final String API_DEBUG_STEP       = "/api/debug/step";
+    public static final String API_DEBUG_TERMINATED  = "/api/debug/terminated";
+    public static final String API_DEBUG_STOP       = "/api/debug/stop";
+    public static final String API_DEBUG_RESUME       = "/api/debug/resume";
 
     // Headers / Content types
     public static final String HEADER_ACCEPT     = "Accept";

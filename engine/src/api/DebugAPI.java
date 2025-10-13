@@ -9,4 +9,7 @@ public interface DebugAPI {
     DebugStepDTO step();
     boolean isTerminated();
     void restore(DebugStateDTO snapshot);
+    default void stop() {}
+    default void resume() {}
+    default DebugStateDTO resumeAndGetLastState() { resume(); return null; }
 }

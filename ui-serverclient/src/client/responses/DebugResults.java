@@ -4,7 +4,9 @@ import execution.debug.DebugStateDTO;
 
 public final class DebugResults {
     private DebugResults() {}
-    public static record Init(String debugId, DebugStateDTO state) {}
-    public static record Stop(boolean stoppedAll, boolean stopped, String debugId, int count) {}
-    public static record Terminated(boolean terminated) {}
+    public record Init(String debugId, DebugStateDTO state) {}
+    public record Stop(boolean stopped, String debugId) {}
+    public record Terminated(boolean terminated) {}
+    public record Resume(boolean terminated, int steps, DebugStateDTO lastState, String debugId) {}
+
 }

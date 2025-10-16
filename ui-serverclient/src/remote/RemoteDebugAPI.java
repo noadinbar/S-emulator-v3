@@ -35,11 +35,20 @@ public class RemoteDebugAPI implements DebugAPI {
         ensureId();
         try {
             Request httpReq = Debug.step(debugId);
-            return DebugResponder.step(httpReq);
+            DebugStepDTO dto = DebugResponder.step(httpReq);
+
+            try {
+                Request termReq = Debug.terminated(debugId);
+                DebugResults.Terminated t = DebugResponder.terminated(termReq);
+                this.terminated = t.terminated();
+            } catch (Exception ignore) { }
+
+            return dto;
         } catch (Exception e) {
             throw new RuntimeException("Debug step failed: " + e.getMessage(), e);
         }
     }
+
 
     @Override
     public void restore(DebugStateDTO to) {
@@ -82,6 +91,17 @@ public class RemoteDebugAPI implements DebugAPI {
             return res.lastState(); // מגיע מהסרבלט שלך
         } catch (Exception e) {
             throw new RuntimeException("Remote debug resume failed", e);
+        }
+    }
+
+    @Override
+    public void recordHistory(ExecutionRequestDTO request) {
+        try {
+            Request httpReq = Debug.history(request);
+            DebugResults.History res = DebugResponder.history(httpReq);
+            if (!res.ok()) throw new RuntimeException("recordHistory failed");
+        } catch (Exception e) {
+            throw new RuntimeException("recordHistory failed: " + e.getMessage(), e);
         }
     }
 

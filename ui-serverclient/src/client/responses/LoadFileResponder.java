@@ -11,21 +11,7 @@ import utils.JsonUtils;
 import java.io.IOException;
 import java.nio.file.Path;
 
-/**
- * Responder for the "load file" flow:
- *  - builds the request via client.requests.LoadFile
- *  - runs it through HttpClientUtil
- *  - parses JSON -> DisplayDTO using JsonUtils.GSON
- */
 public class LoadFileResponder {
-
-    /**
-     * Sends the selected XML file to the server (POST /api/load) and parses the JSON response.
-     * @param xmlPath local filesystem path to the XML
-     * @return DisplayDTO ("as-is" program view)
-     * @throws IOException on network/HTTP errors
-     * @throws JsonSyntaxException if the JSON doesn't match DisplayDTO
-     */
     public static DisplayDTO execute(Path xmlPath) throws IOException, JsonSyntaxException {
         // 1) Build the multipart/form-data request
         Request request = LoadFile.build(xmlPath);

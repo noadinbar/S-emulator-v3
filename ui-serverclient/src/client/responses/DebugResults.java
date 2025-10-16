@@ -8,5 +8,5 @@ public final class DebugResults {
     public record Stop(boolean stopped, String debugId) {}
     public record Terminated(boolean terminated) {}
     public record Resume(boolean terminated, int steps, DebugStateDTO lastState, String debugId) {}
-
+    public record History(boolean ok, int runNumber) {}
 }

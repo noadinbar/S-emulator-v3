@@ -7,12 +7,12 @@ import okhttp3.Callback;
 import utils.Constants;
 
 import java.io.IOException;
-import java.util.concurrent.TimeUnit;
 
 public final class HttpClientUtil {
     private static final OkHttpClient CLIENT =
             new OkHttpClient.Builder()
-            .build();
+                    .cookieJar(new SimpleCookieManager())
+                    .build();
 
     private HttpClientUtil() {}
 

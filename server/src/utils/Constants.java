@@ -16,17 +16,22 @@ public class Constants {
     public static final String API_DEBUG_RESUME   = "/api/debug/resume";  // POST
     public static final String API_DEBUG_STOP = "/api/debug/stop";
     public static final String API_DEBUG_TERMINATED = "/api/debug/terminated";
+    public static final String API_DEBUG_HISTORY   = "/api/debug/history";
     public static final String API_FUNCTIONS             = "/api/functions";
     public static final String API_FUNCTION_PROGRAM      = "/api/functions/%s/program";
     public static final String API_FUNCTION_EXPAND       = "/api/functions/%s/expand";
+    public static final String API_LOGIN  = "/api/login";
+    public static final String API_LOGOUT = "/api/logout";
+    public static final String API_WHOAMI = "/api/whoami";
+    public static final String SESSION_USERNAME = "username";
     public static final String HEADER_CONTENT_TYPE = "Content-Type";
     public static final String CONTENT_TYPE_JSON   = "application/json";
     public static final String CONTENT_TYPE_XML    = "application/xml";
     public static final String MULTIPART_FORM_DATA = "multipart/form-data";
     public static final String CHARSET_UTF8        = "UTF-8";
-    public static final String PART_FILE   = "file";    // multipart field name for uploads
-    public static final String QP_NAME     = "name";    // e.g., ?name=...
-    public static final String QP_DEGREE   = "degree";  // e.g., ?degree=2
+    public static final String PART_FILE   = "file";
+    public static final String QP_NAME     = "name";
+    public static final String QP_DEGREE   = "degree";
     public static final String JSON_ERROR  = "error";
     public static final String JSON_STATUS = "status";
 }

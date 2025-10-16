@@ -19,6 +19,7 @@ public class Constants {
     public static final String API_DEBUG_TERMINATED  = "/api/debug/terminated";
     public static final String API_DEBUG_STOP       = "/api/debug/stop";
     public static final String API_DEBUG_RESUME       = "/api/debug/resume";
+    public static final String API_DEBUG_HISTORY   = "/api/debug/history";
 
     // Headers / Content types
     public static final String HEADER_ACCEPT     = "Accept";

@@ -30,17 +30,16 @@ import static utils.ServletUtils.writeJsonError;
                 API_DEBUG_STEP,
                 API_DEBUG_RESUME,
                 API_DEBUG_STOP,
-                API_DEBUG_TERMINATED
+                API_DEBUG_TERMINATED,
+                API_DEBUG_HISTORY
         }
 )
 public class DebugServlet extends HttpServlet {
 
     private static final String ATTR_DEBUG_SESSIONS = "debug.sessions";
     private static final String ATTR_DBG_BUSY       = "dbgBusy";
-
     private final Gson gson = new Gson();
 
-    // -------- Routing --------
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException {
         String route = req.getServletPath(); // כי מיפוי מלא
@@ -50,6 +49,7 @@ public class DebugServlet extends HttpServlet {
             case API_DEBUG_RESUME -> handleResume(req, resp);
             case API_DEBUG_STOP   -> handleStop(req, resp);
             case API_DEBUG_TERMINATED  -> handleTerminated(req, resp);
+            case API_DEBUG_HISTORY    -> handleHistory(req, resp);
             default -> writeJsonError(resp, HttpServletResponse.SC_NOT_FOUND,
                     "Unknown debug route: " + route);
         }
@@ -242,14 +242,12 @@ public class DebugServlet extends HttpServlet {
         DebugAPI dbg = getSessions().get(debugId);
 
         if (dbg == null) {
-            // אם אין סשן – מבחינת הלקוח זה "נגמר"
             term = true;
         } else {
             boolean t = false;
             try { t = dbg.isTerminated(); } catch (Throwable ignore) { /* שקט */ }
             term = t;
             if (term) {
-                // ניקוי כמו ב-step/resume
                 getSessions().remove(debugId);
                 boolean anyLeft = !getSessions().isEmpty();
                 getServletContext().setAttribute(ATTR_DBG_BUSY, anyLeft ? Boolean.TRUE : Boolean.FALSE);
@@ -261,8 +259,33 @@ public class DebugServlet extends HttpServlet {
         writeJson(resp, HttpServletResponse.SC_OK, out);
     }
 
-    // -------- Helpers --------
+    private void handleHistory(HttpServletRequest req, HttpServletResponse resp) throws IOException {
+        DisplayAPI root = getRootOrError(resp);
+        if (root == null) return;
 
+        JsonObject in = readJson(req);
+        if (in == null) in = new JsonObject();
+
+        ExecutionRequestDTO execReq = gson.fromJson(in, ExecutionRequestDTO.class);
+        if (execReq == null) {
+            writeJsonError(resp, HttpServletResponse.SC_BAD_REQUEST, "Missing execution request body.");
+            return;
+        }
+        int degree = Math.max(0, execReq.getDegree());
+
+        try {
+            root.executionForDegree(degree).execute(execReq);
+            JsonObject out = new JsonObject();
+            out.addProperty("status", "ok");
+            writeJson(resp, HttpServletResponse.SC_OK, out);
+        } catch (Exception ex) {
+            writeJsonError(resp, HttpServletResponse.SC_INTERNAL_SERVER_ERROR,
+                    "debug history failed: " + ex.getMessage());
+        }
+    }
+
+
+    // -------- Helpers --------
     private DisplayAPI getRootOrError(HttpServletResponse resp) throws IOException {
         Object obj = getServletContext().getAttribute(ATTR_DISPLAY_API);
         if (!(obj instanceof DisplayAPI display)) {

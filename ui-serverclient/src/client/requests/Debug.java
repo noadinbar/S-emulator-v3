@@ -7,6 +7,8 @@ import okhttp3.RequestBody;
 import utils.Constants;
 import utils.JsonUtils;
 
+import java.util.List;
+
 public final class Debug {
 
     private Debug() {}
@@ -88,4 +90,15 @@ public final class Debug {
                 .build();
     }
 
+    public static Request history(ExecutionRequestDTO dto) {
+        JsonObject body = JsonUtils.GSON.toJsonTree(dto).getAsJsonObject();
+        RequestBody rb = RequestBody.create(body.toString(), Constants.MEDIA_TYPE_JSON);
+        return new Request.Builder()
+                .url(Constants.BASE_URL + Constants.API_DEBUG_HISTORY)
+                .post(rb)
+                .addHeader(Constants.HEADER_ACCEPT, Constants.CONTENT_TYPE_JSON)
+                .build();
+    }
 }
+
+

@@ -1,0 +1,19 @@
+.skin-default .instructions-root .table-view {
+    -fx-control-inner-background: white;
+    -fx-control-inner-background-alt: derive(white, -2%);
+}
+
+/* Regular (unselected) text color in cells — for all skins */
+.skin-default .instructions-root .table-cell,
+.skin-rose    .instructions-root .table-cell,
+.skin-sky    .instructions-root .table-cell { -fx-text-fill: #222222; }
+
+.skin-default .instructions-root .table-row-cell .text,
+.skin-rose    .instructions-root .table-row-cell .text ,
+.skin-sky    .instructions-root .table-row-cell .text { -fx-fill: #222222; }
+
+/* Placeholder text color when the table has no data */
+.skin-default .instructions-root .placeholder .label,
+.skin-rose    .instructions-root .placeholder .label,
+.skin-sky    .instructions-root .placeholder .label{ -fx-text-fill: #555555; }
+

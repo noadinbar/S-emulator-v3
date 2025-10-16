@@ -1,0 +1,23 @@
+.header-root { /* ProgressBar – height+colors */
+    .skin-default .progress-bar,
+    .skin-rose    .progress-bar,
+    .skin-sky     .progress-bar {
+        -fx-min-height: 8px;
+        -fx-pref-height: 8px;
+        -fx-background-color: transparent;
+    }
+
+    .skin-default .progress-bar > .track { -fx-background-color: #e5e7eb; -fx-background-radius: 6; }
+    .skin-rose    .progress-bar > .track { -fx-background-color: rgba(255,255,255,0.55); -fx-background-radius: 6; }
+    .skin-sky     .progress-bar > .track { -fx-background-color: rgba(255,255,255,0.55); -fx-background-radius: 6; }
+
+    .skin-default .progress-bar > .bar { -fx-background-color: #3b82f6; -fx-background-radius: 6; }
+    .skin-rose    .progress-bar > .bar { -fx-background-color: #c44b73; -fx-background-radius: 6; }
+    .skin-sky     .progress-bar > .bar { -fx-background-color: #2563eb; -fx-background-radius: 6; }
+
+    .skin-default .progress-bar:indeterminate > .bar { -fx-background-color: #3b82f6; }
+    .skin-rose    .progress-bar:indeterminate > .bar { -fx-background-color: #c44b73; }
+    .skin-sky     .progress-bar:indeterminate > .bar { -fx-background-color: #2563eb; }
+}
+
+.app-title { -fx-font-weight: bold; -fx-font-size: 20px !important; }

@@ -90,4 +90,20 @@ public final class DebugResponder {
             return new DebugResults.Resume(terminated, steps, last, debugId);
         }
     }
+
+    public static DebugResults.History history(Request req) throws Exception {
+        try (Response res = HttpClientUtil.runSync(req)) {
+            String body = (res.body() != null) ? res.body().string() : "";
+            if (res.code() != 200) {
+                throw new RuntimeException("DEBUG history failed: HTTP " + res.code() + " | " + body);
+            }
+            JsonObject obj = JsonUtils.GSON.fromJson(body, JsonObject.class);
+            boolean ok = obj.has("status") && "ok".equalsIgnoreCase(obj.get("status").getAsString());
+            int runNumber = (obj.has("runNumber") && !obj.get("runNumber").isJsonNull())
+                    ? obj.get("runNumber").getAsInt()
+                    : 0 ;
+            return new DebugResults.History(ok, runNumber);
+        }
+    }
+
 }

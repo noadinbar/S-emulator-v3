@@ -9,18 +9,25 @@
             prefHeight="260.0" prefWidth="440.0" maxWidth="1.7976931348623157E308">
 
     <top>
-        <Label fx:id="titleLabel" text="Functions" BorderPane.alignment="CENTER_LEFT"/>
+        <Label fx:id="titleLabel" text="Available Functions" BorderPane.alignment="CENTER_LEFT"/>
     </top>
 
     <center>
-        <ListView fx:id="functionsListView" BorderPane.alignment="CENTER">
+        <TableView fx:id="functionsTable" BorderPane.alignment="CENTER">
+            <columns>
+                <TableColumn fx:id="nameCol"        text="Function"/>
+                <TableColumn fx:id="programCol"     text="Program"/>
+                <TableColumn fx:id="uploaderCol"    text="Uploader"/>
+                <TableColumn fx:id="instrCol"       text="#Instructions (deg 0)"/>
+                <TableColumn fx:id="degreeCol"      text="Max Degree"/>
+            </columns>
             <placeholder><Label text="No functions yet"/></placeholder>
-        </ListView>
+        </TableView>
     </center>
 
     <bottom>
         <HBox spacing="8" alignment="CENTER_RIGHT" BorderPane.alignment="CENTER_RIGHT">
-            <Button fx:id="executeBtn" text="Execute function" onAction="#onExecuteAction"/>
+            <Button fx:id="executeBtn" text="Execute" onAction="#onExecuteAction"/>
         </HBox>
     </bottom>
 

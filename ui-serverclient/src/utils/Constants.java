@@ -20,6 +20,8 @@ public class Constants {
     public static final String API_DEBUG_HISTORY   = "/api/debug/history";
     public static final String API_PROGRAMS= "/api/programs";
     public static final String API_PROGRAM_BY_NAME= "/api/programs/by-name";
+    public static final String API_FUNCTIONS_KEYS    = "/api/functions/keys";     // רק רשימת user-strings
+    public static final String API_FUNCTION_PROGRAM  = "/api/functions/%s/program"; // DisplayDTO של הפונקציה/התוכנית
 
     // Headers / Content types
     public static final String HEADER_ACCEPT     = "Accept";
@@ -32,5 +34,5 @@ public class Constants {
     public static final String QP_DEBUG_ID   = "debugId";
     public static final String JSON_FUNCTION = "function";
 
-    public static final int PROGRAMS_REFRESH_RATE_MS = 2000;
+    public static final int REFRESH_RATE_MS = 1000;
 }

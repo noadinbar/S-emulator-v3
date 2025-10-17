@@ -19,8 +19,8 @@
 
             <!-- טורים/שורות שוות -->
             <columnConstraints>
-                <ColumnConstraints hgrow="ALWAYS" percentWidth="45.0" />
-                <ColumnConstraints hgrow="ALWAYS" percentWidth="55.0" />
+                <ColumnConstraints hgrow="ALWAYS" percentWidth="42.0" />
+                <ColumnConstraints hgrow="ALWAYS" percentWidth="58.0" />
             </columnConstraints>
             <rowConstraints>
                 <RowConstraints percentHeight="50" vgrow="ALWAYS" />

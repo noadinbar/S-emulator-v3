@@ -1,6 +1,5 @@
 package application.opening.programs;
 
-import application.opening.programs.ProgramsRefresher;
 import display.ProgramRowDTO;
 import javafx.fxml.FXML;
 import javafx.scene.control.TableColumn;
@@ -41,7 +40,7 @@ public class ProgramsController {
         if (timer != null) return;
         refresher = new ProgramsRefresher(shouldUpdate, this::applyRows);
         timer = new Timer(true);
-        timer.schedule(refresher, Constants.PROGRAMS_REFRESH_RATE_MS, Constants.PROGRAMS_REFRESH_RATE_MS);
+        timer.schedule(refresher, Constants.REFRESH_RATE_MS, Constants.REFRESH_RATE_MS);
     }
 
     public void stopProgramsRefresher() {

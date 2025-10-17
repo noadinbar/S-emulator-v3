@@ -28,6 +28,7 @@ public class OpeningSceneController {
         headerController.setOnLocalFileChosen(this::handleLocalFileChosen);
         headerController.setOnChargeCredits(this::handleChargeCredits);
         programsController.startProgramsRefresher();
+        functionsController.startFunctionsRefresher();
     }
 
     // --- API נוח למסך העוטף/אפליקציה ---
@@ -48,9 +49,6 @@ public class OpeningSceneController {
         if (usersController != null) usersController.setUsers(users);
     }
 
-    public void setFunctions(List<String> functions) {
-        if (functionsController != null) functionsController.setFunctions(functions);
-    }
 
     public void setHistory(List<RunHistoryEntryDTO> entries) {
         if (historyController != null) historyController.setHistory(entries);
@@ -68,5 +66,6 @@ public class OpeningSceneController {
 
     public void stopAllRefreshers() {
         programsController.stopProgramsRefresher();
+        functionsController.stopFunctionsRefresher();
     }
 }

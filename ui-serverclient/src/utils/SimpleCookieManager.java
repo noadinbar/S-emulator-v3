@@ -17,14 +17,12 @@ public class SimpleCookieManager implements CookieJar {
     @Override
     public List<Cookie> loadForRequest(@NotNull HttpUrl httpUrl) {
         String host = httpUrl.host();
-        System.out.print(CACHE_MANAGER_EXTRACT_PREFIX + "Fetching cookies for domain: [" + host + "]...");
         List<Cookie> cookiesPerDomain = Collections.emptyList();
         synchronized (this) {
             if (cookies.containsKey(host)) {
                 cookiesPerDomain = new ArrayList<>(cookies.get(host).values());
             }
         }
-        System.out.println(" Total of " + cookiesPerDomain.size() + " cookie(s) will be loaded !");
         return cookiesPerDomain;
     }
 
@@ -37,7 +35,6 @@ public class SimpleCookieManager implements CookieJar {
                     .stream()
                     .filter(cookie -> !cookiesMap.containsKey(cookie.name()))  // I have the freedom to choose not to accept changes in existing cookie
                     .forEach(cookie -> {
-                        System.out.println(CACHE_MANAGER_STORE_PREFIX + "Storing cookie [" + cookie.name() + "] = [" + cookie.value() + "]");
                         cookiesMap.put(cookie.name(), cookie);
                     });
         }

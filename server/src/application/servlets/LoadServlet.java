@@ -2,16 +2,15 @@ package application.servlets;
 
 import api.DisplayAPI;
 import api.LoadAPI;
+import application.programs.ProgramTableRow;
 import display.DisplayDTO;
+import display.UploadResultDTO;
 import exportToDTO.LoadAPIImpl;
 
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.MultipartConfig;
 import jakarta.servlet.annotation.WebServlet;
-import jakarta.servlet.http.HttpServlet;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
-import jakarta.servlet.http.Part;
+import jakarta.servlet.http.*;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -19,13 +18,18 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 
+import application.listeners.AppContextListener;
+import application.programs.ProgramManager;
+
+import java.nio.file.Paths;
+
 import static utils.Constants.*;
 import static utils.ServletUtils.*;
 
 /**
- * Receives an XML file via multipart/form-data (field name: "file"),
- * loads it into the engine using LoadAPI, stores DisplayAPI in context,
- * and returns DisplayDTO as JSON (DTO -> JSON).
+ * Receives an XML via multipart/form-data ("file"), validates it with LoadAPI,
+ * registers { programName -> DisplayDTO } in ProgramManager (server-wide),
+ * and returns DisplayDTO as JSON.
  */
 @WebServlet(name = "LoadServlet", urlPatterns = { API_LOAD })
 @MultipartConfig
@@ -33,7 +37,7 @@ public class LoadServlet extends HttpServlet {
 
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException {
-        // 1) Parse multipart and validate
+        // 1) Parse multipart
         final Part filePart;
         try {
             filePart = req.getPart(PART_FILE); // "file"
@@ -46,7 +50,7 @@ public class LoadServlet extends HttpServlet {
             return;
         }
 
-        // 2) Copy upload to a temp file (LoadAPI works with Path)
+        // 2) Copy to temp (LoadAPI works with Path)
         Path tmp = Files.createTempFile("program-", ".xml");
         try (InputStream in = filePart.getInputStream()) {
             Files.copy(in, tmp, StandardCopyOption.REPLACE_EXISTING);
@@ -57,21 +61,38 @@ public class LoadServlet extends HttpServlet {
         }
 
         try {
-            // 3) Load engine from XML
+            // 3) Validate & build DTO (no DisplayAPI kept in context)
             LoadAPI loader = new LoadAPIImpl();
-            DisplayAPI display = loader.loadFromXml(tmp);
+            DisplayAPI display = loader.loadFromXml(tmp); // throws on invalid/semantic errors
+            DisplayDTO dto = display.getDisplay();        // <-- what we return & store
 
-            // 4) Store shared state in context
-            getServletContext().setAttribute(ATTR_DISPLAY_API, display);
-            if (getServletContext().getAttribute(ATTR_MODE) == null) {
-                getServletContext().setAttribute(ATTR_MODE, MODE_IDLE);
+            // 4) Derive program name & register in ProgramManager (server-wide)
+            String submitted = filePart.getSubmittedFileName(); // e.g. "MyProg.xml"
+            String baseName = submitted != null
+                    ? Paths.get(submitted).getFileName().toString()
+                    : "program";
+            baseName = baseName.replaceFirst("\\.[^.]+$", ""); // strip extension
+            String uploader = "anonymous";
+            HttpSession session = req.getSession(false);
+            if (session != null && session.getAttribute("username") != null)
+                uploader = session.getAttribute("username").toString();
+
+            ProgramManager pm = (ProgramManager) getServletContext().getAttribute(AppContextListener.ATTR_PROGRAMS);
+            if (pm != null) {
+                pm.put(baseName, dto);
+                int maxDegree = 0;
+                try {
+                    maxDegree = display.execution().getMaxDegree();
+                } catch (Exception ignore) { }
+                pm.putRecord(new ProgramTableRow(
+                        baseName,
+                        uploader,
+                        dto.numberOfInstructions(),
+                        maxDegree
+                ));
             }
-            getServletContext().setAttribute("execBusy", Boolean.FALSE);
-            getServletContext().setAttribute("dbgBusy",  Boolean.FALSE);
-
-            // 5) Return DisplayDTO as JSON (DTO -> JSON)
-            DisplayDTO dto = display.getDisplay(); // "as-is" program
-            writeJson(resp, HttpServletResponse.SC_CREATED, dto);
+            UploadResultDTO uploadResult= new UploadResultDTO(baseName);
+            writeJson(resp, HttpServletResponse.SC_CREATED, uploadResult);
 
         } catch (Exception e) {
             String msg = e.getClass().getSimpleName() + ": " + (e.getMessage() == null ? "" : e.getMessage());

@@ -41,4 +41,5 @@ public class DisplayDTO {
     public List<LabelDTO> getLabelsInUse() { return labelsInUse; }
     public List<InstructionDTO> getInstructions() { return instructions; }
     public List<FunctionDTO> getFunctions() { return functions; }
+    public int numberOfInstructions() { return instructions.size(); }
 }

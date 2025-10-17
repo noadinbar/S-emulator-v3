@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<VBox xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml"
+      fx:controller="application.opening.header.HeaderController"
+      fx:id="headerOpeningRoot" spacing="8"
+      maxWidth="1.7976931348623157E308">
+    <padding>
+        <Insets top="10" right="12" bottom="10" left="12"/>
+    </padding>
+
+    <children>
+        <BorderPane>
+            <left>
+                <Label fx:id="userNameLabel" text="User Name" BorderPane.alignment="CENTER_LEFT"/>
+            </left>
+            <center>
+                <Label fx:id="dashboardTitle" text="S-Emulator — Dashboard" BorderPane.alignment="CENTER"/>
+            </center>
+            <right>
+                <HBox spacing="6" alignment="CENTER_RIGHT">
+                    <Label text="Available Credits:"/>
+                    <TextField fx:id="availableCreditsField" prefColumnCount="6" editable="false" focusTraversable="false"/>
+                </HBox>
+            </right>
+        </BorderPane>
+
+        <HBox spacing="8" alignment="CENTER_LEFT">
+            <Button fx:id="loadFileButton" text="Load File" onAction="#onLoadFile"/>
+            <TextField fx:id="loadedFilePathField" promptText="Currently Loaded File path"
+                       editable="false" HBox.hgrow="ALWAYS"/>
+            <Region HBox.hgrow="ALWAYS"/>
+            <Button fx:id="chargeCreditsButton" text="Charge Credits" onAction="#onChargeCredits"/>
+            <TextField fx:id="chargeAmountField" promptText="credits" prefColumnCount="6"/>
+        </HBox>
+    </children>
+</VBox>

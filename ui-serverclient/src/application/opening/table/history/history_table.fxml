@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import java.net.URL?>
+<?import javafx.scene.control.TableColumn?>
+<?import javafx.scene.control.TableView?>
+<?import javafx.scene.layout.VBox?>
+
+<VBox xmlns="http://javafx.com/javafx/24.0.1" xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="application.opening.table.history.HistoryController">
+    <children>
+        <TableView fx:id="tblHistory" prefHeight="180.0" styleClass="history-root">
+            <columns>
+                <TableColumn fx:id="colRunId"   text="#Run"      prefWidth="60.0"/>
+                <TableColumn fx:id="colDegree"  text="Degree"    prefWidth="80.0"/>
+                <TableColumn fx:id="colInputs"  text="Inputs"    prefWidth="220.0"/>
+                <TableColumn fx:id="colY"       text="Result(y)" prefWidth="100.0"/>
+                <TableColumn fx:id="colCycles"  text="Cycles"    prefWidth="90.0"/>
+            </columns>
+        </TableView>
+    </children>
+</VBox>

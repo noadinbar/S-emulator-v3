@@ -15,7 +15,6 @@ import javafx.scene.control.*;
 import javafx.stage.FileChooser;
 import javafx.stage.Window;
 import javafx.util.converter.IntegerStringConverter;
-import remote.LoadAPIHttp;
 import types.LabelDTO;
 import types.VarRefDTO;
 
@@ -204,7 +203,7 @@ public class HeaderController {
                 updateProgress(0, 1);
                 Thread.sleep(300);
                 updateProgress(0.3, 1);
-                LoadAPI loader = new LoadAPIHttp();
+                LoadAPI loader = new LoadAPIImpl();
                 DisplayAPI display = loader.loadFromXml(chosenXml);
                 updateProgress(0.9, 1);
                 Thread.sleep(300);

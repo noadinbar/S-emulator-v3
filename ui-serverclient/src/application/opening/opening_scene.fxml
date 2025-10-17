@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.layout.BorderPane?>
+<?import javafx.scene.layout.ColumnConstraints?>
+<?import javafx.scene.layout.GridPane?>
+<?import javafx.scene.layout.RowConstraints?>
+
+<BorderPane fx:id="openingRoot" prefHeight="600.0" prefWidth="800.0" xmlns="http://javafx.com/javafx/24.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="application.opening.OpeningSceneController">
+    <top>
+        <fx:include fx:id="header" source="header/header.fxml" />
+    </top>
+
+    <!-- 2x2: (row 0) Users | Programs
+              (row 1) History | Functions -->
+    <center>
+        <GridPane hgap="10" vgap="10" BorderPane.alignment="CENTER">
+            <padding><Insets bottom="12" left="12" right="12" top="8" /></padding>
+
+            <!-- טורים/שורות שוות -->
+            <columnConstraints>
+                <ColumnConstraints hgrow="ALWAYS" percentWidth="45.0" />
+                <ColumnConstraints hgrow="ALWAYS" percentWidth="55.0" />
+            </columnConstraints>
+            <rowConstraints>
+                <RowConstraints percentHeight="50" vgrow="ALWAYS" />
+                <RowConstraints percentHeight="50" vgrow="ALWAYS" />
+            </rowConstraints>
+
+            <fx:include fx:id="users" source="users/users_list.fxml" GridPane.columnIndex="0" GridPane.hgrow="ALWAYS" GridPane.rowIndex="0" GridPane.vgrow="ALWAYS" />
+            <fx:include fx:id="programs" source="programs/programs_list.fxml" GridPane.columnIndex="1" GridPane.hgrow="ALWAYS" GridPane.rowIndex="0" GridPane.vgrow="ALWAYS" />
+            <fx:include fx:id="history" source="table/history/history_table.fxml" GridPane.columnIndex="0" GridPane.hgrow="ALWAYS" GridPane.rowIndex="1" GridPane.vgrow="ALWAYS" />
+            <fx:include fx:id="functions" source="functions/functions_list.fxml" GridPane.columnIndex="1" GridPane.hgrow="ALWAYS" GridPane.rowIndex="1" GridPane.vgrow="ALWAYS" />
+        </GridPane>
+    </center>
+</BorderPane>

@@ -23,6 +23,8 @@ public class Constants {
     public static final String API_LOGIN  = "/api/login";
     public static final String API_LOGOUT = "/api/logout";
     public static final String API_WHOAMI = "/api/whoami";
+    public static final String API_PROGRAMS = "/api/programs";
+    public static final String API_PROGRAM_BY_NAME= "/api/programs/by-name";
     public static final String SESSION_USERNAME = "username";
     public static final String HEADER_CONTENT_TYPE = "Content-Type";
     public static final String CONTENT_TYPE_JSON   = "application/json";
@@ -34,4 +36,5 @@ public class Constants {
     public static final String QP_DEGREE   = "degree";
     public static final String JSON_ERROR  = "error";
     public static final String JSON_STATUS = "status";
+    public static final int PROGRAMS_REFRESH_RATE_MS = 2000;
 }

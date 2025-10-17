@@ -56,7 +56,7 @@ public class LoginController {
 
     private void openMainAndClose() {
         try {
-            Parent root = FXMLLoader.load(getClass().getResource("/application/v2/program_scene.fxml"));
+            Parent root = FXMLLoader.load(getClass().getResource("/application/opening/opening_scene.fxml"));
             Stage stage = new Stage();
             stage.setTitle("S-emulator");
             stage.setScene(new Scene(root));

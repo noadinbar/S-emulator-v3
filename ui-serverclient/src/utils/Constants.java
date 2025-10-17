@@ -12,14 +12,14 @@ public class Constants {
     public static final String API_EXECUTE  = "/api/execute";
     public static final String API_FUNCTIONS= "/api/functions";
     public static final String API_HISTORY  = "/api/history";
-
-    // === Debug endpoints ===
     public static final String API_DEBUG_INIT       = "/api/debug/init";
     public static final String API_DEBUG_STEP       = "/api/debug/step";
     public static final String API_DEBUG_TERMINATED  = "/api/debug/terminated";
     public static final String API_DEBUG_STOP       = "/api/debug/stop";
     public static final String API_DEBUG_RESUME       = "/api/debug/resume";
     public static final String API_DEBUG_HISTORY   = "/api/debug/history";
+    public static final String API_PROGRAMS= "/api/programs";
+    public static final String API_PROGRAM_BY_NAME= "/api/programs/by-name";
 
     // Headers / Content types
     public static final String HEADER_ACCEPT     = "Accept";
@@ -31,4 +31,6 @@ public class Constants {
     // Query params / JSON keys (נוח לאחידות)
     public static final String QP_DEBUG_ID   = "debugId";
     public static final String JSON_FUNCTION = "function";
+
+    public static final int PROGRAMS_REFRESH_RATE_MS = 2000;
 }

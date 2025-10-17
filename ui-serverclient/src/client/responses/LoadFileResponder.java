@@ -1,33 +1,35 @@
 package client.responses;
 
-import utils.HttpClientUtil;
-import client.requests.LoadFile;
-import com.google.gson.JsonSyntaxException;
-import display.DisplayDTO;        // <-- use your actual DTO package
+import com.google.gson.Gson;
 import okhttp3.Request;
 import okhttp3.Response;
-import utils.JsonUtils;
+import utils.HttpClientUtil;
+import client.requests.LoadFile;            // נשאר השם שלך לבקשה
+import display.UploadResultDTO;
 
+import java.io.File;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.nio.file.Path;
 
 public class LoadFileResponder {
-    public static DisplayDTO execute(Path xmlPath) throws IOException, JsonSyntaxException {
-        // 1) Build the multipart/form-data request
-        Request request = LoadFile.build(xmlPath);
+    private static final Gson GSON = new Gson();
 
-        // 2) Execute synchronously via the shared OkHttp client
-        try (Response rs = HttpClientUtil.runSync(request)) {
-            int code = rs.code();
-            String body = rs.body() != null ? rs.body().string() : "";
-
-            // Expecting 201 Created + JSON body (DisplayDTO)
-            if (code != 201) {
-                throw new IOException("LOAD failed: HTTP " + code + " | " + body);
+    public static UploadResultDTO execute(Path xmlPath) throws IOException {
+        Request req = LoadFile.build(xmlPath);
+        try (Response rs = HttpClientUtil.runSync(req)) {
+            if (!rs.isSuccessful()) {
+                String body = rs.body() != null ? rs.body().string() : "";
+                throw new IOException("Upload failed: HTTP " + rs.code() + " " + rs.message()
+                        + (body.isBlank() ? "" : " – " + body));
             }
-
-            // 3) JSON -> DTO (round-trip complete)
-            return JsonUtils.GSON.fromJson(body, DisplayDTO.class);
+            if (rs.body() == null) throw new IOException("Empty body");
+            try (InputStreamReader r = new InputStreamReader(rs.body().byteStream())) {
+                UploadResultDTO dto = GSON.fromJson(r, UploadResultDTO.class);
+                if (dto == null) throw new IOException("Invalid response");
+                if (!dto.ok) throw new IOException(dto.error != null ? dto.error : "Upload failed");
+                return dto;
+            }
         }
     }
 }

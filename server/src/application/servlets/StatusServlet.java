@@ -35,7 +35,6 @@ public class StatusServlet extends HttpServlet {
             json.addProperty("programName", programName);
             json.addProperty("maxDegree", maxDegree);
 
-            // === חדש: מחזירים מקס' דרגה לכל פונקציה ===
             JsonObject functionsMax = new JsonObject();
             try {
                 Map<String, DisplayAPI> funcs = display.functionDisplaysByUserString();
@@ -48,9 +47,8 @@ public class StatusServlet extends HttpServlet {
                         functionsMax.addProperty(e.getKey(), fMax);
                     }
                 }
-            } catch (Exception ignore) { /* נשאיר אובייקט ריק */ }
+            } catch (Exception ignore) {  }
             json.add("functionsMaxDegrees", functionsMax);
-            // === סוף חדש ===
 
         } else {
             json.addProperty("programName", (String) null);

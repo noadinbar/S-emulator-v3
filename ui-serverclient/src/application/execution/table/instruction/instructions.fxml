@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import java.net.URL?>
+<?import javafx.scene.control.TableColumn?>
+<?import javafx.scene.control.TableView?>
+
+
+<TableView fx:id="tblInstructions" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="179.0" prefWidth="457.0" styleClass="instructions-root" xmlns="http://javafx.com/javafx/24.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="application.execution.table.instruction.InstructionsController">
+    <columns>
+        <TableColumn fx:id="colBp" prefWidth="24" />
+        <TableColumn fx:id="colLine" prefWidth="45.33334481716156" text="Line" />
+        <TableColumn fx:id="colBS" prefWidth="27.999996185302734" text="B/S" />
+        <TableColumn fx:id="colLabel" prefWidth="42.66668701171875" text="Label" />
+        <TableColumn fx:id="colCycles" prefWidth="44.66661834716797" text="Cycles" />
+        <TableColumn fx:id="colInstruction" minWidth="6.0" prefWidth="286.6667022705078" text="Instruction" />
+    </columns>
+    <columnResizePolicy>
+        <TableView fx:constant="CONSTRAINED_RESIZE_POLICY" />
+    </columnResizePolicy>
+</TableView>

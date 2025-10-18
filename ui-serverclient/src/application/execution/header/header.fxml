@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<VBox xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml"
+      fx:controller="application.execution.header.HeaderController"
+      fx:id="executionHeaderRoot" spacing="10"
+      maxWidth="1.7976931348623157E308">
+
+    <padding>
+        <Insets top="10" right="12" bottom="6" left="12"/>
+    </padding>
+
+    <!-- שורה עליונה: User Name | S-Emulator - Execution | Available Credits -->
+    <BorderPane>
+        <left>
+            <Label fx:id="userNameLabel" text="User Name" BorderPane.alignment="CENTER_LEFT"/>
+        </left>
+        <center>
+            <Label fx:id="titleLabel" text="S-Emulator - Execution" BorderPane.alignment="CENTER"/>
+        </center>
+        <right>
+            <HBox spacing="6" alignment="CENTER_RIGHT">
+                <Label text="Available Credits:"/>
+                <TextField fx:id="availableCreditsField" prefColumnCount="6"
+                           editable="false" focusTraversable="false"/>
+            </HBox>
+        </right>
+    </BorderPane>
+
+    <!-- שורה תחתונה: כמו ב-ui-fx -->
+    <HBox spacing="10" alignment="CENTER_LEFT">
+        <!-- שמאל: Collapse | Current/Max Degree: [txtDegree] / [txtMaxDegree] | Expand -->
+        <HBox spacing="8" alignment="CENTER_LEFT">
+            <Button fx:id="btnCollapse" text="Collapse" onAction="#onCollapseClicked"/>
+            <Label text="Current/Max Degree:"/>
+            <TextField fx:id="txtDegree" prefWidth="40"/>
+            <Label text="/"/>
+            <TextField fx:id="txtMaxDegree" prefWidth="40" editable="false" focusTraversable="false"/>
+            <Button fx:id="btnExpand" text="Expand" onAction="#onExpandClicked"/>
+        </HBox>
+
+        <Region HBox.hgrow="ALWAYS"/>
+
+        <!-- ימין: Highlight selection כמו בתרגיל 2 -->
+        <ComboBox fx:id="cmbHighlight" promptText="Highlight selection" prefWidth="150.0"/>
+    </HBox>
+</VBox>

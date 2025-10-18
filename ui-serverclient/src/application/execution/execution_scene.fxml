@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import java.net.URL?>
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.ScrollPane?>
+<?import javafx.scene.control.SplitPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.StackPane?>
+<?import javafx.scene.layout.VBox?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.ComboBox?>
+
+<ScrollPane fx:id="rootScroll"
+            prefHeight="610.0" prefWidth="805.0"
+            styleClass="skin-default"
+            xmlns="http://javafx.com/javafx/24.0.1"
+            xmlns:fx="http://javafx.com/fxml/1"
+            fx:controller="application.execution.ExecutionSceneController">
+
+    <content>
+        <VBox fx:id="contentRoot"
+              minHeight="410.0" minWidth="600.0"
+              prefHeight="600.0" prefWidth="800.0"
+              styleClass="content-root">
+
+            <children>
+
+                <!-- Header למעלה -->
+                <fx:include fx:id="header" source="header/header.fxml"/>
+
+                <!-- גוף המסך: SplitPane בדיוק כמו ב-ui-fx -->
+                <SplitPane dividerPositions="0.6" VBox.vgrow="ALWAYS">
+                    <items>
+
+                        <!-- צד שמאל: טבלת פקודות → סיכום → טבלת שרשרת -->
+                        <VBox spacing="8.0">
+                            <children>
+
+                                <StackPane VBox.vgrow="ALWAYS">
+                                    <fx:include fx:id="programTable" source="table/instruction/instructions.fxml"/>
+                                </StackPane>
+
+                                <fx:include fx:id="summary" source="summary/summary.fxml"/>
+
+                                <StackPane VBox.vgrow="ALWAYS">
+                                    <fx:include fx:id="chainTable" source="table/instruction/instructions.fxml"/>
+                                </StackPane>
+                            </children>
+                            <padding>
+                                <Insets bottom="8" left="8" right="8" top="8"/>
+                            </padding>
+                        </VBox>
+
+                        <!-- צד ימין: Run Options, ואז Outputs | (Architecture + Inputs), ולמטה Back -->
+                        <VBox spacing="8.0">
+                            <children>
+
+                                <fx:include fx:id="runOptions" source="run/options/run_options.fxml"/>
+
+                                <HBox fillHeight="true" spacing="8.0">
+                                    <children>
+                                        <!-- Variables -->
+                                        <StackPane HBox.hgrow="ALWAYS">
+                                            <fx:include fx:id="outputs" source="outputs/outputs.fxml"/>
+                                        </StackPane>
+
+                                        <!-- Architecture Selection + Inputs -->
+                                        <VBox spacing="6.0" HBox.hgrow="NEVER">
+                                            <children>
+                                                <Label text="Architecture Selection"/>
+                                                <ComboBox fx:id="cmbArchitecture" promptText="Architecture"/>
+                                                <StackPane>
+                                                    <fx:include fx:id="inputs" source="inputs/inputs.fxml"/>
+                                                </StackPane>
+                                            </children>
+                                            <padding><Insets right="10.0"/></padding>
+                                        </VBox>
+                                    </children>
+                                </HBox>
+
+                                <!-- כפתור חזרה למטה (במקום history) -->
+                                <HBox alignment="CENTER_RIGHT">
+                                    <children>
+                                        <javafx.scene.control.Button fx:id="btnBackToOpening"
+                                                                     text="Back to opening"
+                                                                     onAction="#onBackToOpening"/>
+                                    </children>
+                                </HBox>
+                            </children>
+
+                            <padding>
+                                <Insets bottom="8.0" top="8.0"/>
+                            </padding>
+                        </VBox>
+
+                    </items>
+                </SplitPane>
+            </children>
+
+            <padding>
+                <Insets bottom="8" left="8" right="8" top="8"/>
+            </padding>
+        </VBox>
+    </content>
+</ScrollPane>

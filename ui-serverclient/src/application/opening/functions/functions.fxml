@@ -27,7 +27,7 @@
 
     <bottom>
         <HBox spacing="8" alignment="CENTER_RIGHT" BorderPane.alignment="CENTER_RIGHT">
-            <Button fx:id="executeBtn" text="Execute" onAction="#onExecuteAction"/>
+            <Button fx:id="executeBtn" text="Execute function" onAction="#onExecuteAction"/>
         </HBox>
     </bottom>
 

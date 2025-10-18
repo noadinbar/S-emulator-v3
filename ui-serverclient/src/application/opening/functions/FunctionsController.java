@@ -1,12 +1,18 @@
 package application.opening.functions;
 
+import application.execution.ExecutionSceneController;
 import client.responses.FunctionsResponder;
 import display.FunctionRowDTO;
 import javafx.application.Platform;
 import javafx.fxml.FXML;
+import javafx.fxml.FXMLLoader;
+import javafx.scene.Parent;
+import javafx.scene.Scene;
+import javafx.scene.control.Button;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.control.cell.PropertyValueFactory;
+import javafx.stage.Stage;
 import okhttp3.Request;
 import okhttp3.Response;
 import utils.Constants;
@@ -15,7 +21,6 @@ import java.util.List;
 import java.util.Timer;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-/** Controller for the Functions table (Section 10). */
 public class FunctionsController {
 
     @FXML private TableView<FunctionRowDTO> functionsTable;
@@ -24,30 +29,50 @@ public class FunctionsController {
     @FXML private TableColumn<FunctionRowDTO, String>  uploaderCol;
     @FXML private TableColumn<FunctionRowDTO, Integer> instrCol;
     @FXML private TableColumn<FunctionRowDTO, Integer> degreeCol;
+    @FXML private Button executeBtn;
 
-    // --- added: polling infra ---
     private final AtomicBoolean shouldUpdate = new AtomicBoolean(true);
     private Timer timer;
     private FunctionsRefresher refresher;
+    private String selectedFunctionName;
 
     @FXML
     public void initialize() {
+        // Bind columns to DTO getters
         nameCol.setCellValueFactory(new PropertyValueFactory<>("name"));
         programCol.setCellValueFactory(new PropertyValueFactory<>("programName"));
         uploaderCol.setCellValueFactory(new PropertyValueFactory<>("uploader"));
         instrCol.setCellValueFactory(new PropertyValueFactory<>("baseInstrCount"));
         degreeCol.setCellValueFactory(new PropertyValueFactory<>("maxDegree"));
+
+        // Disable Execute when no selection
+        executeBtn.disableProperty().bind(
+                functionsTable.getSelectionModel().selectedItemProperty().isNull()
+        );
+
+        // Remember current selection whenever user selects a row
+        functionsTable.getSelectionModel().selectedItemProperty().addListener((obs, oldV, newV) -> {
+            selectedFunctionName = (newV != null ? newV.getName() : null);
+        });
     }
 
-    /** Replace table content with given rows. */
-    public void applyRows(List<FunctionRowDTO> rows) {
-        functionsTable.getItems().setAll(rows);
+    @FXML
+    private void onExecuteAction() {
+        FunctionRowDTO sel = functionsTable.getSelectionModel().getSelectedItem();
+        if (sel == null) return;
+
+        try {
+            openExecutionScene("Execution — Function: " + sel.getName());
+            // TODO: next step — pass the relevant DisplayDTO here.
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
     }
 
     public void startFunctionsRefresher() {
         if (timer != null) return;
         refresher = new FunctionsRefresher(shouldUpdate, this::applyRows);
-        timer = new Timer(true); // daemon
+        timer = new Timer(true);
         timer.schedule(refresher, Constants.REFRESH_RATE_MS, Constants.REFRESH_RATE_MS);
     }
 
@@ -60,11 +85,24 @@ public class FunctionsController {
         }
     }
 
-    @FXML
-    private void onExecuteAction() {
+    // Replace table content while restoring selection if possible (by function name)
+    public void applyRows(List<FunctionRowDTO> rows) {
+        final String keep = selectedFunctionName;
+        functionsTable.getItems().setAll(rows);
+
+        if (keep != null) {
+            for (int i = 0; i < rows.size(); i++) {
+                if (keep.equalsIgnoreCase(rows.get(i).getName())) {
+                    functionsTable.getSelectionModel().select(i);
+                    functionsTable.scrollTo(i);
+                    return;
+                }
+            }
+        }
         functionsTable.getSelectionModel().clearSelection();
     }
 
+    // One-shot prime to avoid the first-second lag; uses applyRows
     public void loadOnceAsync() {
         new Thread(() -> {
             try {
@@ -77,11 +115,24 @@ public class FunctionsController {
                 Response rs = utils.HttpClientUtil.runSync(req);
                 if (!rs.isSuccessful()) { rs.close(); return; }
 
-                List<display.FunctionRowDTO> rows = FunctionsResponder.rowsParse(rs); // rowsParse סוגרת את rs
-                Platform.runLater(() -> {
-                    functionsTable.getItems().setAll(rows);
-                });
+                List<display.FunctionRowDTO> rows = FunctionsResponder.rowsParse(rs); // closes rs
+                Platform.runLater(() -> applyRows(rows));
             } catch (Exception ignore) {}
         }, "functions-prime").start();
+    }
+
+    /**
+     * Switch current window to the execution scene and return its controller.
+     */
+    private void openExecutionScene(String title) throws Exception {
+        FXMLLoader loader = new FXMLLoader(getClass().getResource("/application/execution/execution_scene.fxml"));
+        Parent root = loader.load();
+        ExecutionSceneController controller = loader.getController();
+
+        Stage stage = (Stage) functionsTable.getScene().getWindow();
+        if (title != null) stage.setTitle(title);
+        stage.setScene(new Scene(root));
+        stage.show();
+
     }
 }

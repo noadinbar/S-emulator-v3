@@ -1,12 +1,18 @@
 package application.opening.programs;
 
+import application.execution.ExecutionSceneController;
 import client.responses.ProgramsResponder;
 import display.ProgramRowDTO;
 import javafx.application.Platform;
 import javafx.fxml.FXML;
+import javafx.fxml.FXMLLoader;
+import javafx.scene.Parent;
+import javafx.scene.Scene;
+import javafx.scene.control.Button;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.control.cell.PropertyValueFactory;
+import javafx.stage.Stage;
 import okhttp3.Request;
 import okhttp3.Response;
 import utils.Constants;
@@ -24,10 +30,12 @@ public class ProgramsController {
     @FXML private TableColumn<ProgramRowDTO, Integer> degreeCol;
     @FXML private TableColumn<ProgramRowDTO, Integer> runsCol;
     @FXML private TableColumn<ProgramRowDTO, Double>  avgCreditsCol;
+    @FXML private Button executeBtn;
 
     private final AtomicBoolean shouldUpdate = new AtomicBoolean(true);
     private Timer timer;
     private ProgramsRefresher refresher;
+    private String selectedProgramName;
 
     @FXML
     public void initialize() {
@@ -38,6 +46,27 @@ public class ProgramsController {
         degreeCol.setCellValueFactory(new PropertyValueFactory<>("maxDegree"));
         runsCol.setCellValueFactory(new PropertyValueFactory<>("numRuns"));
         avgCreditsCol.setCellValueFactory(new PropertyValueFactory<>("avgCredits"));
+
+        executeBtn.disableProperty().bind(
+                programsTable.getSelectionModel().selectedItemProperty().isNull()
+        );
+
+        programsTable.getSelectionModel().selectedItemProperty().addListener((obs, oldV, newV) -> {
+            selectedProgramName = (newV != null ? newV.getName() : null);
+        });
+    }
+
+    @FXML
+    private void onExecuteAction() {
+        ProgramRowDTO sel = programsTable.getSelectionModel().getSelectedItem();
+        if (sel == null) return;
+
+        try {
+            openExecutionScene("Execution — Program: " + sel.getName());
+            // TODO: in the next step we’ll pass the relevant DisplayDTO here.
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
     }
 
     public void startProgramsRefresher() {
@@ -57,11 +86,17 @@ public class ProgramsController {
     }
 
     private void applyRows(List<ProgramRowDTO> rows) {
+        final String keep = selectedProgramName;
         programsTable.getItems().setAll(rows);
-    }
-
-    @FXML
-    private void onExecuteAction() {
+        if (keep != null) {
+            for (int i = 0; i < rows.size(); i++) {
+                if (keep.equalsIgnoreCase(rows.get(i).getName())) {
+                    programsTable.getSelectionModel().select(i);
+                    programsTable.scrollTo(i);
+                    return;
+                }
+            }
+        }
         programsTable.getSelectionModel().clearSelection();
     }
 
@@ -78,10 +113,26 @@ public class ProgramsController {
                     if (!rs.isSuccessful()) return;
                     List<display.ProgramRowDTO> rows = ProgramsResponder.parse(rs);
                     Platform.runLater(() -> {
-                        programsTable.getItems().setAll(rows);
+                        applyRows(rows);
                     });
                 }
             } catch (Exception ignore) { }
         }, "programs-prime").start();
     }
+
+    /**
+     * Switch current window to the given FXML and return its controller.
+     */
+    private void openExecutionScene(String title) throws Exception {
+        FXMLLoader loader = new FXMLLoader(getClass().getResource("/application/execution/execution_scene.fxml"));
+        Parent root = loader.load();
+        ExecutionSceneController controller = loader.getController();
+
+        Stage stage = (Stage) programsTable.getScene().getWindow();
+        if (title != null) stage.setTitle(title);
+        stage.setScene(new Scene(root));
+        stage.show();
+
+    }
+
 }

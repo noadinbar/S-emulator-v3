@@ -1,4 +1,3 @@
-// server/src/application/listeners/AppContextListener.java
 package application.listeners;
 
 import application.functions.FunctionManager;
@@ -11,7 +10,6 @@ import users.UserManager;
 
 @WebListener
 public class AppContextListener implements ServletContextListener {
-    // Context attribute keys (keep existing names)
     public static final String ATTR_USERS     = "userManager";
     public static final String ATTR_PROGRAMS  = "programsRegistry";
     public static final String ATTR_FUNCTIONS = "functionsRegistry";

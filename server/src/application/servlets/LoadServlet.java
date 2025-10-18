@@ -2,6 +2,8 @@ package application.servlets;
 
 import api.DisplayAPI;
 import api.LoadAPI;
+import application.functions.FunctionManager;
+import application.functions.FunctionTableRow;
 import application.programs.ProgramTableRow;
 import display.DisplayDTO;
 import display.UploadResultDTO;
@@ -22,6 +24,7 @@ import application.listeners.AppContextListener;
 import application.programs.ProgramManager;
 
 import java.nio.file.Paths;
+import java.util.Map;
 
 import static utils.Constants.*;
 import static utils.ServletUtils.*;
@@ -90,6 +93,27 @@ public class LoadServlet extends HttpServlet {
                         dto.numberOfInstructions(),
                         maxDegree
                 ));
+            }
+            FunctionManager fm = (FunctionManager) getServletContext().getAttribute(AppContextListener.ATTR_FUNCTIONS);
+            if (fm != null) {
+                Map<String, DisplayAPI> fnMap = display.functionDisplaysByUserString();
+                //TODO- to check if there is double functions
+                for (Map.Entry<String, DisplayAPI> e : fnMap.entrySet()) {
+                    String userString = e.getKey();
+                    DisplayAPI fApi   = e.getValue();
+                    DisplayDTO fDto   = fApi.getDisplay();
+                    int fBaseInstr = fDto.numberOfInstructions();
+                    int fMaxDegree = 0;
+                    try { fMaxDegree = fApi.execution().getMaxDegree(); } catch (Exception ignore) { }
+                    fm.put(userString, fDto);
+                    fm.putRecord(new FunctionTableRow(
+                            userString,
+                            baseName,
+                            uploader,
+                            fBaseInstr,
+                            fMaxDegree
+                    ));
+                }
             }
             UploadResultDTO uploadResult= new UploadResultDTO(baseName);
             writeJson(resp, HttpServletResponse.SC_CREATED, uploadResult);

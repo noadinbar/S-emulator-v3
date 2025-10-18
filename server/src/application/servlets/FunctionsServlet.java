@@ -1,7 +1,10 @@
 package application.servlets;
 
-import api.DisplayAPI;
+import application.functions.FunctionManager;
+import application.functions.FunctionTableRow;
+import application.listeners.AppContextListener;
 import display.DisplayDTO;
+import display.FunctionRowDTO;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
@@ -12,9 +15,7 @@ import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
-import static utils.Constants.ATTR_DISPLAY_API;
 import static utils.Constants.API_FUNCTIONS;   // "/api/functions"
 import static utils.ServletUtils.writeJson;
 import static utils.ServletUtils.writeJsonError;
@@ -24,57 +25,58 @@ public class FunctionsServlet extends HttpServlet {
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException {
-        Object obj = getServletContext().getAttribute(ATTR_DISPLAY_API);
-        if (!(obj instanceof DisplayAPI)) {
-            writeJsonError(resp, HttpServletResponse.SC_CONFLICT, "No loaded program.");
+        FunctionManager fm = (FunctionManager) getServletContext()
+                .getAttribute(AppContextListener.ATTR_FUNCTIONS);
+        if (fm == null) {
+            // No registry yet → return empty list for rows endpoint, or 409 for others
+            String path = req.getPathInfo();
+            if (path == null || "/".equals(path)) {
+                writeJson(resp, HttpServletResponse.SC_OK, List.of());
+            } else {
+                writeJsonError(resp, HttpServletResponse.SC_CONFLICT, "Functions registry not initialized.");
+            }
             return;
         }
-        DisplayAPI display = (DisplayAPI) obj;
+
         String path = req.getPathInfo();
         if (path == null || "/".equals(path)) {
-            // 1) list
-            handleList(display, resp);
+            handleRows(fm, resp);
             return;
         }
 
-        String[] parts = path.split("/");
-        if (parts.length < 3) {
-            writeJsonError(resp, HttpServletResponse.SC_BAD_REQUEST, "Invalid functions path.");
+        if ("/keys".equals(path)) {
+            writeJson(resp, HttpServletResponse.SC_OK, fm.list());
             return;
         }
-        String key    = urlDecode(parts[1]);
-        String action = parts[2];
 
-        if ("program".equals(action)) {
-            // 2) program-as-is
-            handleProgram(display, key, resp);
-        } else {
-            writeJsonError(resp, HttpServletResponse.SC_NOT_FOUND, "Unknown action: " + action);
-        }
-    }
-
-    private void handleList(DisplayAPI display, HttpServletResponse resp) throws IOException {
-        List<String> keys = new ArrayList<>();
-        try {
-            Map<String, DisplayAPI> map = display.functionDisplaysByUserString();
-            if (map != null) keys.addAll(map.keySet());
-        } catch (Exception ignore) { /* נשאיר רשימה ריקה */ }
-        writeJson(resp, HttpServletResponse.SC_OK, keys);
-    }
-
-    private void handleProgram(DisplayAPI display, String key, HttpServletResponse resp) throws IOException {
-        try {
-            Map<String, DisplayAPI> map = display.functionDisplaysByUserString();
-            if (map == null || !map.containsKey(key)) {
+        if (path.endsWith("/program")) {
+            String rest = path.startsWith("/") ? path.substring(1) : path; // "{key}/program"
+            String keyEnc = rest.substring(0, rest.length() - "/program".length() - 1); // strip "/program"
+            String key = urlDecode(keyEnc);
+            DisplayDTO dto = fm.get(key);
+            if (dto == null) {
                 writeJsonError(resp, HttpServletResponse.SC_NOT_FOUND, "Function not found: " + key);
                 return;
             }
-            DisplayAPI func = map.get(key);
-            DisplayDTO dto = func.getDisplay();
             writeJson(resp, HttpServletResponse.SC_OK, dto);
-        } catch (Exception e) {
-            writeJsonError(resp, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Failed to load function: " + e.getMessage());
+            return;
         }
+
+        writeJsonError(resp, HttpServletResponse.SC_NOT_FOUND, "Unknown functions endpoint.");
+    }
+
+    private void handleRows(FunctionManager fm, HttpServletResponse resp) throws IOException {
+        List<FunctionRowDTO> out = new ArrayList<>();
+        for (FunctionTableRow r : fm.listRecords()) {
+            out.add(new FunctionRowDTO(
+                    r.getName(),           // function user-string (key)
+                    r.getProgramName(),    // owning program
+                    r.getUploader(),       // uploader
+                    r.getBaseInstrCount(), // deg-0 instruction count
+                    r.getMaxDegree()       // max degree
+            ));
+        }
+        writeJson(resp, HttpServletResponse.SC_OK, out);
     }
 
     private static String urlDecode(String s) {

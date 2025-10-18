@@ -16,6 +16,7 @@ import javafx.stage.Stage;
 import okhttp3.Request;
 import okhttp3.Response;
 import utils.Constants;
+import utils.ExecTarget;
 
 import java.util.List;
 import java.util.Timer;
@@ -60,14 +61,18 @@ public class FunctionsController {
     private void onExecuteAction() {
         FunctionRowDTO sel = functionsTable.getSelectionModel().getSelectedItem();
         if (sel == null) return;
-
         try {
-            openExecutionScene("Execution — Function: " + sel.getName());
-            // TODO: next step — pass the relevant DisplayDTO here.
+            ExecutionSceneController controller =
+                    openExecutionScene("Execution — Function: " + sel.getName());
+
+            controller.init(ExecTarget.FUNCTION,
+                    sel.getName(),
+                    sel.getMaxDegree());
         } catch (Exception ex) {
             ex.printStackTrace();
         }
     }
+
 
     public void startFunctionsRefresher() {
         if (timer != null) return;
@@ -124,15 +129,14 @@ public class FunctionsController {
     /**
      * Switch current window to the execution scene and return its controller.
      */
-    private void openExecutionScene(String title) throws Exception {
+    private ExecutionSceneController openExecutionScene(String title) throws Exception {
         FXMLLoader loader = new FXMLLoader(getClass().getResource("/application/execution/execution_scene.fxml"));
         Parent root = loader.load();
         ExecutionSceneController controller = loader.getController();
-
         Stage stage = (Stage) functionsTable.getScene().getWindow();
         if (title != null) stage.setTitle(title);
         stage.setScene(new Scene(root));
         stage.show();
-
+        return controller;
     }
 }

@@ -11,7 +11,7 @@
 <?import javafx.scene.control.ComboBox?>
 
 <ScrollPane fx:id="rootScroll"
-            prefHeight="610.0" prefWidth="805.0"
+            prefHeight="600.0" prefWidth="900.0"
             styleClass="skin-default"
             xmlns="http://javafx.com/javafx/24.0.1"
             xmlns:fx="http://javafx.com/fxml/1"
@@ -24,7 +24,6 @@
               styleClass="content-root">
 
             <children>
-
                 <!-- Header למעלה -->
                 <fx:include fx:id="header" source="header/header.fxml"/>
 

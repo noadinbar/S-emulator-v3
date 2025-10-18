@@ -3,6 +3,10 @@ package application.execution;
 import java.util.List;
 import java.util.function.Consumer;
 
+import client.responses.FunctionsResponder;
+import client.responses.ProgramByNameResponder;
+import display.DisplayDTO;
+import javafx.application.Platform;
 import javafx.beans.binding.Bindings;
 import javafx.beans.binding.DoubleBinding;
 import javafx.fxml.FXML;
@@ -22,14 +26,11 @@ import application.execution.run.options.RunOptionsController;
 import application.execution.summary.SummaryController;
 import application.execution.table.instruction.InstructionsController;
 import javafx.stage.Stage;
+import utils.ExecTarget;
 
 public class ExecutionSceneController {
-
-    // root + centering כמו ב-ui-fx
     @FXML private ScrollPane rootScroll;
     @FXML private VBox contentRoot;
-
-    // fx:include controllers (שם fx:id + "Controller")
     @FXML private HeaderController          headerController;
     @FXML private InstructionsController    programTableController;
     @FXML private SummaryController         summaryController;
@@ -38,17 +39,13 @@ public class ExecutionSceneController {
     @FXML private OutputsController         outputsController;
     @FXML private InputsController          inputsController;
 
-    // UI: ארכיטקטורה + Back
     @FXML private ComboBox<String> cmbArchitecture;
     @FXML private Button btnBackToOpening;
-
-    // callbacks (שלד בלבד)
     private Runnable onBackToOpening;
     private Consumer<String> onArchitectureSelected;
 
     @FXML
     private void initialize() {
-        // מיקום/מרכוז התוכן בתוך ה-ScrollPane — אחד לאחד מה-ui-fx
         rootScroll.setFitToWidth(false);
         rootScroll.setFitToHeight(false);
         contentRoot.setMinSize(Region.USE_PREF_SIZE, Region.USE_PREF_SIZE);
@@ -76,6 +73,43 @@ public class ExecutionSceneController {
         } catch (Exception ex) {
             ex.printStackTrace();
         }
+    }
+
+    public void init(ExecTarget target, String name, int maxDegree) {
+        // 1) Header title + degrees
+        if (headerController != null) {
+            String prefix = (target == ExecTarget.PROGRAM) ? "Program: " : "Function: ";
+            headerController.setTitle(prefix + name);
+            headerController.setMaxDegree(maxDegree);
+            headerController.setCurrentDegree(0);
+        }
+
+        // 2) Summary follows the main program table
+        if (summaryController != null && programTableController != null) {
+            summaryController.wireTo(programTableController);
+        }
+
+        // 3) Load DisplayDTO off the FX thread
+        new Thread(() -> {
+            try {
+                DisplayDTO dto = (target == ExecTarget.PROGRAM)
+                        ? ProgramByNameResponder.execute(name)    // by program name
+                        : FunctionsResponder.program(name);      // by function user-string (key)
+
+                if (dto == null) return;
+
+                Platform.runLater(() -> {
+                    // degree 0 flat instructions into the main table
+                    programTableController.show(dto.getInstructions());
+                    // chain table stays empty for now (we'll use it on expand/debug)
+                    if (chainTableController != null) {
+                        chainTableController.show(java.util.List.of());
+                    }
+                });
+            } catch (Exception ex) {
+                ex.printStackTrace();
+            }
+        }, "exec-load-" + ((target == ExecTarget.PROGRAM) ? "program" : "function")).start();
     }
 
     private void openOpeningAndReplace() throws Exception {

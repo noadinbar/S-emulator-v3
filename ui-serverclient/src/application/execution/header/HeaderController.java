@@ -52,11 +52,9 @@ public class HeaderController {
         });
     }
 
-    // ===== API חיצוני (כמו ב-ui-fx) =====
     public void setUserName(String name) { userNameLabel.setText(name); }
     public void setAvailableCredits(int credits) { availableCreditsField.setText(Integer.toString(credits)); }
 
-    /** מקסימום מהשרת; מתעדכן גם שדה max וגם כיווץ הערך הנוכחי אם צריך. */
     public void setMaxDegree(int max) {
         this.maxDegree = Math.max(0, max);
         txtMaxDegree.setText(Integer.toString(this.maxDegree));
@@ -70,7 +68,11 @@ public class HeaderController {
         catch (Exception e) { return 0; }
     }
     public void setCurrentDegree(int d) { txtDegree.setText(Integer.toString(Math.max(0, Math.min(d, maxDegree)))); }
-
+    public void setTitle(String title) {
+        if (titleLabel != null) {
+            titleLabel.setText(title != null ? title : "");
+        }
+    }
     public void setHighlightOptions(List<String> options) {
         cmbHighlight.getItems().setAll(options);
     }

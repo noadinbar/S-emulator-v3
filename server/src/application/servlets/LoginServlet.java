@@ -26,11 +26,12 @@ public class LoginServlet extends HttpServlet {
                 return;
             }
 
-            if (!um.addIfAbsent(uname)) {
-                writeJsonError(resp, HttpServletResponse.SC_CONFLICT, "username already taken");
+            if (um.exists(uname)) {
+                writeJsonError(resp, HttpServletResponse.SC_CONFLICT, "User name already in use");
                 return;
             }
 
+            um.addIfAbsent(uname);
             req.getSession(true).setAttribute(SESSION_USERNAME, uname);
 
             JsonObject ok = new JsonObject();

@@ -10,7 +10,7 @@
     <children>
         <Label style="-fx-font-size:16px;-fx-font-weight:bold;" text="S-emulator" />
         <TextField fx:id="txtUsername" maxWidth="240" promptText="Username" />
-        <Button fx:id="btnLogin" defaultButton="true" maxWidth="120" text="Login" />
+        <Button fx:id="btnLogin" defaultButton="true" maxWidth="120" onAction="#onLogin" text="Login" />
         <Label fx:id="lblError" textFill="red" />
     </children>
     <padding><Insets topRightBottomLeft="16" /></padding>

@@ -2,11 +2,14 @@
 <?import javafx.geometry.Insets?>
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
+<?import javafx.scene.image.Image?>
+<?import javafx.scene.image.ImageView?>
 
 <VBox xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml"
       fx:controller="application.opening.header.HeaderController"
       fx:id="headerOpeningRoot" spacing="8"
       maxWidth="1.7976931348623157E308">
+
     <padding>
         <Insets top="10" right="12" bottom="10" left="12"/>
     </padding>
@@ -14,11 +17,22 @@
     <children>
         <BorderPane>
             <left>
-                <Label fx:id="userNameLabel" text="User Name" BorderPane.alignment="CENTER_LEFT"/>
+                <HBox spacing="6" alignment="CENTER_LEFT" BorderPane.alignment="CENTER_LEFT">
+                    <ImageView fx:id="statusIcon"
+                               fitHeight="12.0" fitWidth="12.0"
+                               preserveRatio="true" smooth="true">
+                        <image>
+                            <Image url="@/application/resources/green-dot.png"/>
+                        </image>
+                    </ImageView>
+                    <Label fx:id="userNameLabel" text="User Name"/>
+                </HBox>
             </left>
+
             <center>
                 <Label fx:id="dashboardTitle" text="S-Emulator — Dashboard" BorderPane.alignment="CENTER"/>
             </center>
+
             <right>
                 <HBox spacing="6" alignment="CENTER_RIGHT">
                     <Label text="Available Credits:"/>

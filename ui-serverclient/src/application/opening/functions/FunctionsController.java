@@ -1,10 +1,14 @@
 package application.opening.functions;
 
+import client.responses.FunctionsResponder;
 import display.FunctionRowDTO;
+import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.control.cell.PropertyValueFactory;
+import okhttp3.Request;
+import okhttp3.Response;
 import utils.Constants;
 
 import java.util.List;
@@ -59,5 +63,25 @@ public class FunctionsController {
     @FXML
     private void onExecuteAction() {
         functionsTable.getSelectionModel().clearSelection();
+    }
+
+    public void loadOnceAsync() {
+        new Thread(() -> {
+            try {
+                Request req = new Request.Builder()
+                        .url(Constants.BASE_URL + Constants.API_FUNCTIONS)
+                        .get()
+                        .addHeader(Constants.HEADER_ACCEPT, Constants.CONTENT_TYPE_JSON)
+                        .build();
+
+                Response rs = utils.HttpClientUtil.runSync(req);
+                if (!rs.isSuccessful()) { rs.close(); return; }
+
+                List<display.FunctionRowDTO> rows = FunctionsResponder.rowsParse(rs); // rowsParse סוגרת את rs
+                Platform.runLater(() -> {
+                    functionsTable.getItems().setAll(rows);
+                });
+            } catch (Exception ignore) {}
+        }, "functions-prime").start();
     }
 }

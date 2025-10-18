@@ -7,6 +7,7 @@ import okhttp3.Call;
 import okhttp3.Callback;
 import okhttp3.Request;
 import okhttp3.Response;
+import org.jetbrains.annotations.NotNull;
 import utils.Constants;
 import utils.HttpClientUtil;
 
@@ -39,7 +40,7 @@ public final class ProgramsRefresher extends TimerTask {
 
         HttpClientUtil.runAsync(request, new Callback() {
             @Override
-            public void onFailure(Call call, IOException e) {
+            public void onFailure(@NotNull Call call, @NotNull IOException e) {
                 if (!shouldUpdate.get()) return;
                 System.err.println("Programs refresh failed: "
                         + e.getClass().getSimpleName()
@@ -47,7 +48,7 @@ public final class ProgramsRefresher extends TimerTask {
             }
 
             @Override
-            public void onResponse(Call call, Response response) throws IOException {
+            public void onResponse(@NotNull Call call, @NotNull Response response) throws IOException {
                 if (!shouldUpdate.get()) { response.close(); return; }
                 if (response.isSuccessful()) {
                     List<ProgramRowDTO> rows = ProgramsResponder.parse(response);

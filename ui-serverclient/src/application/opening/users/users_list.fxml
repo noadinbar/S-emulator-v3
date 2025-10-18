@@ -3,22 +3,31 @@
 <?import javafx.geometry.Insets?>
 <?import javafx.scene.control.Button?>
 <?import javafx.scene.control.Label?>
-<?import javafx.scene.control.ListView?>
+<?import javafx.scene.control.TableColumn?>
+<?import javafx.scene.control.TableView?>
 <?import javafx.scene.layout.BorderPane?>
 <?import javafx.scene.layout.HBox?>
 
-<BorderPane fx:id="usersRoot" maxWidth="1.7976931348623157E308" prefHeight="221.0" prefWidth="321.0" xmlns="http://javafx.com/javafx/24.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="application.opening.users.UsersController">
+<BorderPane fx:id="usersRoot" maxWidth="1.7976931348623157E308" prefHeight="221.0" prefWidth="386.0" xmlns="http://javafx.com/javafx/24.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="application.opening.users.UsersController">
 
     <top>
         <Label fx:id="titleLabel" text="Available Users" BorderPane.alignment="CENTER_LEFT" />
     </top>
 
     <center>
-        <ListView fx:id="usersListView" prefHeight="197.0" prefWidth="355.0" BorderPane.alignment="CENTER">
+        <TableView fx:id="usersTable" prefHeight="197.0" prefWidth="355.0" BorderPane.alignment="CENTER">
+            <columns>
+                <TableColumn fx:id="colUserName" prefWidth="50.666625022888184" text="Name" />
+                <TableColumn fx:id="colMainPrograms" prefWidth="58.00003433227539" text="Programs" />
+                <TableColumn fx:id="colFunctions" prefWidth="63.33336639404297" text="Functions" />
+                <TableColumn fx:id="colCreditsCurrent" prefWidth="53.33331298828125" text="Credits" />
+                <TableColumn fx:id="colCreditsUsed" prefWidth="83.33332824707031" text="Credits Used" />
+                <TableColumn fx:id="colRuns" prefWidth="57.33331298828125" text="#Runs" />
+            </columns>
             <placeholder>
                 <Label text="No users connected yet" />
             </placeholder>
-        </ListView>
+        </TableView>
     </center>
 
     <bottom>

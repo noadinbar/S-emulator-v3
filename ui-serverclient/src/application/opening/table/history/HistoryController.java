@@ -14,6 +14,7 @@ import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
 import javafx.scene.Node;
+import javafx.scene.control.Button;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableRow;
 import javafx.scene.control.TableView;
@@ -27,6 +28,8 @@ public class HistoryController {
     @FXML private TableColumn<RunHistoryEntryDTO, String>  colInputs;
     @FXML private TableColumn<RunHistoryEntryDTO, Number> colY;
     @FXML private TableColumn<RunHistoryEntryDTO, Number> colCycles;
+    @FXML private Button btnRerun;
+    @FXML private Button btnShow;
 
     private final ObservableList<RunHistoryEntryDTO> items = FXCollections.observableArrayList();
 

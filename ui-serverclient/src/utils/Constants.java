@@ -22,6 +22,7 @@ public class Constants {
     public static final String API_PROGRAM_BY_NAME= "/api/programs/by-name";
     public static final String API_FUNCTIONS_KEYS    = "/api/functions/keys";     // רק רשימת user-strings
     public static final String API_FUNCTION_PROGRAM  = "/api/functions/%s/program"; // DisplayDTO של הפונקציה/התוכנית
+    public static final String API_USERS = "/api/users";
 
     // Headers / Content types
     public static final String HEADER_ACCEPT     = "Accept";

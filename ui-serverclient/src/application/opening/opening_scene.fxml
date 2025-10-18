@@ -28,9 +28,9 @@
             </rowConstraints>
 
             <fx:include fx:id="users" source="users/users_list.fxml" GridPane.columnIndex="0" GridPane.hgrow="ALWAYS" GridPane.rowIndex="0" GridPane.vgrow="ALWAYS" />
-            <fx:include fx:id="programs" source="programs/programs_list.fxml" GridPane.columnIndex="1" GridPane.hgrow="ALWAYS" GridPane.rowIndex="0" GridPane.vgrow="ALWAYS" />
+            <fx:include fx:id="programs" source="programs/programs.fxml" GridPane.columnIndex="1" GridPane.hgrow="ALWAYS" GridPane.rowIndex="0" GridPane.vgrow="ALWAYS" />
             <fx:include fx:id="history" source="table/history/history_table.fxml" GridPane.columnIndex="0" GridPane.hgrow="ALWAYS" GridPane.rowIndex="1" GridPane.vgrow="ALWAYS" />
-            <fx:include fx:id="functions" source="functions/functions_list.fxml" GridPane.columnIndex="1" GridPane.hgrow="ALWAYS" GridPane.rowIndex="1" GridPane.vgrow="ALWAYS" />
+            <fx:include fx:id="functions" source="functions/functions.fxml" GridPane.columnIndex="1" GridPane.hgrow="ALWAYS" GridPane.rowIndex="1" GridPane.vgrow="ALWAYS" />
         </GridPane>
     </center>
 </BorderPane>

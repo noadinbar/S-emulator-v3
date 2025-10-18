@@ -28,7 +28,6 @@ public class FunctionsServlet extends HttpServlet {
         FunctionManager fm = (FunctionManager) getServletContext()
                 .getAttribute(AppContextListener.ATTR_FUNCTIONS);
         if (fm == null) {
-            // No registry yet → return empty list for rows endpoint, or 409 for others
             String path = req.getPathInfo();
             if (path == null || "/".equals(path)) {
                 writeJson(resp, HttpServletResponse.SC_OK, List.of());
@@ -61,7 +60,6 @@ public class FunctionsServlet extends HttpServlet {
             writeJson(resp, HttpServletResponse.SC_OK, dto);
             return;
         }
-
         writeJsonError(resp, HttpServletResponse.SC_NOT_FOUND, "Unknown functions endpoint.");
     }
 
@@ -69,11 +67,11 @@ public class FunctionsServlet extends HttpServlet {
         List<FunctionRowDTO> out = new ArrayList<>();
         for (FunctionTableRow r : fm.listRecords()) {
             out.add(new FunctionRowDTO(
-                    r.getName(),           // function user-string (key)
-                    r.getProgramName(),    // owning program
-                    r.getUploader(),       // uploader
-                    r.getBaseInstrCount(), // deg-0 instruction count
-                    r.getMaxDegree()       // max degree
+                    r.getName(),
+                    r.getProgramName(),
+                    r.getUploader(),
+                    r.getBaseInstrCount(),
+                    r.getMaxDegree()
             ));
         }
         writeJson(resp, HttpServletResponse.SC_OK, out);

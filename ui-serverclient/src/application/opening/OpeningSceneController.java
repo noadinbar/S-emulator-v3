@@ -27,11 +27,14 @@ public class OpeningSceneController {
     private void initialize() {
         headerController.setOnLocalFileChosen(this::handleLocalFileChosen);
         headerController.setOnChargeCredits(this::handleChargeCredits);
+        programsController.loadOnceAsync();
         programsController.startProgramsRefresher();
+        functionsController.loadOnceAsync();
         functionsController.startFunctionsRefresher();
+        usersController.loadOnceAsync();      // see all users immediately
+        usersController.startUsersRefresher();
     }
 
-    // --- API נוח למסך העוטף/אפליקציה ---
     public void setHostWindow(Window window) {
         this.hostWindow = window;
         if (headerController != null) headerController.setHostWindow(window);
@@ -67,5 +70,6 @@ public class OpeningSceneController {
     public void stopAllRefreshers() {
         programsController.stopProgramsRefresher();
         functionsController.stopFunctionsRefresher();
+        usersController.stopUsersRefresher();
     }
 }

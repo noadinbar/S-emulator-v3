@@ -1,10 +1,14 @@
 package application.opening.programs;
 
+import client.responses.ProgramsResponder;
 import display.ProgramRowDTO;
+import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.control.cell.PropertyValueFactory;
+import okhttp3.Request;
+import okhttp3.Response;
 import utils.Constants;
 
 import java.util.List;
@@ -59,5 +63,25 @@ public class ProgramsController {
     @FXML
     private void onExecuteAction() {
         programsTable.getSelectionModel().clearSelection();
+    }
+
+    public void loadOnceAsync() {
+        new Thread(() -> {
+            try {
+                Request req = new Request.Builder()
+                        .url(Constants.BASE_URL + Constants.API_PROGRAMS)
+                        .get()
+                        .addHeader(Constants.HEADER_ACCEPT, Constants.CONTENT_TYPE_JSON)
+                        .build();
+
+                try (Response rs = utils.HttpClientUtil.runSync(req)) {
+                    if (!rs.isSuccessful()) return;
+                    List<display.ProgramRowDTO> rows = ProgramsResponder.parse(rs);
+                    Platform.runLater(() -> {
+                        programsTable.getItems().setAll(rows);
+                    });
+                }
+            } catch (Exception ignore) { }
+        }, "programs-prime").start();
     }
 }

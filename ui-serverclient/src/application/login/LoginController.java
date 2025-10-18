@@ -1,6 +1,10 @@
+// ui-serverclient/src/application/login/LoginController.java
 package application.login;
 
 import client.responses.LoginResponder;
+import users.LoginDTO;
+
+import application.opening.OpeningSceneController;
 import javafx.concurrent.Task;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
@@ -11,6 +15,8 @@ import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
 import javafx.stage.Stage;
 
+import java.util.List;
+
 public class LoginController {
 
     @FXML private TextField txtUsername;
@@ -18,49 +24,52 @@ public class LoginController {
     @FXML private Label lblError;
 
     @FXML
-    private void initialize() {
-        btnLogin.setOnAction(e -> doLogin());
-    }
-
-    private void doLogin() {
-        String u = txtUsername.getText() == null ? "" : txtUsername.getText().trim();
-        if (u.isEmpty()) {
-            lblError.setText("username is required");
+    private void onLogin() {
+        String user = txtUsername.getText() == null ? "" : txtUsername.getText().trim();
+        if (user.isEmpty()) {
+            lblError.setText("Please enter a user name");
             return;
         }
-        lblError.setText("");
-        btnLogin.setDisable(true);
 
-        // The responder throws IOException on failure; we let Task propagate it to onFailed.
-        Task<Void> task = new Task<>() {
-            @Override
-            protected Void call() throws Exception {
-                LoginResponder.execute(u); // throws on any HTTP/network/app error
-                return null;
+        Task<LoginDTO> task = new Task<>() {
+            @Override protected LoginDTO call() throws Exception {
+                return LoginResponder.execute(user);
             }
         };
 
         task.setOnSucceeded(e -> {
-            btnLogin.setDisable(false);
-            openMainAndClose();
+            LoginDTO dto = task.getValue();
+            if (dto == null || !dto.isOk()) {
+                lblError.setText(dto != null && dto.getError() != null ? dto.getError() : "Login failed");
+                return;
+            }
+            openMainAndClose(dto.getUsername());
         });
 
         task.setOnFailed(e -> {
-            btnLogin.setDisable(false);
             Throwable ex = task.getException();
-            lblError.setText(ex != null && ex.getMessage() != null ? ex.getMessage() : "Login error");
+            lblError.setText(ex == null ? "Login failed" : ex.getMessage());
         });
 
-        new Thread(task, "login-thread").start();
+        new Thread(task, "login-call").start();
     }
 
-    private void openMainAndClose() {
+    /** Opens the main window and injects the logged-in user so it shows immediately. */
+    private void openMainAndClose(String loggedUser) {
         try {
-            Parent root = FXMLLoader.load(getClass().getResource("/application/opening/opening_scene.fxml"));
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/application/opening/opening_scene.fxml"));
+            Parent root = loader.load();
+            OpeningSceneController opening = loader.getController();
+            // Your OpeningSceneController already exposes setUsers(List<String>)
+            opening.setUsers(List.of(loggedUser));
+            // And also setUserName(String) to update the header (stage 4)
+            opening.setUserName(loggedUser);
+
             Stage stage = new Stage();
             stage.setTitle("S-emulator");
             stage.setScene(new Scene(root));
             stage.show();
+
             ((Stage) btnLogin.getScene().getWindow()).close();
         } catch (Exception ex) {
             lblError.setText("Failed to open main: " + ex.getMessage());

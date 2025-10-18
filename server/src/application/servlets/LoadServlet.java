@@ -26,6 +26,8 @@ import application.programs.ProgramManager;
 import java.nio.file.Paths;
 import java.util.Map;
 
+import users.UserManager; // <<< NEW
+
 import static utils.Constants.*;
 import static utils.ServletUtils.*;
 
@@ -75,12 +77,21 @@ public class LoadServlet extends HttpServlet {
                     ? Paths.get(submitted).getFileName().toString()
                     : "program";
             baseName = baseName.replaceFirst("\\.[^.]+$", ""); // strip extension
+
+            // Resolve uploader from session (keeps your current logic)
             String uploader = "anonymous";
             HttpSession session = req.getSession(false);
             if (session != null && session.getAttribute("username") != null)
                 uploader = session.getAttribute("username").toString();
 
+            // Obtain managers from context
             ProgramManager pm = (ProgramManager) getServletContext().getAttribute(AppContextListener.ATTR_PROGRAMS);
+            FunctionManager fm = (FunctionManager) getServletContext().getAttribute(AppContextListener.ATTR_FUNCTIONS);
+
+            // <<< NEW: also get the UserManager for updating the Users table
+            UserManager um = (UserManager) getServletContext().getAttribute(AppContextListener.ATTR_USERS);
+
+            // Register program
             if (pm != null) {
                 pm.put(baseName, dto);
                 int maxDegree = 0;
@@ -93,11 +104,16 @@ public class LoadServlet extends HttpServlet {
                         dto.numberOfInstructions(),
                         maxDegree
                 ));
+                // --- USERS TABLE UPDATE: bump main-programs counter for this uploader
+                if (um != null && uploader != null && !uploader.isBlank()) {
+                    try { um.onMainProgramUploaded(uploader); } catch (Exception ignore) { }
+                }
             }
-            FunctionManager fm = (FunctionManager) getServletContext().getAttribute(AppContextListener.ATTR_FUNCTIONS);
+
+            // Register functions derived from the program
             if (fm != null) {
                 Map<String, DisplayAPI> fnMap = display.functionDisplaysByUserString();
-                //TODO- to check if there is double functions
+                // TODO: double functions check (kept as-is)
                 for (Map.Entry<String, DisplayAPI> e : fnMap.entrySet()) {
                     String userString = e.getKey();
                     DisplayAPI fApi   = e.getValue();
@@ -105,6 +121,7 @@ public class LoadServlet extends HttpServlet {
                     int fBaseInstr = fDto.numberOfInstructions();
                     int fMaxDegree = 0;
                     try { fMaxDegree = fApi.execution().getMaxDegree(); } catch (Exception ignore) { }
+
                     fm.put(userString, fDto);
                     fm.putRecord(new FunctionTableRow(
                             userString,
@@ -113,9 +130,15 @@ public class LoadServlet extends HttpServlet {
                             fBaseInstr,
                             fMaxDegree
                     ));
+
+                    // --- USERS TABLE UPDATE: bump functions counter for this uploader (per recorded function)
+                    if (um != null && uploader != null && !uploader.isBlank()) {
+                        try { um.onFunctionUploaded(uploader); } catch (Exception ignore) { }
+                    }
                 }
             }
-            UploadResultDTO uploadResult= new UploadResultDTO(baseName);
+
+            UploadResultDTO uploadResult = new UploadResultDTO(baseName);
             writeJson(resp, HttpServletResponse.SC_CREATED, uploadResult);
 
         } catch (Exception e) {

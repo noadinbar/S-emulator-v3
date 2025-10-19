@@ -6,10 +6,14 @@ import java.util.List;
 import java.util.function.Consumer;
 
 import application.opening.OpeningSceneController;
+import client.requests.Execute;
+import client.responses.ExecuteResponder;
 import client.responses.ExpandResponder;
 import client.responses.FunctionsResponder;
 import client.responses.ProgramByNameResponder;
 import display.*;
+import execution.ExecutionDTO;
+import execution.ExecutionRequestDTO;
 import javafx.application.Platform;
 import javafx.beans.binding.Bindings;
 import javafx.beans.binding.DoubleBinding;
@@ -30,6 +34,7 @@ import application.execution.run.options.RunOptionsController;
 import application.execution.summary.SummaryController;
 import application.execution.table.instruction.InstructionsController;
 import javafx.stage.Stage;
+import okhttp3.Request;
 import types.LabelDTO;
 import types.VarRefDTO;
 import utils.ExecTarget;
@@ -206,6 +211,34 @@ public class ExecutionSceneController {
                 // TODO: לוג/שגיאה עדינה אם תרצי
             }
         }, "expand-" + target).start();
+    }
+
+    public void executeRun() {
+        if (headerController == null || outputsController == null) return;
+        List<Long> inputs = (inputsController != null)
+                ? inputsController.collectValuesPadded()
+                : List.of();
+
+        final int degree = headerController.getCurrentDegree();
+        final ExecutionRequestDTO dto = new ExecutionRequestDTO(degree, inputs);
+        final String functionUserString =
+                (targetKind == ExecTarget.FUNCTION) ? targetName : null;
+        outputsController.clear();
+        new Thread(() -> {
+            try {
+                Request req = Execute.build(dto, functionUserString);
+                ExecutionDTO result = ExecuteResponder.execute(req);
+                Platform.runLater(() -> {
+                    outputsController.showExecution(result);
+                    if (inputsController != null) {
+                        inputsController.setInputsEditable(false);
+                    }
+                });
+            } catch (Exception ex) {
+                ex.printStackTrace();
+                // אפשר להציג Alert קטן אם תרצי
+            }
+        }, "execute-run").start();
     }
 
     private void openOpeningAndReplace() throws Exception {

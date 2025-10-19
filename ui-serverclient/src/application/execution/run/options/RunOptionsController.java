@@ -86,14 +86,17 @@ public class RunOptionsController {
         chkDebug.setSelected(true);
     }
 
-    @FXML private void onExecuteAction() {
-        // For now: just simulate start; later we'll actually execute DisplayDTO
-        boolean run = chkRun != null && chkRun.isSelected();
+    @FXML
+    private void onExecuteAction() {
+        boolean run   = chkRun   != null && chkRun.isSelected();
         boolean debug = chkDebug != null && chkDebug.isSelected();
-
+        if (run && main != null) {
+            main.executeRun();
+        }
         startEnabled(true);
         setButtonsEnabled(debug);
     }
+
 
     public void setButtonsEnabled(boolean enabled) {
         boolean disable = !enabled;

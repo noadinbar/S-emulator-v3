@@ -131,16 +131,18 @@ public class InputsController implements Initializable {
 
     public void focusFirstField() {
         if (lstInputs == null || lstInputs.getItems().isEmpty()) return;
-        HBox row = lstInputs.getItems().get(0);
-        TextField textField = (TextField) row.getChildren().get(1);
-        Platform.runLater(() -> { textField.requestFocus(); textField.selectAll(); });
-        textField.requestFocus();
+        lstInputs.scrollTo(0);
+        Platform.runLater(() -> focusTextFieldAt(0));
     }
 
     private void focusTextFieldAt(int rowIndex) {
+        if (lstInputs == null || rowIndex < 0 || rowIndex >= lstInputs.getItems().size()) return;
+
         HBox row = lstInputs.getItems().get(rowIndex);
         TextField textField = (TextField) row.getChildren().get(1);
-        Platform.runLater(() -> { textField.requestFocus(); textField.selectAll(); });
+        textField.setFocusTraversable(true);
+        textField.requestFocus();
+        textField.selectAll();
     }
 
     private void focusNextFromRow(HBox currentRow) {

@@ -26,6 +26,7 @@ import javafx.util.Duration;
 import types.LabelDTO;
 import types.VarRefDTO;
 
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
@@ -216,6 +217,14 @@ public class InstructionsController {
             }
         });
         //==Bonus- breakpoint==
+
+        URL css = getClass().getResource("/application/execution/table/instruction/instructions.css");
+        if (css != null && tblInstructions != null) {
+            String url = css.toExternalForm();
+            if (!tblInstructions.getStylesheets().contains(url)) {
+                tblInstructions.getStylesheets().add(url);
+            }
+        }
     }
 
     public long countBasic() {

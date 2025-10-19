@@ -30,6 +30,8 @@ import application.execution.run.options.RunOptionsController;
 import application.execution.summary.SummaryController;
 import application.execution.table.instruction.InstructionsController;
 import javafx.stage.Stage;
+import types.LabelDTO;
+import types.VarRefDTO;
 import utils.ExecTarget;
 
 public class ExecutionSceneController {
@@ -54,6 +56,8 @@ public class ExecutionSceneController {
     private int maxDegree;
     private int currentDegree = 0;
     private ExpandDTO lastExpanded = null;
+    private String currentHighlight;
+    private DisplayDTO display;
 
     @FXML
     private void initialize() {
@@ -100,6 +104,13 @@ public class ExecutionSceneController {
             headerController.setOnExpand(()  -> changeDegreeAndShow(+1));
             headerController.setOnCollapse(() -> changeDegreeAndShow(-1));
             headerController.setOnApplyDegree(() -> doApply(headerController.getCurrentDegree()));
+            headerController.setOnHighlightChanged(sel -> {
+                currentHighlight = ("NONE".equals(sel) || "Highlight selection".equals(sel)) ? null : sel;
+                if (programTableController != null && programTableController.getTableView() != null)
+                    programTableController.getTableView().refresh();
+                if (chainTableController != null && chainTableController.getTableView() != null)
+                    chainTableController.getTableView().refresh();
+            });
         }
 
         // 2) Summary follows the main program table
@@ -107,9 +118,12 @@ public class ExecutionSceneController {
             summaryController.wireTo(programTableController);
         }
 
+        if (runOptionsController != null) {
+            runOptionsController.setMainController(this);
+        }
+
         if (programTableController != null && chainTableController != null) {
             chainTableController.hideLineColumn();
-
             programTableController.selectedItemProperty().addListener((obs, oldSel, newSel) -> {
                 List<InstructionDTO> chain = programTableController.getCreatedByChainFor(newSel);
                 chainTableController.show(chain == null ? List.of() : chain);
@@ -125,11 +139,28 @@ public class ExecutionSceneController {
 
                 if (dto == null) return;
                 Platform.runLater(() -> {
+                    this.display = dto;
                     // degree 0 flat instructions into the main table
                     programTableController.show(dto.getInstructions());
+                    // === HIGHLIGHT: after first render of degree 0 ===
+                    if (headerController != null
+                            && programTableController != null
+                            && programTableController.getTableView() != null) {
+                        headerController.populateHighlight(
+                                programTableController.getTableView().getItems(), true);
+                        wireHighlight(programTableController);
+                        currentHighlight = headerController.getSelectedHighlight();
+                        programTableController.getTableView().refresh();
+                        if (chainTableController != null && chainTableController.getTableView() != null) {
+                            chainTableController.getTableView().refresh();
+                        }
+                    }
                     // chain table stays empty for now (we'll use it on expand/debug)
                     if (chainTableController != null) {
                         chainTableController.show(List.of());
+                    }
+                    if (runOptionsController != null) {
+                        runOptionsController.startEnabled(true);
                     }
                 });
             } catch (Exception ex) {
@@ -145,8 +176,10 @@ public class ExecutionSceneController {
     private void doApply(int requestedDegree) {
         int target = Math.max(0, Math.min(requestedDegree, maxDegree));
         currentDegree = target;
-        if (headerController != null) {
-            headerController.setCurrentDegree(currentDegree);
+        if (headerController != null) { headerController.setCurrentDegree(currentDegree); }
+        if (inputsController != null) {
+            inputsController.clear();
+            inputsController.setInputsEditable(false);
         }
 
         new Thread(() -> {
@@ -159,8 +192,15 @@ public class ExecutionSceneController {
                     if (programTableController != null) {
                         programTableController.showExpanded(dto);
                     }
-                    // *** חשוב: כאן עדיין לא מציגים את dto בטבלאות ***
-                    // נעשה זאת בשלב הבא (programTableController.showExpanded(dto) וכו').
+                    if (headerController != null && programTableController != null && programTableController.getTableView() != null) {
+                        headerController.populateHighlight(
+                                programTableController.getTableView().getItems(), /*resetToNone=*/true);
+                        currentHighlight = null;
+                        programTableController.getTableView().refresh();
+                        if (chainTableController != null && chainTableController.getTableView() != null) {
+                            chainTableController.getTableView().refresh();
+                        }
+                    }
                 });
             } catch (Exception ignore) {
                 // TODO: לוג/שגיאה עדינה אם תרצי
@@ -177,6 +217,53 @@ public class ExecutionSceneController {
         stage.setTitle("S-emulator");
         stage.setScene(new Scene(root));
         stage.show();
+    }
+
+    private void wireHighlight(InstructionsController ic) {
+        if (ic == null || ic.getTableView() == null) return;
+        ic.setHighlightPredicate(ins -> {
+            if (ins == null) return false;
+            String sel = currentHighlight;
+            if (sel == null || sel.isBlank() || "Highlight selection".equals(sel)) return false;
+            InstructionBodyDTO body = ins.getBody();
+            LabelDTO label = ins.getLabel();
+            LabelDTO targetLabel = (body != null) ? body.getJumpTo() : null;
+            if ("EXIT".equals(sel)) {
+                return (targetLabel != null && targetLabel.isExit());
+            }
+            if (sel.startsWith("L")) {
+                boolean isLabelMatch  = (label != null && !label.isExit() && sel.equals(label.getName()));
+                boolean isJumpToMatch = (targetLabel != null && !targetLabel.isExit() && sel.equals(targetLabel.getName()));
+                return isLabelMatch || isJumpToMatch;
+            }
+            if (body != null) {
+                for (VarRefDTO var : new VarRefDTO[]{
+                        body.getVariable(), body.getDest(), body.getSource(), body.getCompare(), body.getCompareWith()
+                }) {
+                    if (var == null) continue;
+                    switch (var.getVariable()) {
+                        case y -> { if ("y".equals(sel)) return true; }
+                        case x -> { if (sel.equals("x" + var.getIndex())) return true; }
+                        case z -> { if (sel.equals("z" + var.getIndex())) return true; }
+                    }
+                }
+                if (body.getOp() == InstrOpDTO.QUOTE || body.getOp() == InstrOpDTO.JUMP_EQUAL_FUNCTION) {
+                    String args = body.getFunctionArgs();
+                    if (args != null && !args.isBlank()) {
+                        if (sel.startsWith("x") && args.matches(".*\\bx" + sel.substring(1) + "\\b.*")) return true;
+                        if (sel.startsWith("z") && args.matches(".*\\bz" + sel.substring(1) + "\\b.*")) return true;
+                    }
+                }
+            }
+            return false;
+        });
+    }
+
+    public void showInputsForEditing() {
+        if (display == null || inputsController == null) return;
+        inputsController.show(display);
+        inputsController.setInputsEditable(true);
+        Platform.runLater(inputsController::focusFirstField);
     }
 
     // ===== API לשימוש האפליקציה בהמשך =====

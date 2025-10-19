@@ -1,8 +1,16 @@
 package application.execution.header;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.SortedSet;
+import java.util.TreeSet;
 import java.util.function.Consumer;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
+import display.InstrOpDTO;
+import display.InstructionBodyDTO;
+import display.InstructionDTO;
 import javafx.application.Platform;
 import javafx.beans.binding.Bindings;
 import javafx.beans.property.IntegerProperty;
@@ -14,6 +22,8 @@ import javafx.scene.control.*;
 import javafx.scene.layout.VBox;
 import javafx.util.StringConverter;
 import javafx.scene.control.TextFormatter;
+import types.LabelDTO;
+import types.VarRefDTO;
 
 public class HeaderController {
     @FXML private VBox   executionHeaderRoot;
@@ -33,7 +43,9 @@ public class HeaderController {
     private final IntegerProperty currentDegree = new SimpleIntegerProperty(0);
     private final ObjectProperty<Runnable> onExpand   = new SimpleObjectProperty<>();
     private final ObjectProperty<Runnable> onCollapse = new SimpleObjectProperty<>();
-    private final ObjectProperty<Runnable> onApplyDegree = new SimpleObjectProperty<>(null);
+    private final ObjectProperty<Runnable> onApplyDegree = new SimpleObjectProperty<>();
+    private static final Pattern X_IN_ARGS = Pattern.compile("\\bx(\\d+)\\b");
+    private static final Pattern Z_IN_ARGS = Pattern.compile("\\bz(\\d+)\\b");
 
     @FXML
     private void initialize() {
@@ -109,10 +121,6 @@ public class HeaderController {
         refreshButtons();
     }
 
-    public int getCurrentDegree() {
-        return currentDegree.get();
-    }
-
     public void setOnDegreeChanged(Consumer<Integer> callback) {
         this.onDegreeChanged = callback;
     }
@@ -128,9 +136,81 @@ public class HeaderController {
     public void setHighlightOptions(List<String> options) {
         cmbHighlight.getItems().setAll(options);
     }
+
+    public int getCurrentDegree() {
+        return currentDegree.get();
+    }
+
+    public String getSelectedHighlight() {
+        String v = (cmbHighlight != null) ? cmbHighlight.getValue() : null;
+        return (v == null || v.isBlank() || "Highlight selection".equals(v)) ? "NONE" : v;
+    }
+
     public void selectHighlight(String value) { cmbHighlight.getSelectionModel().select(value); }
     public void setOnHighlightChanged(Consumer<String> c){ this.onHighlightChanged = c; }
 
+    public void populateHighlight(List<InstructionDTO> rows) { populateHighlight(rows, false); }
+
+    public void populateHighlight(List<InstructionDTO> rows, boolean resetToNone) {
+        if (cmbHighlight == null) return;
+        String prev = resetToNone ? null : cmbHighlight.getValue();
+        boolean hasY = false, jumpToExit = false;
+        SortedSet<Integer> xs = new TreeSet<>();
+        SortedSet<Integer> zs = new TreeSet<>();
+        SortedSet<Integer> ls = new TreeSet<>();
+
+        if (rows != null) {
+            for (InstructionDTO ins : rows) {
+                if (ins == null) continue;
+
+                LabelDTO lbl = ins.getLabel();
+                if (lbl != null && !lbl.isExit()) {
+                    String name = lbl.getName();
+                    if (name != null && name.startsWith("L")) {
+                        try { ls.add(Integer.parseInt(name.substring(1))); } catch (Exception ignore) {}
+                    }
+                }
+                InstructionBodyDTO body = ins.getBody();
+                if (body == null) continue;
+
+                LabelDTO jt = body.getJumpTo();
+                if (jt != null && jt.isExit()) jumpToExit = true;
+
+                for (VarRefDTO ref : new VarRefDTO[]{
+                        body.getVariable(), body.getDest(), body.getSource(), body.getCompare(), body.getCompareWith()
+                }) {
+                    if (ref == null) continue;
+                    switch (ref.getVariable()) {
+                        case y -> hasY = true;
+                        case x -> xs.add(ref.getIndex());
+                        case z -> zs.add(ref.getIndex());
+                    }
+                }
+
+                if (body.getOp() == InstrOpDTO.QUOTE || body.getOp() == InstrOpDTO.JUMP_EQUAL_FUNCTION) {
+                    String argsText = body.getFunctionArgs();
+                    parseVarsFromArgs(argsText, xs, zs);
+                }
+            }
+        }
+
+        List<String> items = new ArrayList<>();
+        items.add("Highlight selection");           // ברירת מחדל (כמו v2)
+        if (hasY) items.add("y");
+        for (Integer i : xs) items.add("x" + i);
+        for (Integer i : zs) items.add("z" + i);
+        for (Integer i : ls) items.add("L" + i);
+        if (jumpToExit) items.add("EXIT");
+
+        cmbHighlight.getItems().setAll(items);
+
+        // שימור בחירה קודמת אם עדיין תקפה
+        if (prev != null && items.contains(prev)) {
+            cmbHighlight.setValue(prev);
+        } else {
+            cmbHighlight.setValue("Highlight selection");
+        }
+    }
 
     // ===== helpers =====
     private void clampDegree() {
@@ -153,6 +233,14 @@ public class HeaderController {
                 try { return Integer.parseInt(string.trim()); } catch (NumberFormatException e) { return 0; }
             }
         });
+    }
+
+    private static void parseVarsFromArgs(String text, SortedSet<Integer> xs, SortedSet<Integer> zs) {
+        if (text == null || text.isBlank()) return;
+        Matcher mx = X_IN_ARGS.matcher(text);
+        while (mx.find()) { try { xs.add(Integer.parseInt(mx.group(1))); } catch (Exception ignore) {} }
+        Matcher mz = Z_IN_ARGS.matcher(text);
+        while (mz.find()) { try { zs.add(Integer.parseInt(mz.group(1))); } catch (Exception ignore) {} }
     }
 
     private void showError(String title, String msg) {

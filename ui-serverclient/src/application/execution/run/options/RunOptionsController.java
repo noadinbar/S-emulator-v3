@@ -8,7 +8,6 @@ import javafx.scene.control.Button;
 import javafx.scene.control.CheckBox;
 
 public class RunOptionsController {
-
     @FXML private Button btnStart;
     @FXML private Button btnStop;
     @FXML private Button btnResume;
@@ -54,51 +53,16 @@ public class RunOptionsController {
             if (btnStart != null) btnStart.setDisable(is);
         });
         if (btnStart != null) btnStart.setDisable(chkDebug.isSelected());
-
     }
 
-    public void startEnabled(boolean enabled) {
-        if (btnStart != null) btnStart.setDisable(!enabled);
-    }
-
-
-    public void setButtonsEnabled(boolean enabled) {
-        boolean disable = !enabled;
-
-        if (chkRun != null) {
-            chkRun.setDisable(disable);
-            if (disable) chkRun.setSelected(false);
-        }
-        if (chkDebug != null) {
-            chkDebug.setDisable(disable);
-            if (disable) chkDebug.setSelected(false);
-        }
-        setDebugBtnsDisabled(true);
-    }
-
-    public void clearRunCheckBox() {
-        if (chkRun  != null) chkRun.setSelected(false);
-        if (chkDebug!= null) chkDebug.setSelected(false);
-        setDebugBtnsDisabled(true);
-    }
-
-    public void setDebugBtnsDisabled(boolean disabled) {
-        if (btnStepOver != null) btnStepOver.setDisable(disabled);
-        if (btnResume != null) btnResume.setDisable(disabled);
-        if (btnStop != null) btnStop.setDisable(disabled);
-        if (btnStepBack != null) btnStepBack.setDisable(disabled);
-    }
-
-    public void setStepBackDisabled(boolean disabled) {
-        if (btnStepBack != null) btnStepBack.setDisable(disabled);
-    }
-
-    // --- Actions (wired from run_options.fxml) ---
-
-    @FXML private void onStartAction() {
-        // TODO: wire start later (open inputs, etc.)
-        startEnabled(true);
+    @FXML
+    private void onStartAction() {
         setButtonsEnabled(true);
+        if (chkRun   != null) chkRun.setDisable(false);
+        if (chkDebug != null) chkDebug.setDisable(false);
+        if (main != null) {
+            main.showInputsForEditing();
+        }
     }
 
     @FXML private void onStopAction() {
@@ -128,9 +92,33 @@ public class RunOptionsController {
         boolean debug = chkDebug != null && chkDebug.isSelected();
 
         startEnabled(true);
-        setButtonsEnabled(debug); // אם Debug מסומן, השאירי כפתורי דיבוג פעילים
+        setButtonsEnabled(debug);
     }
 
+    public void setButtonsEnabled(boolean enabled) {
+        boolean disable = !enabled;
+
+        if (chkRun != null) {
+            chkRun.setDisable(disable);
+            if (disable) chkRun.setSelected(false);
+        }
+        if (chkDebug != null) {
+            chkDebug.setDisable(disable);
+            if (disable) chkDebug.setSelected(false);
+        }
+        setDebugBtnsDisabled(true);
+    }
+
+    public void setDebugBtnsDisabled(boolean disabled) {
+        if (btnStepOver != null) btnStepOver.setDisable(disabled);
+        if (btnResume != null) btnResume.setDisable(disabled);
+        if (btnStop != null) btnStop.setDisable(disabled);
+        if (btnStepBack != null) btnStepBack.setDisable(disabled);
+    }
+
+    public void setStepBackDisabled(boolean disabled) {
+        if (btnStepBack != null) btnStepBack.setDisable(disabled);
+    }
 
     public void setResumeBusy(boolean busy) {
         if (busy) {
@@ -148,5 +136,15 @@ public class RunOptionsController {
             if (chkRun != null)      chkRun.setDisable(false);
             if (chkDebug != null)    chkDebug.setDisable(false);
         }
+    }
+
+    public void clearRunCheckBox() {
+        if (chkRun  != null) chkRun.setSelected(false);
+        if (chkDebug!= null) chkDebug.setSelected(false);
+        setDebugBtnsDisabled(true);
+    }
+
+    public void startEnabled(boolean enabled) {
+        if (btnStart != null) btnStart.setDisable(!enabled);
     }
 }

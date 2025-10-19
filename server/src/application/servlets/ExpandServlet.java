@@ -25,7 +25,6 @@ public class ExpandServlet extends HttpServlet {
             return;
         }
         DisplayAPI rootDisplay = (DisplayAPI) obj;
-
         String degreeStr = req.getParameter(QP_DEGREE);
         int degree;
         try {

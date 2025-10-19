@@ -241,7 +241,6 @@ public class InstructionsController {
             return;
         }
         expandedByNumber.clear();
-
         List<InstructionDTO> flat = new ArrayList<>(dto.getInstructions().size());
         for (ExpandedInstructionDTO d : dto.getInstructions()) {
             InstructionDTO instruction = d.getInstruction();

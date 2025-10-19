@@ -2,6 +2,13 @@ package application.execution.header;
 
 import java.util.List;
 import java.util.function.Consumer;
+
+import javafx.application.Platform;
+import javafx.beans.binding.Bindings;
+import javafx.beans.property.IntegerProperty;
+import javafx.beans.property.ObjectProperty;
+import javafx.beans.property.SimpleIntegerProperty;
+import javafx.beans.property.SimpleObjectProperty;
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
 import javafx.scene.layout.VBox;
@@ -9,66 +16,112 @@ import javafx.util.StringConverter;
 import javafx.scene.control.TextFormatter;
 
 public class HeaderController {
-
-    // --- root/top ---
     @FXML private VBox   executionHeaderRoot;
     @FXML private Label  userNameLabel;
     @FXML private Label  titleLabel;
     @FXML private Label runTargetLabel;
     @FXML private TextField availableCreditsField;
 
-    // --- bottom: exactly like ui-fx ids ---
     @FXML private Button     btnCollapse;
-    @FXML private TextField  txtDegree;     // current
-    @FXML private TextField  txtMaxDegree;  // max (readonly)
+    @FXML private TextField  txtDegree;
+    @FXML private TextField  txtMaxDegree;
     @FXML private Button     btnExpand;
     @FXML private ComboBox<String> cmbHighlight;
-
-    // callbacks (לוגיקה בחוץ)
-    private Runnable onCollapse;
-    private Runnable onExpand;
     private Consumer<Integer> onDegreeChanged;
     private Consumer<String> onHighlightChanged;
-
-    private int maxDegree = 0;
+    private final IntegerProperty maxDegree     = new SimpleIntegerProperty(0);
+    private final IntegerProperty currentDegree = new SimpleIntegerProperty(0);
+    private final ObjectProperty<Runnable> onExpand   = new SimpleObjectProperty<>();
+    private final ObjectProperty<Runnable> onCollapse = new SimpleObjectProperty<>();
+    private final ObjectProperty<Runnable> onApplyDegree = new SimpleObjectProperty<>(null);
 
     @FXML
     private void initialize() {
-        // credits readonly
+        // read-only fields
         availableCreditsField.setEditable(false);
         availableCreditsField.setFocusTraversable(false);
 
-        // מספר שלם בלבד ב-txtDegree (כמו אצלך)
+        // current degree (עם ה-formatter הקיים שלך)
         txtDegree.setTextFormatter(integerOnlyFormatter());
         txtDegree.setText("0");
 
         txtMaxDegree.setEditable(false);
         txtMaxDegree.setFocusTraversable(false);
-        txtMaxDegree.setText("0");
+        txtMaxDegree.textProperty().bind(
+                Bindings.createStringBinding(() -> Integer.toString(maxDegree.get()), maxDegree)
+        );
 
-        // highlight: ערכי ברירת-מחדל; אפשר להחליף מבחוץ
+        // highlight (כבר היה)
         cmbHighlight.getItems().setAll("None", "Instruction", "Block", "Function");
         cmbHighlight.getSelectionModel().selectedItemProperty().addListener((o, ov, nv) -> {
-            if (onHighlightChanged != null) onHighlightChanged.accept(nv);
+            if (onHighlightChanged != null && nv != null) onHighlightChanged.accept(nv);
         });
+
+        refreshButtons();
+        txtDegree.textProperty().addListener((o, ov, nv) -> {
+            int val;
+            try { val = Integer.parseInt(nv.trim()); } catch (Exception e) { val = 0; }
+            int clamped = Math.max(0, Math.min(val, maxDegree.get()));
+            if (currentDegree.get() != clamped) currentDegree.set(clamped);
+            refreshButtons();
+        });
+        maxDegree.addListener((o, ov, nv) -> refreshButtons());
     }
+
+    @FXML
+    private void onExpandClicked() {
+        Runnable r = onExpand.get();
+        if (r != null) r.run();
+    }
+
+    @FXML
+    private void onCollapseClicked() {
+        Runnable r = onCollapse.get();
+        if (r != null) r.run();
+    }
+
+    @FXML
+    private void onDegreeEnter() {
+        Runnable r = onApplyDegree.get();
+        if (r != null) r.run();
+    }
+
+    public void setMaxDegree(int d) {
+        int m = Math.max(0, d);
+        maxDegree.set(m);
+        refreshButtons();
+    }
+
+    public void setOnExpand(Runnable r) {
+        this.onExpand.set(r);
+    }
+
+    public void setOnCollapse(Runnable r) {
+        this.onCollapse.set(r);
+    }
+
+    public void setCurrentDegree(int degree) {
+        int clamped = Math.max(0, Math.min(degree, maxDegree.get()));
+        this.currentDegree.set(clamped);
+        if (!String.valueOf(clamped).equals(txtDegree.getText())) {
+            txtDegree.setText(Integer.toString(clamped));
+        }
+        refreshButtons();
+    }
+
+    public int getCurrentDegree() {
+        return currentDegree.get();
+    }
+
+    public void setOnDegreeChanged(Consumer<Integer> callback) {
+        this.onDegreeChanged = callback;
+    }
+
+    public void setOnApplyDegree(Runnable r) { this.onApplyDegree.set(r); }
 
     public void setUserName(String name) { userNameLabel.setText(name); }
     public void setAvailableCredits(int credits) { availableCreditsField.setText(Integer.toString(credits)); }
 
-    public void setMaxDegree(int max) {
-        this.maxDegree = Math.max(0, max);
-        txtMaxDegree.setText(Integer.toString(this.maxDegree));
-        int cur = getCurrentDegree();
-        if (cur > this.maxDegree) setCurrentDegree(this.maxDegree);
-        if (cur < 0) setCurrentDegree(0);
-    }
-
-    public int  getCurrentDegree() {
-        try { return Integer.parseInt(txtDegree.getText().trim()); }
-        catch (Exception e) { return 0; }
-    }
-    public void setCurrentDegree(int d) { txtDegree.setText(Integer.toString(Math.max(0, Math.min(d, maxDegree)))); }
     public void setRunTarget(String txt) {
         if (runTargetLabel != null) runTargetLabel.setText(txt != null ? txt : "");
     }
@@ -76,22 +129,22 @@ public class HeaderController {
         cmbHighlight.getItems().setAll(options);
     }
     public void selectHighlight(String value) { cmbHighlight.getSelectionModel().select(value); }
-
-    public void setOnCollapse(Runnable r) { this.onCollapse = r; }
-    public void setOnExpand(Runnable r)   { this.onExpand = r; }
-    public void setOnDegreeChanged(Consumer<Integer> c) { this.onDegreeChanged = c; }
     public void setOnHighlightChanged(Consumer<String> c){ this.onHighlightChanged = c; }
 
-    // ===== Actions (מחוברות מה-FXML) =====
-    @FXML private void onCollapseClicked() { if (onCollapse != null) onCollapse.run(); }
-    @FXML private void onExpandClicked()   { if (onExpand   != null) onExpand.run(); }
-
-    // אם תרצי “Apply” נפרד – נוסיף; כרגע שינוי הערך נלכד כשאת קוראת getCurrentDegree/או מאזינה מבחוץ
-    @FXML private void onDegreeEdited() {
-        if (onDegreeChanged != null) onDegreeChanged.accept(getCurrentDegree());
-    }
 
     // ===== helpers =====
+    private void clampDegree() {
+        if (currentDegree.get() > maxDegree.get()) currentDegree.set(maxDegree.get());
+        if (currentDegree.get() < 0) currentDegree.set(0);
+    }
+
+    private void refreshButtons() {
+        int val;
+        try { val = Integer.parseInt(txtDegree.getText().trim()); } catch (Exception e) { val = 0; }
+        btnCollapse.setDisable(val <= 0);
+        btnExpand.setDisable(val >= maxDegree.get());
+    }
+
     private static TextFormatter<Integer> integerOnlyFormatter() {
         return new TextFormatter<>(new StringConverter<>() {
             @Override public String toString(Integer object) { return object == null ? "0" : object.toString(); }
@@ -99,6 +152,19 @@ public class HeaderController {
                 if (string == null || string.isBlank()) return 0;
                 try { return Integer.parseInt(string.trim()); } catch (NumberFormatException e) { return 0; }
             }
+        });
+    }
+
+    private void showError(String title, String msg) {
+        Platform.runLater(() -> {
+            Alert alert = new Alert(Alert.AlertType.ERROR);
+            alert.setTitle(title);
+            alert.setHeaderText(null);
+            TextArea area = new TextArea(msg);
+            area.setEditable(false);
+            area.setWrapText(true);
+            alert.getDialogPane().setContent(area);
+            alert.showAndWait();
         });
     }
 }

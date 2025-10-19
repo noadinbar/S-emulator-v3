@@ -1,12 +1,15 @@
 package application.execution;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.function.Consumer;
 
 import application.opening.OpeningSceneController;
+import client.responses.ExpandResponder;
 import client.responses.FunctionsResponder;
 import client.responses.ProgramByNameResponder;
-import display.DisplayDTO;
+import display.*;
 import javafx.application.Platform;
 import javafx.beans.binding.Bindings;
 import javafx.beans.binding.DoubleBinding;
@@ -46,6 +49,11 @@ public class ExecutionSceneController {
     private Consumer<String> onArchitectureSelected;
 
     private String userName;
+    private ExecTarget targetKind;
+    private String targetName;
+    private int maxDegree;
+    private int currentDegree = 0;
+    private ExpandDTO lastExpanded = null;
 
     @FXML
     private void initialize() {
@@ -79,12 +87,19 @@ public class ExecutionSceneController {
     }
 
     public void init(ExecTarget target, String name, int maxDegree) {
+        targetKind = target;
+        targetName = name;
+        this.maxDegree  = Math.max(0, maxDegree);
+
         // 1) Header title + degrees
         if (headerController != null) {
             String prefix = (target == ExecTarget.PROGRAM) ? "Program: " : "Function: ";
             headerController.setRunTarget(prefix + name);
-            headerController.setMaxDegree(maxDegree);
+            headerController.setMaxDegree(this.maxDegree);
             headerController.setCurrentDegree(0);
+            headerController.setOnExpand(()  -> changeDegreeAndShow(+1));
+            headerController.setOnCollapse(() -> changeDegreeAndShow(-1));
+            headerController.setOnApplyDegree(() -> doApply(headerController.getCurrentDegree()));
         }
 
         // 2) Summary follows the main program table
@@ -113,6 +128,54 @@ public class ExecutionSceneController {
             }
         }, "exec-load-" + ((target == ExecTarget.PROGRAM) ? "program" : "function")).start();
     }
+
+    private void changeDegreeAndShow(int i) {
+        doApply(currentDegree + i);
+    }
+
+    private void doApply(int requestedDegree) {
+        System.out.println("[EXEC] A doApply: requested=" + requestedDegree + " max=" + maxDegree);
+
+        final int target = Math.max(0, Math.min(requestedDegree, maxDegree));
+        currentDegree = target;
+        if (headerController != null) headerController.setCurrentDegree(currentDegree);
+
+        // ---- דיבוג סביב Thread ----
+        Runnable job = () -> {
+            System.out.println("[EXEC] D THREAD enter (deg=" + target + ")");
+            try {
+                display.ExpandDTO dto = (targetKind == utils.ExecTarget.PROGRAM)
+                        ? client.responses.ExpandResponder.execute(target)
+                        : client.responses.ExpandResponder.execute(targetName, target);
+                System.out.println("[EXEC] D1 THREAD got response: " + (dto != null));
+                javafx.application.Platform.runLater(() -> {
+                    System.out.println("[EXEC] D2 FX apply dto");
+                    lastExpanded = dto;
+                    if (dto != null && dto.getMaxDegree() != maxDegree) {
+                        maxDegree = dto.getMaxDegree();
+                        if (headerController != null) headerController.setMaxDegree(maxDegree);
+                    }
+                });
+            } catch (Exception ex) {
+                System.out.println("[EXEC] D! THREAD ERROR: " + ex);
+                ex.printStackTrace();
+            }
+        };
+
+        try {
+            System.out.println("[EXEC] B about to create thread");
+            Thread t = new Thread(job, "expand-" + target);
+            System.out.println("[EXEC] B1 created: " + t);
+            t.setDaemon(true);
+            System.out.println("[EXEC] B2 starting...");
+            t.start();
+            System.out.println("[EXEC] C started, isAlive=" + t.isAlive());
+        } catch (Throwable th) {
+            System.out.println("[EXEC] B! failed to start thread: " + th);
+            th.printStackTrace();
+        }
+    }
+
 
     private void openOpeningAndReplace() throws Exception {
         FXMLLoader loader = new FXMLLoader(getClass().getResource("/application/opening/opening_scene.fxml"));

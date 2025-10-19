@@ -218,7 +218,6 @@ public class InstructionsController {
         //==Bonus- breakpoint==
     }
 
-
     public long countBasic() {
         return items.stream().filter(i -> i.getKind() == InstrKindDTO.BASIC).count();
     }

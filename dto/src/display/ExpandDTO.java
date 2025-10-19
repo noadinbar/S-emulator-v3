@@ -1,4 +1,3 @@
-// dto/src/display/Command3DTO.java
 package display;
 
 import types.LabelDTO;
@@ -11,7 +10,7 @@ public final class ExpandDTO {
     private final List<VarRefDTO> inputsInUse;
     private final List<LabelDTO> labelsInUse;
     private final List<ExpandedInstructionDTO> instructions;
-    private int maxDegree;
+    private final int maxDegree;
 
     public ExpandDTO(String programName,
                      List<VarRefDTO> inputsInUse,

@@ -107,6 +107,15 @@ public class ExecutionSceneController {
             summaryController.wireTo(programTableController);
         }
 
+        if (programTableController != null && chainTableController != null) {
+            chainTableController.hideLineColumn();
+
+            programTableController.selectedItemProperty().addListener((obs, oldSel, newSel) -> {
+                List<InstructionDTO> chain = programTableController.getCreatedByChainFor(newSel);
+                chainTableController.show(chain == null ? List.of() : chain);
+            });
+        }
+
         // 3) Load DisplayDTO off the FX thread
         new Thread(() -> {
             try {
@@ -134,48 +143,30 @@ public class ExecutionSceneController {
     }
 
     private void doApply(int requestedDegree) {
-        System.out.println("[EXEC] A doApply: requested=" + requestedDegree + " max=" + maxDegree);
-
-        final int target = Math.max(0, Math.min(requestedDegree, maxDegree));
+        int target = Math.max(0, Math.min(requestedDegree, maxDegree));
         currentDegree = target;
-        if (headerController != null) headerController.setCurrentDegree(currentDegree);
+        if (headerController != null) {
+            headerController.setCurrentDegree(currentDegree);
+        }
 
-        // ---- דיבוג סביב Thread ----
-        Runnable job = () -> {
-            System.out.println("[EXEC] D THREAD enter (deg=" + target + ")");
+        new Thread(() -> {
             try {
                 display.ExpandDTO dto = (targetKind == utils.ExecTarget.PROGRAM)
                         ? client.responses.ExpandResponder.execute(target)
                         : client.responses.ExpandResponder.execute(targetName, target);
-                System.out.println("[EXEC] D1 THREAD got response: " + (dto != null));
-                javafx.application.Platform.runLater(() -> {
-                    System.out.println("[EXEC] D2 FX apply dto");
+                Platform.runLater(() -> {
                     lastExpanded = dto;
-                    if (dto != null && dto.getMaxDegree() != maxDegree) {
-                        maxDegree = dto.getMaxDegree();
-                        if (headerController != null) headerController.setMaxDegree(maxDegree);
+                    if (programTableController != null) {
+                        programTableController.showExpanded(dto);
                     }
+                    // *** חשוב: כאן עדיין לא מציגים את dto בטבלאות ***
+                    // נעשה זאת בשלב הבא (programTableController.showExpanded(dto) וכו').
                 });
-            } catch (Exception ex) {
-                System.out.println("[EXEC] D! THREAD ERROR: " + ex);
-                ex.printStackTrace();
+            } catch (Exception ignore) {
+                // TODO: לוג/שגיאה עדינה אם תרצי
             }
-        };
-
-        try {
-            System.out.println("[EXEC] B about to create thread");
-            Thread t = new Thread(job, "expand-" + target);
-            System.out.println("[EXEC] B1 created: " + t);
-            t.setDaemon(true);
-            System.out.println("[EXEC] B2 starting...");
-            t.start();
-            System.out.println("[EXEC] C started, isAlive=" + t.isAlive());
-        } catch (Throwable th) {
-            System.out.println("[EXEC] B! failed to start thread: " + th);
-            th.printStackTrace();
-        }
+        }, "expand-" + target).start();
     }
-
 
     private void openOpeningAndReplace() throws Exception {
         FXMLLoader loader = new FXMLLoader(getClass().getResource("/application/opening/opening_scene.fxml"));

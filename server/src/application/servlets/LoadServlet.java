@@ -70,7 +70,7 @@ public class LoadServlet extends HttpServlet {
             LoadAPI loader = new LoadAPIImpl();
             DisplayAPI display = loader.loadFromXml(tmp); // throws on invalid/semantic errors
             DisplayDTO dto = display.getDisplay();        // <-- what we return & store
-
+            getServletContext().setAttribute(ATTR_DISPLAY_API, display);
             // 4) Derive program name & register in ProgramManager (server-wide)
             String submitted = filePart.getSubmittedFileName(); // e.g. "MyProg.xml"
             String baseName = submitted != null

@@ -42,6 +42,8 @@ public class OpeningSceneController {
 
     public void setUserName(String name) {
         if (headerController != null) headerController.setUserName(name);
+        if (programsController != null)  programsController.setUserName(name);
+        if (functionsController != null) functionsController.setUserName(name);
     }
 
     public void setAvailableCredits(int credits) {

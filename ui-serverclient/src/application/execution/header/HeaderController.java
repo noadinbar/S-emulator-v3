@@ -14,6 +14,7 @@ public class HeaderController {
     @FXML private VBox   executionHeaderRoot;
     @FXML private Label  userNameLabel;
     @FXML private Label  titleLabel;
+    @FXML private Label runTargetLabel;
     @FXML private TextField availableCreditsField;
 
     // --- bottom: exactly like ui-fx ids ---
@@ -68,10 +69,8 @@ public class HeaderController {
         catch (Exception e) { return 0; }
     }
     public void setCurrentDegree(int d) { txtDegree.setText(Integer.toString(Math.max(0, Math.min(d, maxDegree)))); }
-    public void setTitle(String title) {
-        if (titleLabel != null) {
-            titleLabel.setText(title != null ? title : "");
-        }
+    public void setRunTarget(String txt) {
+        if (runTargetLabel != null) runTargetLabel.setText(txt != null ? txt : "");
     }
     public void setHighlightOptions(List<String> options) {
         cmbHighlight.getItems().setAll(options);

@@ -36,6 +36,7 @@ public class FunctionsController {
     private Timer timer;
     private FunctionsRefresher refresher;
     private String selectedFunctionName;
+    private String userName;
 
     @FXML
     public void initialize() {
@@ -73,6 +74,7 @@ public class FunctionsController {
         }
     }
 
+    public void setUserName(String name) { this.userName = name; }
 
     public void startFunctionsRefresher() {
         if (timer != null) return;
@@ -133,6 +135,7 @@ public class FunctionsController {
         FXMLLoader loader = new FXMLLoader(getClass().getResource("/application/execution/execution_scene.fxml"));
         Parent root = loader.load();
         ExecutionSceneController controller = loader.getController();
+        controller.setUserName(userName);
         Stage stage = (Stage) functionsTable.getScene().getWindow();
         if (title != null) stage.setTitle(title);
         stage.setScene(new Scene(root));

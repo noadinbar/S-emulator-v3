@@ -37,6 +37,7 @@ public class ProgramsController {
     private Timer timer;
     private ProgramsRefresher refresher;
     private String selectedProgramName;
+    private String userName;
 
     @FXML
     public void initialize() {
@@ -72,6 +73,8 @@ public class ProgramsController {
             ex.printStackTrace();
         }
     }
+
+    public void setUserName(String name) { this.userName = name; }
 
     public void startProgramsRefresher() {
         if (timer != null) return;
@@ -131,6 +134,7 @@ public class ProgramsController {
         FXMLLoader loader = new FXMLLoader(getClass().getResource("/application/execution/execution_scene.fxml"));
         Parent root = loader.load();
         ExecutionSceneController controller = loader.getController();
+        controller.setUserName(userName);
         Stage stage = (Stage) programsTable.getScene().getWindow();
         if (title != null) stage.setTitle(title);
         stage.setScene(new Scene(root));

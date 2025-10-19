@@ -50,7 +50,7 @@ public class FunctionsServlet extends HttpServlet {
 
         if (path.endsWith("/program")) {
             String rest = path.startsWith("/") ? path.substring(1) : path; // "{key}/program"
-            String keyEnc = rest.substring(0, rest.length() - "/program".length() - 1); // strip "/program"
+            String keyEnc = rest.substring(0, rest.length() - "/program".length()); // strip "/program"
             String key = urlDecode(keyEnc);
             DisplayDTO dto = fm.get(key);
             if (dto == null) {

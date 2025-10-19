@@ -3,6 +3,8 @@
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
 
+<?import javafx.scene.image.ImageView?>
+<?import javafx.scene.image.Image?>
 <VBox xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml"
       fx:controller="application.execution.header.HeaderController"
       fx:id="executionHeaderRoot" spacing="10"
@@ -12,7 +14,6 @@
         <Insets top="10" right="12" bottom="6" left="12"/>
     </padding>
 
-    <!-- Top line: Screen title -->
     <HBox alignment="CENTER">
         <Label fx:id="titleLabel" text="S-Emulator - Execution"/>
     </HBox>
@@ -20,7 +21,16 @@
     <!-- Second line: User | Run Target (center) | Credits -->
     <BorderPane>
         <left>
-            <Label fx:id="userNameLabel" text="User Name" BorderPane.alignment="CENTER_LEFT"/>
+            <HBox spacing="6" alignment="CENTER_LEFT" BorderPane.alignment="CENTER_LEFT">
+                <ImageView fx:id="statusIcon"
+                           fitHeight="12.0" fitWidth="12.0"
+                           preserveRatio="true" smooth="true">
+                    <image>
+                        <Image url="@/application/resources/dot.png"/>
+                    </image>
+                </ImageView>
+                <Label fx:id="userNameLabel" text="User Name"/>
+            </HBox>
         </left>
         <center>
             <!-- Name of the selected Program/Function (set at runtime) -->

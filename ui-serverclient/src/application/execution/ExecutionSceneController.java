@@ -3,6 +3,7 @@ package application.execution;
 import java.util.List;
 import java.util.function.Consumer;
 
+import application.opening.OpeningSceneController;
 import client.responses.FunctionsResponder;
 import client.responses.ProgramByNameResponder;
 import display.DisplayDTO;
@@ -44,6 +45,8 @@ public class ExecutionSceneController {
     private Runnable onBackToOpening;
     private Consumer<String> onArchitectureSelected;
 
+    private String userName;
+
     @FXML
     private void initialize() {
         rootScroll.setFitToWidth(false);
@@ -79,7 +82,7 @@ public class ExecutionSceneController {
         // 1) Header title + degrees
         if (headerController != null) {
             String prefix = (target == ExecTarget.PROGRAM) ? "Program: " : "Function: ";
-            headerController.setTitle(prefix + name);
+            headerController.setRunTarget(prefix + name);
             headerController.setMaxDegree(maxDegree);
             headerController.setCurrentDegree(0);
         }
@@ -97,13 +100,12 @@ public class ExecutionSceneController {
                         : FunctionsResponder.program(name);      // by function user-string (key)
 
                 if (dto == null) return;
-
                 Platform.runLater(() -> {
                     // degree 0 flat instructions into the main table
                     programTableController.show(dto.getInstructions());
                     // chain table stays empty for now (we'll use it on expand/debug)
                     if (chainTableController != null) {
-                        chainTableController.show(java.util.List.of());
+                        chainTableController.show(List.of());
                     }
                 });
             } catch (Exception ex) {
@@ -115,7 +117,8 @@ public class ExecutionSceneController {
     private void openOpeningAndReplace() throws Exception {
         FXMLLoader loader = new FXMLLoader(getClass().getResource("/application/opening/opening_scene.fxml"));
         Parent root = loader.load();
-
+        OpeningSceneController opening = loader.getController();
+        if (userName != null) opening.setUserName(userName);
         Stage stage = (Stage) rootScroll.getScene().getWindow();
         stage.setTitle("S-emulator");
         stage.setScene(new Scene(root));
@@ -136,4 +139,8 @@ public class ExecutionSceneController {
     public void setOnBackToOpening(Runnable cb) { this.onBackToOpening = cb; }
     public void setOnArchitectureSelected(Consumer<String> cb) { this.onArchitectureSelected = cb; }
     public void setDebugMode(boolean debug) {}
+    public void setUserName(String name) {
+        this.userName = name;
+        if (headerController != null) headerController.setUserName(name);
+    }
 }

@@ -22,7 +22,7 @@
                                fitHeight="12.0" fitWidth="12.0"
                                preserveRatio="true" smooth="true">
                         <image>
-                            <Image url="@/application/resources/green-dot.png"/>
+                            <Image url="@/application/resources/dot.png"/>
                         </image>
                     </ImageView>
                     <Label fx:id="userNameLabel" text="User Name"/>

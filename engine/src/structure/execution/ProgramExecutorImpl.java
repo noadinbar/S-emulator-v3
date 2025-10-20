@@ -90,6 +90,7 @@ public class ProgramExecutorImpl implements ProgramExecutor{
                               int pc) {
 
         Instruction current = instructions.get(pc);
+        System.out.println(current.getName());
         Label next;
         if (current instanceof QuotationInstruction quotationInstruction) {
             next = quotationInstruction.execute(context, program);
@@ -117,7 +118,6 @@ public class ProgramExecutorImpl implements ProgramExecutor{
             return jumpTo;
         }
     }
-
 
     public int getCycles() {
         return cycles;

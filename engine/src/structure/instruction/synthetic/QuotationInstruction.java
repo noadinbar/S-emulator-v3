@@ -23,6 +23,8 @@ import structure.variable.VariableType;
 import utils.InstructionsHelpers;
 
 import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class QuotationInstruction extends AbstractInstruction {
 
@@ -99,6 +101,8 @@ public class QuotationInstruction extends AbstractInstruction {
         return FixedLabel.EMPTY;
     }
 
+// QuotationInstruction.java — expand(...) + helpers (consolidated)
+
     public List<Instruction> expand(ExpansionManager prog, Program program) {
         Function function = program.getFunction(functionName);
         List<Instruction> newInstructions = new ArrayList<>();
@@ -112,15 +116,12 @@ public class QuotationInstruction extends AbstractInstruction {
         Map<Variable, Variable> convertToZ = new LinkedHashMap<>();
         Map<Label, Label> newLabelMap = new LinkedHashMap<>();
 
-        boolean isExit=false;
-
+        // ensure zTmp for every x# in QUOTE's argument list
         for (Variable xVar : argToX.values()) {
-            if(!convertToZ.containsKey(xVar))
-            {
-                convertToZ.put(xVar, prog.newWorkVar());
-            }
+            convertToZ.putIfAbsent(xVar, prog.newWorkVar());
         }
 
+        // pass 1: collect vars/labels referenced directly in function body
         for (Instruction ins : function.getInstructions()) {
             addLabel(ins.getMyLabel(), labelSet);
 
@@ -189,35 +190,57 @@ public class QuotationInstruction extends AbstractInstruction {
             }
         }
 
+        // pass 1.5: also collect x#/z# that appear only inside functionArguments of QUOTE/JEF in the body
+        for (Instruction ins : function.getInstructions()) {
+            switch (ins.getName()) {
+                case "QUOTE": {
+                    QuotationInstruction q = (QuotationInstruction) ins;
+                    addVarsFromArgs(q.getFunctionArguments(), xs, zs);
+                    break;
+                }
+                case "JUMP_EQUAL_FUNCTION": {
+                    JumpEqualFunctionInstruction jef = (JumpEqualFunctionInstruction) ins;
+                    addVarsFromArgs(jef.getFunctionArguments(), xs, zs);
+                    break;
+                }
+            }
+        }
+
+        // allocate work-vars for all referenced x#/z#
         for (int index : xs) {
-            if(!convertToZ.containsKey(new VariableImpl(VariableType.INPUT, index))) {
-                convertToZ.put(new VariableImpl(VariableType.INPUT, index), prog.newWorkVar());
-            }
+            convertToZ.putIfAbsent(new VariableImpl(VariableType.INPUT, index), prog.newWorkVar());
         }
-
         for (int index : zs) {
-            if(!convertToZ.containsKey(new VariableImpl(VariableType.WORK, index))) {
-                convertToZ.put(new VariableImpl(VariableType.WORK, index), prog.newWorkVar());
-            }
+            convertToZ.putIfAbsent(new VariableImpl(VariableType.WORK, index), prog.newWorkVar());
         }
 
+        // labels mapping (EXIT consistent)
+        boolean hasExit = false;
+        Label exitMapped = null;
         for (Label lbl : labelSet) {
-            if(!Objects.equals(lbl.getLabelRepresentation(), "EXIT")) {
+            boolean isExit =
+                    (lbl == FixedLabel.EXIT) || "EXIT".equals(lbl.getLabelRepresentation());
+            if (isExit) {
+                hasExit = true;
+                if (exitMapped == null) exitMapped = prog.newLabel();
+                newLabelMap.put(lbl, exitMapped);
+            } else {
                 newLabelMap.put(lbl, prog.newLabel());
             }
-            else isExit=true;
+        }
+        if (hasExit) {
+            newLabelMap.putIfAbsent(FixedLabel.EXIT, exitMapped);
+            newLabelMap.putIfAbsent(new LabelImpl("EXIT"), exitMapped);
         }
 
-        Label exitLabel=new LabelImpl("EXIT");
-        if (isExit) {newLabelMap.put(exitLabel,prog.newLabel());}
+        // anchor original QUOTE label
+        newInstructions.add(new NeutralInstruction(getVariable(), getMyLabel()));
 
-        newInstructions.add(new NeutralInstruction(getVariable(),getMyLabel()));
-
+        // PROLOG: evaluate each QUOTE argument into its x#-dest zTmp
         for (Map.Entry<String, Variable> e : argToX.entrySet()) {
-            String str = e.getKey();
+            String t = e.getKey().trim();
             Variable xVar = e.getValue();
             Variable dest = convertToZ.get(xVar);
-            String t = str.trim();
 
             Integer constant = tryParseInt(t);
             if (constant != null) {
@@ -225,7 +248,7 @@ public class QuotationInstruction extends AbstractInstruction {
                 continue;
             }
 
-            Variable src = parseVariableToken(t);
+            Variable src = parseVariableToken(t); // y / x# / z#
             if (src != null) {
                 newInstructions.add(new AssignmentInstruction(dest, src));
                 continue;
@@ -235,15 +258,29 @@ public class QuotationInstruction extends AbstractInstruction {
             String funcName = fa[0];
             String funcArgs = fa[1];
             String funcUserString = program.getFunction(funcName).getUserString();
-
             newInstructions.add(new QuotationInstruction(dest, funcName, funcUserString, funcArgs));
         }
 
-        convertToZ.put(y, prog.newWorkVar());
+        // ensure mapping for function result 'y'
+        convertToZ.putIfAbsent(y, prog.newWorkVar());
+        final Label exitTarget = exitMapped;  // <<< עותק סופי לשימוש בתוך הלמבדָה
 
+        // safe label mapping (covers EXIT in both representations)
+        java.util.function.Function<Label, Label> mapTarget = (orig) -> {
+            Label mapped = newLabelMap.get(orig);
+            if (mapped != null) return mapped;
+            if (orig == FixedLabel.EXIT || "EXIT".equals(orig.getLabelRepresentation())) {
+                return (exitTarget != null) ? exitTarget : orig;
+            }
+            return orig;
+        };
+
+        // BODY: clone with var/label remap; also remap functionArguments for QUOTE/JEF
         for (Instruction ins : function.getInstructions()) {
-            Label myLabel=FixedLabel.EMPTY;
-            if (ins.getMyLabel() != FixedLabel.EMPTY) myLabel = newLabelMap.get(ins.getMyLabel());
+            Label myLabel = (ins.getMyLabel() == FixedLabel.EMPTY)
+                    ? FixedLabel.EMPTY
+                    : mapTarget.apply(ins.getMyLabel());
+
             InstructionType type = InstructionType.valueOf(ins.getName().toUpperCase());
 
             switch (type) {
@@ -252,25 +289,21 @@ public class QuotationInstruction extends AbstractInstruction {
                     newInstructions.add(new IncreaseInstruction(v, myLabel));
                     break;
                 }
-
                 case DECREASE: {
                     Variable v = convertToZ.get(ins.getVariable());
                     newInstructions.add(new DecreaseInstruction(v, myLabel));
                     break;
                 }
-
                 case NEUTRAL: {
                     Variable v = convertToZ.get(ins.getVariable());
                     newInstructions.add(new NeutralInstruction(v, myLabel));
                     break;
                 }
-
                 case ZERO_VARIABLE: {
                     Variable v = convertToZ.get(ins.getVariable());
                     newInstructions.add(new ZeroVariableInstruction(v, myLabel));
                     break;
                 }
-
                 case ASSIGNMENT: {
                     AssignmentInstruction a = (AssignmentInstruction) ins;
                     Variable dest = convertToZ.get(a.getVariable());
@@ -278,7 +311,6 @@ public class QuotationInstruction extends AbstractInstruction {
                     newInstructions.add(new AssignmentInstruction(dest, src, myLabel));
                     break;
                 }
-
                 case CONSTANT_ASSIGNMENT: {
                     ConstantAssignmentInstruction c = (ConstantAssignmentInstruction) ins;
                     Variable dest = convertToZ.get(c.getVariable());
@@ -286,81 +318,141 @@ public class QuotationInstruction extends AbstractInstruction {
                     newInstructions.add(new ConstantAssignmentInstruction(dest, k, myLabel));
                     break;
                 }
-
                 case JUMP_NOT_ZERO: {
                     JumpNotZeroInstruction jnz = (JumpNotZeroInstruction) ins;
                     Variable v = convertToZ.get(jnz.getVariable());
-                    Label target = newLabelMap.get(jnz.getTargetLabel());
+                    Label target = mapTarget.apply(jnz.getTargetLabel());
                     newInstructions.add(new JumpNotZeroInstruction(v, target, myLabel));
                     break;
                 }
-
                 case JUMP_ZERO: {
                     JumpZeroInstruction jz = (JumpZeroInstruction) ins;
                     Variable v = convertToZ.get(jz.getVariable());
-                    Label target = newLabelMap.get(jz.getTargetLabel());
+                    Label target = mapTarget.apply(jz.getTargetLabel());
                     newInstructions.add(new JumpZeroInstruction(v, target, myLabel));
                     break;
                 }
-
                 case JUMP_EQUAL_CONSTANT: {
                     JumpEqualConstantInstruction jec = (JumpEqualConstantInstruction) ins;
                     Variable v = convertToZ.get(jec.getVariable());
-                    Label target = newLabelMap.get(jec.getTargetLabel());
+                    Label target = mapTarget.apply(jec.getTargetLabel());
                     int k = jec.getConstant();
                     newInstructions.add(new JumpEqualConstantInstruction(v, target, k, myLabel));
                     break;
                 }
-
                 case JUMP_EQUAL_VARIABLE: {
                     JumpEqualVariableInstruction jev = (JumpEqualVariableInstruction) ins;
                     Variable v1 = convertToZ.get(jev.getVariable());
                     Variable v2 = convertToZ.get(jev.getToCompare());
-                    Label target = newLabelMap.get(jev.getTargetLabel());
+                    Label target = mapTarget.apply(jev.getTargetLabel());
                     newInstructions.add(new JumpEqualVariableInstruction(v1, target, v2, myLabel));
                     break;
                 }
-
                 case GOTO_LABEL: {
                     GoToInstruction go = (GoToInstruction) ins;
                     Variable v = convertToZ.get(go.getVariable());
-                    Label target = newLabelMap.get(go.getTarget());
+                    Label target = mapTarget.apply(go.getTarget());
                     newInstructions.add(new GoToInstruction(v, target, myLabel));
                     break;
                 }
-
                 case JUMP_EQUAL_FUNCTION: {
                     JumpEqualFunctionInstruction jef = (JumpEqualFunctionInstruction) ins;
                     Variable v = convertToZ.get(jef.getVariable());
-                    Label target = newLabelMap.get(jef.getTargetLabel());
+                    Label target = mapTarget.apply(jef.getTargetLabel());
                     String fname = jef.getFunctionName();
                     String ustr  = jef.getUserString();
-                    String fargs = jef.getFunctionArguments();
+                    String fargs = remapFunctionArguments(jef.getFunctionArguments(), convertToZ);
                     newInstructions.add(new JumpEqualFunctionInstruction(v, target, fname, ustr, fargs, myLabel));
                     break;
                 }
-
                 case QUOTE: {
                     QuotationInstruction q = (QuotationInstruction) ins;
                     Variable dest = convertToZ.get(q.getVariable());
                     String fname = q.getFunctionName();
                     String ustr  = q.getUserString();
-                    String fargs = q.getFunctionArguments();
+                    String fargs = remapFunctionArguments(q.getFunctionArguments(), convertToZ);
                     newInstructions.add(new QuotationInstruction(dest, fname, ustr, fargs, myLabel));
                     break;
                 }
-
                 default:
             }
         }
 
-        if(newLabelMap.containsKey(FixedLabel.EXIT) ) {
-            newInstructions.add(new AssignmentInstruction(getVariable(), convertToZ.get(Variable.RESULT),newLabelMap.get(FixedLabel.EXIT)));
+        // copy function result 'y' into original QUOTE destination (bind to EXIT if present)
+        if (exitMapped != null) {
+            newInstructions.add(new AssignmentInstruction(getVariable(), convertToZ.get(Variable.RESULT), exitMapped));
+        } else {
+            newInstructions.add(new AssignmentInstruction(getVariable(), convertToZ.get(Variable.RESULT)));
         }
-        else newInstructions.add(new AssignmentInstruction(getVariable(), convertToZ.get(Variable.RESULT)));
 
         return newInstructions;
     }
+
+    /* ===== helpers (same class) ===== */
+
+    private static final Pattern X_IN_ARGS = Pattern.compile("\\bx(\\d+)\\b");
+    private static final Pattern Z_IN_ARGS = Pattern.compile("\\bz(\\d+)\\b");
+
+    private static void addVarsFromArgs(String args, SortedSet<Integer> xs, SortedSet<Integer> zs) {
+        if (args == null || args.isBlank()) return;
+        Matcher mx = X_IN_ARGS.matcher(args);
+        while (mx.find()) {
+            try { xs.add(Integer.parseInt(mx.group(1))); } catch (Exception ignore) {}
+        }
+        Matcher mz = Z_IN_ARGS.matcher(args);
+        while (mz.find()) {
+            try { zs.add(Integer.parseInt(mz.group(1))); } catch (Exception ignore) {}
+        }
+    }
+
+    private String remapFunctionArguments(String args, Map<Variable, Variable> map) {
+        if (args == null || args.isBlank()) return args;
+        StringBuilder out = new StringBuilder(args.length());
+        int i = 0, n = args.length();
+        while (i < n) {
+            char c = args.charAt(i);
+            if (Character.isLetterOrDigit(c) || c == '_') {
+                int j = i + 1;
+                while (j < n) {
+                    char cj = args.charAt(j);
+                    if (Character.isLetterOrDigit(cj) || cj == '_') j++; else break;
+                }
+                String tok = args.substring(i, j);
+                out.append(remapToken(tok, map));
+                i = j;
+            } else {
+                out.append(c);
+                i++;
+            }
+        }
+        return out.toString();
+    }
+
+    private String remapToken(String tok, Map<Variable, Variable> map) {
+        if ("y".equals(tok)) {
+            Variable v = map.get(Variable.RESULT);
+            if (v instanceof VariableImpl) return v.getRepresentation();
+            return tok;
+        }
+        if (tok.length() >= 2 && tok.charAt(0) == 'x') {
+            try {
+                int idx = Integer.parseInt(tok.substring(1));
+                Variable v = map.get(new VariableImpl(VariableType.INPUT, idx));
+                if (v instanceof VariableImpl) return v.getRepresentation();
+                return tok;
+            } catch (NumberFormatException ignore) { return tok; }
+        }
+        if (tok.length() >= 2 && tok.charAt(0) == 'z') {
+            try {
+                int idx = Integer.parseInt(tok.substring(1));
+                Variable v = map.get(new VariableImpl(VariableType.WORK, idx));
+                if (v instanceof VariableImpl) return v.getRepresentation();
+                return tok;
+            } catch (NumberFormatException ignore) { return tok; }
+        }
+        return tok; // function names / CONST0 / NOT / etc.
+    }
+
 
     private Long evalArgVal(ArgVal a, ExecutionContext ctx, Program program) {
         if (a.getKind() == ArgKind.LONG) {

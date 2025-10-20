@@ -62,21 +62,18 @@ public class JumpEqualFunctionInstruction extends AbstractInstruction {
     }
 
     public Label execute(ExecutionContext context, Program program) {
-        final Function function;
-        function = program.getFunction(functionName);
         lastFunctionCycles = 0;
-
-        List<ArgVal> args = helper.parseFunctionInputs(functionArguments, context);
-        Long[] inputs = new Long[args.size()];
-        for (int i = 0; i < args.size(); i++) {
-            inputs[i] = evalArgVal(args.get(i), context, program);
+        List<ArgVal> inputsList = helper.parseFunctionInputs(functionArguments, context);
+        Long[] nestedInputs = new Long[inputsList.size()];
+        for (int i = 0; i < inputsList.size(); i++) {
+            nestedInputs[i] = evalArgVal(inputsList.get(i), context, program);
         }
-
+        Function f = program.getFunction(functionName);
         FunctionExecutor runner = new FunctionExecutorImpl();
-        long qResult = runner.run(function, program, inputs);
+        long val = runner.run(f, program, nestedInputs);
         lastFunctionCycles += runner.getLastRunCycles();
-        long v = context.getVariableValue(getVariable());
-        return (v == qResult) ? targetLabel : FixedLabel.EMPTY;
+        long cur = context.getVariableValue(getVariable());
+        return (cur == val) ? targetLabel : FixedLabel.EMPTY;
     }
 
     public List<Instruction> expand(ExpansionManager prog, Program program) {

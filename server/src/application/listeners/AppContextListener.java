@@ -1,5 +1,6 @@
 package application.listeners;
 
+import application.execution.ExecutionTaskManager;
 import application.functions.FunctionManager;
 import application.programs.ProgramManager;
 import jakarta.servlet.ServletContext;
@@ -32,5 +33,11 @@ public class AppContextListener implements ServletContextListener {
 
     public static FunctionManager getFunctions(ServletContext ctx) {
         return (FunctionManager) ctx.getAttribute(ATTR_FUNCTIONS);
+    }
+
+    @Override
+    public void contextDestroyed(ServletContextEvent sce) {
+        // Clean shutdown of async execution pool (prevents thread leaks on redeploy)
+        ExecutionTaskManager.shutdown();
     }
 }

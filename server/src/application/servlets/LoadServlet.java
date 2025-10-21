@@ -2,17 +2,21 @@ package application.servlets;
 
 import api.DisplayAPI;
 import api.LoadAPI;
+import application.execution.ExecutionCache;
 import application.functions.FunctionManager;
 import application.functions.FunctionTableRow;
 import application.programs.ProgramTableRow;
 import display.DisplayDTO;
 import display.UploadResultDTO;
 import exportToDTO.LoadAPIImpl;
+import application.execution.ProgramLocks;
 
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.MultipartConfig;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.*;
+
+import java.util.concurrent.locks.ReadWriteLock;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -26,7 +30,7 @@ import application.programs.ProgramManager;
 import java.nio.file.Paths;
 import java.util.Map;
 
-import users.UserManager; // <<< NEW
+import users.UserManager;
 
 import static utils.Constants.*;
 import static utils.ServletUtils.*;
@@ -66,77 +70,79 @@ public class LoadServlet extends HttpServlet {
         }
 
         try {
-            // 3) Validate & build DTO (no DisplayAPI kept in context)
+            // 3) Validate & build DTO (עבודת parsing/בדיקות — ללא נעילה)
             LoadAPI loader = new LoadAPIImpl();
             DisplayAPI display = loader.loadFromXml(tmp); // throws on invalid/semantic errors
-            DisplayDTO dto = display.getDisplay();        // <-- what we return & store
-            getServletContext().setAttribute(ATTR_DISPLAY_API, display);
-            // 4) Derive program name & register in ProgramManager (server-wide)
+            DisplayDTO dto = display.getDisplay();        // מה שנחזיר וגם נרשום
+
+            // גזירת שם בסיסי מהקובץ
             String submitted = filePart.getSubmittedFileName(); // e.g. "MyProg.xml"
             String baseName = submitted != null
                     ? Paths.get(submitted).getFileName().toString()
                     : "program";
             baseName = baseName.replaceFirst("\\.[^.]+$", ""); // strip extension
 
-            // Resolve uploader from session (keeps your current logic)
             String uploader = "anonymous";
             HttpSession session = req.getSession(false);
             if (session != null && session.getAttribute("username") != null)
                 uploader = session.getAttribute("username").toString();
 
-            // Obtain managers from context
             ProgramManager pm = (ProgramManager) getServletContext().getAttribute(AppContextListener.ATTR_PROGRAMS);
             FunctionManager fm = (FunctionManager) getServletContext().getAttribute(AppContextListener.ATTR_FUNCTIONS);
+            UserManager um    = (UserManager) getServletContext().getAttribute(AppContextListener.ATTR_USERS);
 
-            // <<< NEW: also get the UserManager for updating the Users table
-            UserManager um = (UserManager) getServletContext().getAttribute(AppContextListener.ATTR_USERS);
+            final ReadWriteLock rw = ProgramLocks.lockFor("REPO");
+            rw.writeLock().lock();
+            try {
+                getServletContext().setAttribute(ATTR_DISPLAY_API, display);
+                ExecutionCache.clearAll();
+                if (pm != null) {
+                    pm.put(baseName, dto);
+                    int maxDegree = 0;
+                    try { maxDegree = display.execution().getMaxDegree(); } catch (Exception ignore) {}
 
-            // Register program
-            if (pm != null) {
-                pm.put(baseName, dto);
-                int maxDegree = 0;
-                try {
-                    maxDegree = display.execution().getMaxDegree();
-                } catch (Exception ignore) { }
-                pm.putRecord(new ProgramTableRow(
-                        baseName,
-                        uploader,
-                        dto.numberOfInstructions(),
-                        maxDegree
-                ));
-                // --- USERS TABLE UPDATE: bump main-programs counter for this uploader
-                if (um != null && uploader != null && !uploader.isBlank()) {
-                    try { um.onMainProgramUploaded(uploader); } catch (Exception ignore) { }
-                }
-            }
-
-            // Register functions derived from the program
-            if (fm != null) {
-                Map<String, DisplayAPI> fnMap = display.functionDisplaysByUserString();
-                // TODO: double functions check (kept as-is)
-                for (Map.Entry<String, DisplayAPI> e : fnMap.entrySet()) {
-                    String userString = e.getKey();
-                    DisplayAPI fApi   = e.getValue();
-                    DisplayDTO fDto   = fApi.getDisplay();
-                    int fBaseInstr = fDto.numberOfInstructions();
-                    int fMaxDegree = 0;
-                    try { fMaxDegree = fApi.execution().getMaxDegree(); } catch (Exception ignore) { }
-
-                    fm.put(userString, fDto);
-                    fm.putRecord(new FunctionTableRow(
-                            userString,
+                    pm.putRecord(new ProgramTableRow(
                             baseName,
                             uploader,
-                            fBaseInstr,
-                            fMaxDegree
+                            dto.numberOfInstructions(),
+                            maxDegree
                     ));
 
-                    // --- USERS TABLE UPDATE: bump functions counter for this uploader (per recorded function)
                     if (um != null && uploader != null && !uploader.isBlank()) {
-                        try { um.onFunctionUploaded(uploader); } catch (Exception ignore) { }
+                        try { um.onMainProgramUploaded(uploader); } catch (Exception ignore) {}
                     }
                 }
+
+                // רישום פונקציות שנגזרו מהתוכנית
+                if (fm != null) {
+                    Map<String, DisplayAPI> fnMap = display.functionDisplaysByUserString();
+                    for (Map.Entry<String, DisplayAPI> e : fnMap.entrySet()) {
+                        String userString = e.getKey();
+                        DisplayAPI fApi   = e.getValue();
+                        DisplayDTO fDto   = fApi.getDisplay();
+                        int fBaseInstr = fDto.numberOfInstructions();
+                        int fMaxDegree = 0;
+                        try { fMaxDegree = fApi.execution().getMaxDegree(); } catch (Exception ignore) {}
+
+                        fm.put(userString, fDto);
+                        fm.putRecord(new FunctionTableRow(
+                                userString,
+                                baseName,
+                                uploader,
+                                fBaseInstr,
+                                fMaxDegree
+                        ));
+
+                        if (um != null && uploader != null && !uploader.isBlank()) {
+                            try { um.onFunctionUploaded(uploader); } catch (Exception ignore) {}
+                        }
+                    }
+                }
+
+            } finally {
+                rw.writeLock().unlock();
             }
+            // ========== /NEW ==========
 
             UploadResultDTO uploadResult = new UploadResultDTO(baseName);
             writeJson(resp, HttpServletResponse.SC_CREATED, uploadResult);
@@ -148,4 +154,5 @@ public class LoadServlet extends HttpServlet {
             try { Files.deleteIfExists(tmp); } catch (Exception ignore) {}
         }
     }
+
 }

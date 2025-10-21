@@ -6,6 +6,7 @@ import client.responses.ExecuteResponder;
 import client.responses.StatusResponder;
 import com.google.gson.JsonObject;
 import execution.ExecutionDTO;
+import execution.ExecutionPollDTO;
 import execution.ExecutionRequestDTO;
 import okhttp3.Request;
 
@@ -43,10 +44,39 @@ public class RemoteExecutionAPI implements ExecutionAPI {
     @Override
     public ExecutionDTO execute(ExecutionRequestDTO request) {
         try {
-            Request httpReq = Execute.build(request, userString);
-            return ExecuteResponder.execute(httpReq);
+            // build original POST to get the exact URL
+            Request submitReq = Execute.build(request, userString);
+            String executeUrl = submitReq.url().toString();
+
+            // submit -> jobId
+            String jobId = ExecuteResponder.submit(
+                    ExecuteResponder.buildSubmitRequest(executeUrl, request, userString)
+            );
+
+            // poll until terminal
+            while (true) {
+                Request pollReq = ExecuteResponder.buildPollRequest(executeUrl, jobId);
+                ExecutionPollDTO pr = ExecuteResponder.poll(pollReq);
+                switch (pr.getStatus()) {
+                    case PENDING:
+                    case RUNNING:
+                        try { Thread.sleep(300); } catch (InterruptedException ignore) {}
+                        continue;
+                    case DONE:
+                        return pr.getResult();
+                    case CANCELED:
+                        throw new RuntimeException("Canceled");
+                    case ERROR:
+                    default:
+                        String err = (pr.getError() == null || pr.getError().isBlank())
+                                ? "Unknown error"
+                                : pr.getError();
+                        throw new RuntimeException("Execute failed: " + err);
+                }
+            }
         } catch (Exception e) {
             throw new RuntimeException("Execute failed: " + e.getMessage(), e);
         }
     }
+
 }

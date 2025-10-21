@@ -851,7 +851,7 @@ public class ExecutionSceneController {
 
     private void showBreakpointMessage() {
         Popup popup = new Popup();
-        Label msg = new Label("Run finished — breakpoint not reached");
+        Label msg = new Label("Run finished - breakpoint not reached");
         msg.setStyle(
                 "-fx-background-color: rgba(40,40,40,0.92);" +
                         "-fx-text-fill: white;" +

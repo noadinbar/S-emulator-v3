@@ -26,12 +26,8 @@
             <children>
                 <!-- Header למעלה -->
                 <fx:include fx:id="header" source="header/header.fxml"/>
-
-                <!-- גוף המסך: SplitPane בדיוק כמו ב-ui-fx -->
                 <SplitPane dividerPositions="0.6" VBox.vgrow="ALWAYS">
                     <items>
-
-                        <!-- צד שמאל: טבלת פקודות → סיכום → טבלת שרשרת -->
                         <VBox spacing="8.0">
                             <children>
 

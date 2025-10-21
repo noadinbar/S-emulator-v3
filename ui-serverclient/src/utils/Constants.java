@@ -29,7 +29,7 @@ public class Constants {
     public static final String CONTENT_TYPE_JSON = "application/json";
 
     public static final MediaType MEDIA_TYPE_XML  = MediaType.parse("application/xml");
-    public static final MediaType MEDIA_TYPE_JSON = MediaType.parse("application/json");
+    public static final MediaType MEDIA_TYPE_JSON = MediaType.parse("application/json; charset=utf-8");
 
     // Query params / JSON keys (נוח לאחידות)
     public static final String QP_DEBUG_ID   = "debugId";

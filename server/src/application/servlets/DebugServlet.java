@@ -19,6 +19,9 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
+import application.execution.ExecutionTaskManager;
+import application.execution.JobSubmitResult;
+
 import static utils.Constants.*;
 import static utils.ServletUtils.writeJson;
 import static utils.ServletUtils.writeJsonError;
@@ -60,7 +63,7 @@ public class DebugServlet extends HttpServlet {
     /**
      * POST /api/debug/init
      * Body JSON: { degree: number, inputs: number[], function?: string }
-     * Returns: { debugId: string, state: DebugStateDTO }
+     * New behavior (async): 202 {debugId} | 429 {retryMs}
      */
     private void handleInit(HttpServletRequest req, HttpServletResponse resp) throws IOException {
         DisplayAPI root = getRootOrError(resp);
@@ -88,25 +91,57 @@ public class DebugServlet extends HttpServlet {
             return;
         }
 
-        try {
-            DebugAPI dbg = target.debugForDegree(degree);
-            DebugStateDTO state = dbg.init(execReq);
+        // מזהה סשן מראש כדי שהלקוח ידע על מה לפולינג
+        String id = UUID.randomUUID().toString();
 
-            String id = UUID.randomUUID().toString();
-            getSessions().put(id, dbg);
-            getServletContext().setAttribute(ATTR_DBG_BUSY, Boolean.TRUE);
+        // מגישים ל-pool: init דיבאג ירוץ ברקע; על עומס -> 429; על קבלה -> 202
+        JobSubmitResult res = ExecutionTaskManager.trySubmit(() -> {
+            try {
+                DebugAPI dbg = target.debugForDegree(degree);
+                DebugStateDTO state = dbg.init(execReq);
 
-            JsonObject out = new JsonObject();
-            out.addProperty("debugId", id);
-            out.add("state", gson.toJsonTree(state));
-            writeJson(resp, HttpServletResponse.SC_OK, out);
-        } catch (Exception e) {
-            writeJsonError(resp, HttpServletResponse.SC_INTERNAL_SERVER_ERROR,
-                    "Debug init failed: " + e.getMessage());
+                // שמירת הסשן מוכן לצעדים/רזיום
+                getSessions().put(id, dbg);
+                // dbgBusy true כל עוד יש לפחות סשן אחד
+                getServletContext().setAttribute(ATTR_DBG_BUSY, Boolean.TRUE);
+
+                // אם תרצי לשמור snapshot ראשוני בצד השרת — אפשר פה במפה נפרדת
+                // (לא חובה כרגע; ה-UI בדרך כלל ינהל את המצב לאחר הפול הראשון)
+                // getSnapshots().put(id, state);
+
+            } catch (Throwable t) {
+                // במקרה של שגיאה, אין סשן פעיל
+                getSessions().remove(id);
+                boolean anyLeft = !getSessions().isEmpty();
+                getServletContext().setAttribute(ATTR_DBG_BUSY, anyLeft ? Boolean.TRUE : Boolean.FALSE);
+                // נזרוק כדי שיסומן כ-ERROR ברמת ה-job; הלקוח יקבל זאת דרך ה-/terminated/step בהמשך
+                throw t;
+            }
+            return null; // ExecutionTaskManager לא משתמש בתוצאה כאן
+        });
+
+        if (!res.isAccepted()) {
+            // עומס: 429 + Retry-After (בשניות) + גוף עם retryMs
+            int retryMs = res.getRetryAfterMs();
+            int retrySec = (int) Math.ceil(retryMs / 1000.0);
+            resp.setStatus(SC_TOO_MANY_REQUESTS);
+            resp.setHeader("Retry-After", String.valueOf(retrySec));
+            writeJson(resp, SC_TOO_MANY_REQUESTS,
+                    gson.toJsonTree(new JsonObject() {{
+                        addProperty("error", "busy");
+                        addProperty("retryMs", retryMs);
+                    }}));
+            return;
         }
+
+        // התקבל: לא מחזירים state (אין חסימה) — ה-UI יעשה polling לפי debugId
+        JsonObject out = new JsonObject();
+        out.addProperty("debugId", id);
+        resp.setStatus(HttpServletResponse.SC_ACCEPTED); // 202
+        writeJson(resp, HttpServletResponse.SC_ACCEPTED, out);
     }
 
-    /** POST /api/debug/step  (body או query: debugId) — מחזיר DebugStepDTO */
+    /** POST /api/debug/step  (body או query: debugId) — מחזיר DebugStepDTO (כרגע סינכרוני כמו שהיה) */
     private void handleStep(HttpServletRequest req, HttpServletResponse resp) throws IOException {
         // קבלת debugId או מה-query או מה-JSON body
         String debugId = req.getParameter("debugId");
@@ -169,7 +204,7 @@ public class DebugServlet extends HttpServlet {
             int steps = 0;
             DebugStepDTO last = null;
 
-            // ריצה עד סיום (ללא תקרה)
+            // ריצה עד סיום (ללא תקרה) — כרגע סינכרוני כמו שהיה
             while (!dbg.isTerminated()) {
                 last = dbg.step();
                 steps++;

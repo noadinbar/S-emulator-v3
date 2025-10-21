@@ -38,7 +38,7 @@ public class HeaderController {
     @FXML
     private void initialize() {
         if (dashboardTitle != null && dashboardTitle.getText() == null) {
-            dashboardTitle.setText("S-Emulator — Dashboard");
+            dashboardTitle.setText("S-Emulator - Dashboard");
         }
         if (availableCreditsField != null) {
             availableCreditsField.setEditable(false);

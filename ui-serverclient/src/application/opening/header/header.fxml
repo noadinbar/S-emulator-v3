@@ -30,7 +30,7 @@
             </left>
 
             <center>
-                <Label fx:id="dashboardTitle" text="S-Emulator — Dashboard" BorderPane.alignment="CENTER"/>
+                <Label fx:id="dashboardTitle" text="S-Emulator - Dashboard" BorderPane.alignment="CENTER"/>
             </center>
 
             <right>

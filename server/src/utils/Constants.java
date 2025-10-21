@@ -40,4 +40,5 @@ public class Constants {
     public static final String JSON_ERROR  = "error";
     public static final String JSON_STATUS = "status";
     public static final int PROGRAMS_REFRESH_RATE_MS = 2000;
+    public static final int SC_TOO_MANY_REQUESTS = 429;
 }

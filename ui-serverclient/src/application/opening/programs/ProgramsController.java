@@ -65,7 +65,7 @@ public class ProgramsController {
 
         try {
             ExecutionSceneController controller =
-                    openExecutionScene("Execution — Program: " + sel.getName());
+                    openExecutionScene("Execution - Program: " + sel.getName());
             controller.init(ExecTarget.PROGRAM,
                     sel.getName(),
                     sel.getMaxDegree());

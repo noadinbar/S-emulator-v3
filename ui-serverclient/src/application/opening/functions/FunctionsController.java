@@ -64,7 +64,7 @@ public class FunctionsController {
         if (sel == null) return;
         try {
             ExecutionSceneController controller =
-                    openExecutionScene("Execution — Function: " + sel.getName());
+                    openExecutionScene("Execution - Function: " + sel.getName());
 
             controller.init(ExecTarget.FUNCTION,
                     sel.getName(),

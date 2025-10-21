@@ -7,12 +7,10 @@ import java.util.function.Consumer;
 
 import application.opening.OpeningSceneController;
 import client.requests.Execute;
-import client.responses.ExecuteResponder;
-import client.responses.ExpandResponder;
-import client.responses.FunctionsResponder;
-import client.responses.ProgramByNameResponder;
+import client.responses.*;
 import display.*;
 import execution.ExecutionDTO;
+import execution.ExecutionPollDTO;
 import execution.ExecutionRequestDTO;
 import javafx.application.Platform;
 import javafx.beans.binding.Bindings;
@@ -21,9 +19,7 @@ import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
-import javafx.scene.control.Button;
-import javafx.scene.control.ComboBox;
-import javafx.scene.control.ScrollPane;
+import javafx.scene.control.*;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
 
@@ -221,22 +217,76 @@ public class ExecutionSceneController {
 
         final int degree = headerController.getCurrentDegree();
         final ExecutionRequestDTO dto = new ExecutionRequestDTO(degree, inputs);
-        final String functionUserString =
-                (targetKind == ExecTarget.FUNCTION) ? targetName : null;
+        final String functionUserString = (targetKind == ExecTarget.FUNCTION) ? targetName : null;
         outputsController.clear();
+
         new Thread(() -> {
             try {
-                Request req = Execute.build(dto, functionUserString);
-                ExecutionDTO result = ExecuteResponder.execute(req);
-                Platform.runLater(() -> {
-                    outputsController.showExecution(result);
-                    if (inputsController != null) {
-                        inputsController.setInputsEditable(false);
+                // 1) build the original POST (we reuse it to extract the correct /api/execute URL)
+                Request submitReq = Execute.build(dto, functionUserString);
+                String executeUrl = submitReq.url().toString();
+                String jobId;
+                while (true) {
+                    JobSubmitResult sr = ExecuteResponder.submit(
+                            ExecuteResponder.buildSubmitRequest(executeUrl, dto, functionUserString)
+                    );
+                    if (sr.isAccepted()) {
+                        jobId = sr.getJobId();
+                        break;
                     }
-                });
+                    try { Thread.sleep(Math.max(200, sr.getRetryMs())); } catch (InterruptedException ie) { return; }
+                }
+
+                // 3) POLL until terminal state
+                ExecutionDTO result = null;
+                String errorMsg = null;
+
+                while (true) {
+                    Request pollReq = ExecuteResponder.buildPollRequest(executeUrl, jobId);
+                    ExecutionPollDTO pr = ExecuteResponder.poll(pollReq);
+
+                    switch (pr.getStatus()) {
+                        case PENDING:
+                        case RUNNING:
+                            try { Thread.sleep(300); } catch (InterruptedException ignore) {}
+                            continue;
+                        case DONE:
+                            result = pr.getResult();
+                            break;
+                        case CANCELED:
+                            errorMsg = "Canceled";
+                            break;
+                        case TIMED_OUT:
+                            errorMsg = "Timed out";
+                            break;
+                        case ERROR:
+                        default:
+                            errorMsg = (pr.getError() == null || pr.getError().isBlank())
+                                    ? "Unknown error"
+                                    : pr.getError();
+                            break;
+                    }
+                    break;
+                }
+
+                if (result != null) {
+                    final ExecutionDTO finalResult = result;
+                    Platform.runLater(() -> {
+                        outputsController.showExecution(finalResult);
+                        if (inputsController != null) {
+                            inputsController.setInputsEditable(false);
+                        }
+                    });
+                } else {
+                    final String em = errorMsg;
+                    Platform.runLater(() ->
+                            showError("Execution failed", em == null ? "Unknown error" : em));
+                }
+
             } catch (Exception ex) {
                 ex.printStackTrace();
-                // אפשר להציג Alert קטן אם תרצי
+                Platform.runLater(() ->
+                        showError("Execution failed", ex.getMessage()));
             }
         }, "execute-run").start();
     }
@@ -316,5 +366,19 @@ public class ExecutionSceneController {
     public void setUserName(String name) {
         this.userName = name;
         if (headerController != null) headerController.setUserName(name);
+    }
+
+    // helpers
+    private void showError(String title, String msg) {
+        Platform.runLater(() -> {
+            Alert alert = new Alert(Alert.AlertType.ERROR);
+            alert.setTitle(title);
+            alert.setHeaderText(null);
+            TextArea area = new TextArea(msg);
+            area.setEditable(false);
+            area.setWrapText(true);
+            alert.getDialogPane().setContent(area);
+            alert.showAndWait();
+        });
     }
 }

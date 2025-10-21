@@ -13,6 +13,7 @@ import structure.variable.VariableImpl;
 import structure.variable.VariableType;
 
 import java.util.*;
+import java.util.concurrent.CancellationException;
 
 public class ProgramExecutorImpl implements ProgramExecutor{
 
@@ -53,6 +54,7 @@ public class ProgramExecutorImpl implements ProgramExecutor{
         int pc = 0;
         while (pc >= 0 && pc < instructions.size()) {
             pc = singleExecute(instructions, labelToIndex, context, pc);
+            if (Thread.currentThread().isInterrupted()) throw new CancellationException("Canceled");
         }
         long y = context.getVariableValue(Variable.RESULT);
 
@@ -90,7 +92,6 @@ public class ProgramExecutorImpl implements ProgramExecutor{
                               int pc) {
 
         Instruction current = instructions.get(pc);
-        System.out.println(current.getName());
         Label next;
         if (current instanceof QuotationInstruction quotationInstruction) {
             next = quotationInstruction.execute(context, program);

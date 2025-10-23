@@ -99,6 +99,7 @@ public class ExecutionSceneController {
             cmbArchitecture.getSelectionModel().selectedItemProperty().addListener((o, ov, nv) -> {
                 if (onArchitectureSelected != null) onArchitectureSelected.accept(nv);
             });
+            cmbArchitecture.getItems().setAll("I","II","III","IV");
         }
     }
 
@@ -138,6 +139,10 @@ public class ExecutionSceneController {
         // 2) Summary follows the main program table
         if (summaryController != null && programTableController != null) {
             summaryController.wireTo(programTableController);
+            this.setOnArchitectureSelected(arch -> {
+                summaryController.setSelectedArchitecture(arch);
+                executeGenerationCheck();
+            });
         }
 
         if (runOptionsController != null) {
@@ -213,6 +218,7 @@ public class ExecutionSceneController {
                     lastExpanded = dto;
                     if (programTableController != null) {
                         programTableController.showExpanded(dto);
+                        executeGenerationCheck();
                     }
                     if (headerController != null && programTableController != null && programTableController.getTableView() != null) {
                         headerController.populateHighlight(
@@ -918,5 +924,21 @@ public class ExecutionSceneController {
             }
         }
         selectAndScrollProgramRow(targetIndex);
+    }
+
+    private int convertRomanToInteger(String v) {
+        if (v == null) return 0;
+        String t = v.trim().toUpperCase();
+        return switch (t) { case "I" -> 1; case "II" -> 2; case "III" -> 3; case "IV" -> 4; default -> 0; };
+    }
+
+    private void executeGenerationCheck() {
+        if (runOptionsController == null || programTableController == null) return;
+        String sel = getSelectedArchitecture();
+        String maxInTable = programTableController.getMaxGenerationValue();
+        int selRank = convertRomanToInteger(sel);
+        int maxRank = convertRomanToInteger(maxInTable);
+        boolean shouldDisable = sel != null && selRank > 0 && maxRank > 0 && (selRank < maxRank);
+        runOptionsController.startEnabled(!shouldDisable);
     }
 }

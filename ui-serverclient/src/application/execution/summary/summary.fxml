@@ -3,25 +3,70 @@
 <?import javafx.geometry.Insets?>
 <?import javafx.scene.control.Label?>
 <?import javafx.scene.control.TextField?>
-<?import javafx.scene.layout.*?>
-<Pane maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="41.0" prefWidth="338.0" xmlns="http://javafx.com/javafx/24.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="application.execution.summary.SummaryController">
+<?import javafx.scene.layout.AnchorPane?>
+<?import javafx.scene.layout.HBox?>
+
+<AnchorPane prefHeight="41.0" prefWidth="338.0"
+            xmlns="http://javafx.com/javafx/24.0.1"
+            xmlns:fx="http://javafx.com/fxml/1"
+            fx:controller="application.execution.summary.SummaryController">
+
    <children>
-      <HBox fillHeight="false" layoutX="1.0" layoutY="6.0" prefHeight="17.0" prefWidth="422.0" spacing="20.0">
-         <children>
-            <Label text="Basic:" />
-            <TextField fx:id="txtBasic" editable="false" focusTraversable="false" prefHeight="29.0" prefWidth="71.0">
-               <HBox.margin>
-                  <Insets left="10.0" />
-               </HBox.margin></TextField>
-            <Label text="Synthetic:">
-               <HBox.margin>
-                  <Insets left="40.0" />
-               </HBox.margin></Label>
-            <TextField fx:id="txtSynthetic" editable="false" focusTraversable="false" prefHeight="29.0" prefWidth="57.0">
-               <HBox.margin>
-                  <Insets left="10.0" />
-               </HBox.margin></TextField>
-         </children>
+      <HBox AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="6.0">
+
+         <!-- Basic -->
+         <Label minWidth="44.0" prefHeight="17.0" prefWidth="44.0" text="Basic:" />
+         <TextField fx:id="txtBasic" editable="false" focusTraversable="false"
+                    prefHeight="29.0" prefWidth="41.0">
+            <!-- 6px between label and its field -->
+            <HBox.margin><Insets left="6.0" /></HBox.margin>
+         </TextField>
+
+         <!-- Synthetic -->
+         <Label minWidth="53.0" prefHeight="17.0" prefWidth="53.0" text="Synthetic:">
+            <!-- 16px gap before next pair -->
+            <HBox.margin><Insets left="16.0" /></HBox.margin>
+         </Label>
+         <TextField fx:id="txtSynthetic" editable="false" focusTraversable="false"
+                    prefHeight="29.0" prefWidth="41.0">
+            <HBox.margin><Insets left="6.0" /></HBox.margin>
+         </TextField>
+
+         <!-- Architecture I -->
+         <Label fx:id="lblGenI" minWidth="15.0" prefHeight="17.0" prefWidth="15.0" text="I:">
+            <HBox.margin><Insets left="16.0" /></HBox.margin>
+         </Label>
+         <TextField fx:id="txtGenI" editable="false" focusTraversable="false"
+                    prefHeight="29.0" prefWidth="41.0">
+            <HBox.margin><Insets left="6.0" /></HBox.margin>
+         </TextField>
+
+         <!-- Architecture II -->
+         <Label fx:id="lblGenII" minWidth="19.0" prefHeight="17.0" prefWidth="19.0" text="II:">
+            <HBox.margin><Insets left="16.0" /></HBox.margin>
+         </Label>
+         <TextField fx:id="txtGenII" editable="false" focusTraversable="false"
+                    prefHeight="29.0" prefWidth="41.0">
+            <HBox.margin><Insets left="6.0" /></HBox.margin>
+         </TextField>
+
+         <!-- Architecture III -->
+         <Label fx:id="lblGenIII" minWidth="23.0" prefHeight="17.0" prefWidth="23.0" text="III:">
+            <HBox.margin><Insets left="16.0" /></HBox.margin>
+         </Label>
+         <TextField fx:id="txtGenIII" editable="false" focusTraversable="false"
+                    prefHeight="29.0" prefWidth="41.0">
+            <HBox.margin><Insets left="6.0" /></HBox.margin>
+         </TextField>
+
+         <!-- Architecture IV -->
+         <Label fx:id="lblGenIV" minWidth="19.0" prefHeight="17.0" prefWidth="19.0" text="IV:">
+            <HBox.margin><Insets left="16.0" /></HBox.margin>
+         </Label>
+         <TextField fx:id="txtGenIV" editable="false" focusTraversable="false"
+                    prefHeight="29.0" prefWidth="41.0">
+            <HBox.margin><Insets left="6.0" /></HBox.margin>
+         </TextField>
       </HBox>
    </children>
-</Pane>
+</AnchorPane>

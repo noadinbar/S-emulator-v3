@@ -66,7 +66,6 @@ public class HeaderController {
                 Bindings.createStringBinding(() -> Integer.toString(maxDegree.get()), maxDegree)
         );
 
-        // highlight (כבר היה)
         cmbHighlight.getItems().setAll("None", "Instruction", "Block", "Function");
         cmbHighlight.getSelectionModel().selectedItemProperty().addListener((o, ov, nv) -> {
             if (onHighlightChanged != null && nv != null) onHighlightChanged.accept(nv);

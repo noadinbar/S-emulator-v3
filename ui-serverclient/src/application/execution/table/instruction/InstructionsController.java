@@ -106,6 +106,20 @@ public class InstructionsController {
         }
     }
 
+    public String getMaxGenerationValue() {
+        if (tblInstructions == null || tblInstructions.getItems() == null || tblInstructions.getItems().isEmpty()) {
+            return "I";
+        }
+        String max = "I";
+        for (InstructionDTO dto : tblInstructions.getItems()) {
+            String g = (dto != null && dto.getGeneration() != null) ? dto.getGeneration().trim().toUpperCase() : null;
+            if (g != null && g.compareTo(max) > 0) {
+                max = g;
+            }
+        }
+        return max;
+    }
+
     public long countBasic() {
         return items.stream().filter(i -> i.getKind() == InstrKindDTO.BASIC).count();
     }

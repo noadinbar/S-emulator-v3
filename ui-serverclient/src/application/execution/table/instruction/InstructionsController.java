@@ -22,6 +22,7 @@ import display.InstrOpDTO;
 import display.InstructionBodyDTO;
 import display.InstructionDTO;
 
+import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.util.Duration;
 import types.LabelDTO;
 import types.VarRefDTO;
@@ -37,32 +38,18 @@ import java.util.function.Consumer;
 import java.util.function.Predicate;
 
 public class InstructionsController {
-
-    @FXML private TableColumn<InstructionDTO, InstructionDTO> colBp;
     @FXML private TableView<InstructionDTO> tblInstructions;
     @FXML private TableColumn<InstructionDTO, Number> colLine;
     @FXML private TableColumn<InstructionDTO, String> colBS;
     @FXML private TableColumn<InstructionDTO, String> colLabel;
     @FXML private TableColumn<InstructionDTO, Number> colCycles;
     @FXML private TableColumn<InstructionDTO, String> colInstruction;
+    @FXML private TableColumn<InstructionDTO, String> colGeneration;
 
-    private Integer breakpointPc = null;
-    private Consumer<Integer> onBreakpointChanged = null;
     private final ObservableList<InstructionDTO> items = FXCollections.observableArrayList();
     private final Map<Integer, ExpandedInstructionDTO> expandedByNumber = new HashMap<>();
     private static final String HILITE_CLASS = "hilite";
     private Predicate<InstructionDTO> highlightPredicate = i -> false;
-
-
-    // === BONUS: Row fade-in on expand (BEGIN) ===
-    private boolean animationsEnabled = true;
-    private boolean animateNextPopulate = false;
-    private boolean populateStagger = true;
-    private long populateStamp = 0;
-    private static final int POPULATE_FADE_MS = 450;
-    private static final int POPULATE_PER_ROW_DELAY_MS = 35;
-    private static final int TOTAL_ANIM_MAX_MS = 2000;
-    // === BONUS: Row fade-in on expand (END) ===
 
     @FXML
     private void initialize() {
@@ -108,115 +95,7 @@ public class InstructionsController {
         colInstruction.setCellValueFactory(d ->
                 new ReadOnlyStringWrapper(formatBody(d.getValue().getBody())));
 
-
-        //==BONUS==
-        tblInstructions.setRowFactory(tv -> new TableRow<>() {
-            @Override
-            protected void updateItem(InstructionDTO item, boolean empty) {
-                super.updateItem(item, empty);
-                getStyleClass().remove(InstructionsController.HILITE_CLASS);
-                if (empty || item == null) {
-                    return;
-                }
-                if (highlightPredicate != null && highlightPredicate.test(item)) {
-                    getStyleClass().add(InstructionsController.HILITE_CLASS);
-                }
-                if (!(animationsEnabled && animateNextPopulate)) {
-                    return;
-                }
-                Object done   = getProperties().get("popAnimDoneStamp");
-                Object queued = getProperties().get("popAnimQueuedStamp");
-                if (Long.valueOf(populateStamp).equals(done) || Long.valueOf(populateStamp).equals(queued)) {
-                    return;
-                }
-                getProperties().put("popAnimQueuedStamp", populateStamp);
-
-                final long stampAtSchedule = populateStamp;
-                final int indexAtSchedule = getIndex();
-                final InstructionDTO itemAtSchedule = item;
-                final boolean staggerLocal = populateStagger;
-
-                Platform.runLater(() -> {
-                    if (stampAtSchedule != populateStamp ||
-                            getIndex() != indexAtSchedule ||
-                            getItem() != itemAtSchedule) {
-                        getProperties().put("popAnimDoneStamp", stampAtSchedule);
-                        getProperties().remove("popAnimQueuedStamp");
-                        return;
-                    }
-                    final String BASE_STAMP_KEY = "staggerBaseIndexStamp";
-                    final String BASE_VAL_KEY   = "staggerBaseIndexValue";
-
-                    Object baseStampObj = tv.getProperties().get(BASE_STAMP_KEY);
-                    if (!(baseStampObj instanceof Long) || ((Long) baseStampObj) != populateStamp) {
-                        int min = Integer.MAX_VALUE;
-                        for (Node n : tv.lookupAll(".table-row-cell")) {
-                            if (n instanceof TableRow<?> tr) {
-                                int idx = tr.getIndex();
-                                if (idx >= 0) min = Math.min(min, idx);
-                            }
-                        }
-                        if (min == Integer.MAX_VALUE) min = 0;
-                        tv.getProperties().put(BASE_STAMP_KEY, populateStamp);
-                        tv.getProperties().put(BASE_VAL_KEY, min);
-                    }
-                    int baseIndex = (Integer) tv.getProperties().getOrDefault(BASE_VAL_KEY, 0);
-                    final int TOTAL_ANIM_MAX_MS = 2000;
-                    final int MAX_DELAY_MS = Math.max(0, TOTAL_ANIM_MAX_MS - POPULATE_FADE_MS);
-                    int relIndex = Math.max(0, indexAtSchedule - baseIndex);
-                    int delayMs = staggerLocal ? Math.min(relIndex * POPULATE_PER_ROW_DELAY_MS, MAX_DELAY_MS) : 0;
-                    for (Node cell : lookupAll(".table-cell")) {
-                        PauseTransition pt = new PauseTransition(Duration.millis(delayMs));
-                        FadeTransition ft = new FadeTransition(Duration.millis(POPULATE_FADE_MS), cell);
-                        ft.setFromValue(0.0);
-                        ft.setToValue(1.0);
-                        ft.setInterpolator(Interpolator.EASE_OUT);
-                        SequentialTransition seq = new SequentialTransition(pt, ft);
-                        seq.play();
-                    }
-                    getProperties().put("popAnimDoneStamp", stampAtSchedule);
-                    getProperties().remove("popAnimQueuedStamp");
-                });
-            }
-        });
-
-        //==BONUS==
-
-        //==Bonus- breakpoint==
-        colBp.setSortable(false);
-        colBp.setReorderable(false);
-        colBp.setResizable(false);
-        colBp.setPrefWidth(24);
-
-        colBp.setCellValueFactory(cd -> new ReadOnlyObjectWrapper<>(cd.getValue()));
-        colBp.setCellFactory(col -> new TableCell<InstructionDTO, InstructionDTO>() {
-            private final Label dot = createDot();
-            private Label createDot() {
-                Label l = new Label("●");
-                l.setStyle("-fx-font-size: 13; -fx-text-fill: #ff0000;");
-                l.setMouseTransparent(true);
-                return l;
-            }
-            @Override
-            protected void updateItem(InstructionDTO item, boolean empty) {
-                super.updateItem(item, empty);
-                if (empty || item == null) {
-                    setGraphic(null); setText(null); setOnMouseClicked(null);
-                    return;
-                }
-                final int pc = getIndex();
-                setGraphic((breakpointPc != null && breakpointPc == pc) ? dot : null);
-                setText(null);
-                setStyle("-fx-alignment: CENTER;");
-
-                setOnMouseClicked(e -> {
-                    breakpointPc = (breakpointPc != null && breakpointPc == pc) ? null : pc;
-                    getTableView().refresh();
-                    if (onBreakpointChanged != null) onBreakpointChanged.accept(breakpointPc);
-                });
-            }
-        });
-        //==Bonus- breakpoint==
+        colGeneration.setCellValueFactory(new PropertyValueFactory<>("generation"));
 
         URL css = getClass().getResource("/application/execution/table/instruction/instructions.css");
         if (css != null && tblInstructions != null) {
@@ -260,32 +139,16 @@ public class InstructionsController {
     }
 
     public void show(List<InstructionDTO> instructions) {
-        populateStamp++;
-        boolean willAnimate = animationsEnabled && animateNextPopulate;
         items.setAll(instructions == null ? List.of() : instructions);
         tblInstructions.layout();
-        if (willAnimate) {
-            Platform.runLater(() -> animateNextPopulate = false);
-        } else {
-            animateNextPopulate = false;
-        }
     }
 
     public void setRows(List<InstructionDTO> rows) {
-        populateStamp++;
-        boolean willAnimate = animationsEnabled && animateNextPopulate;
         items.setAll(rows == null ? List.of() : rows);
         tblInstructions.layout();
-        if (willAnimate) {
-            Platform.runLater(() -> animateNextPopulate = false);
-        } else {
-            animateNextPopulate = false;
-        }
     }
-    public void setAnimationsEnabled(boolean enabled) { this.animationsEnabled = enabled; }
 
     public void clear() {
-        populateStamp++;
         items.clear();
         expandedByNumber.clear();
     }
@@ -345,12 +208,6 @@ public class InstructionsController {
             }
         }
         return out;
-    }
-    public Integer getBreakpointPc() { return breakpointPc; }
-    public void clearBreakpoint() {
-        breakpointPc = null;
-        if (getTableView() != null) getTableView().refresh();
-        if (onBreakpointChanged != null) onBreakpointChanged.accept(null);
     }
 
     private String formatLabel(LabelDTO lbl) {
@@ -417,12 +274,6 @@ public class InstructionsController {
         return base + idx;
     }
 
-    //== BONUS==
-    public void requestPopulateAnimation(boolean stagger) {
-        this.animateNextPopulate = true;
-        this.populateStagger = stagger;
-        this.populateStamp++;
-    }
 
     public void setHighlightPredicate(Predicate<InstructionDTO> pred) {
         this.highlightPredicate = (pred != null) ? pred : i -> false;

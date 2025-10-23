@@ -206,7 +206,7 @@ public class ExecutionSceneController {
 
         new Thread(() -> {
             try {
-                display.ExpandDTO dto = (targetKind == utils.ExecTarget.PROGRAM)
+                ExpandDTO dto = (targetKind == ExecTarget.PROGRAM)
                         ? ExpandResponder.execute(target)
                         : ExpandResponder.execute(targetName, target);
                 Platform.runLater(() -> {
@@ -919,5 +919,4 @@ public class ExecutionSceneController {
         }
         selectAndScrollProgramRow(targetIndex);
     }
-
 }

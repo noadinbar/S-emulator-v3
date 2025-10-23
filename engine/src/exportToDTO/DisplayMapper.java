@@ -2,6 +2,7 @@ package exportToDTO;
 
 import display.*;
 import structure.function.Function;
+import structure.instruction.InstructionType;
 import structure.instruction.synthetic.*;
 import types.LabelDTO;
 import types.VarRefDTO;
@@ -64,7 +65,8 @@ class DisplayMapper {
         LabelDTO lineLabel = labelDTO(ins.getMyLabel());
         InstructionBodyDTO body = toBody(ins);
         int cycles = ins.cycles();
-        return new InstructionDTO(number, kind, lineLabel, body, cycles);
+        String generation = InstructionType.valueOf(ins.getName()).getGeneration();
+        return new InstructionDTO(number, kind, lineLabel, body, cycles, generation);
     }
 
     private static InstructionBodyDTO toBody(Instruction ins) {

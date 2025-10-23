@@ -258,7 +258,7 @@ public class ExecutionSceneController {
 
         List<Long> inputs = inputsController.collectValuesPadded();
         int degree = headerController.getCurrentDegree();
-        ExecutionRequestDTO req = new ExecutionRequestDTO(degree, inputs);
+        ExecutionRequestDTO req = new ExecutionRequestDTO(degree, inputs, null);
         ExecutionDTO result = execute.execute(req);
 
         outputsController.showExecution(result);
@@ -351,7 +351,7 @@ public class ExecutionSceneController {
 
         int degree = (headerController != null) ? headerController.getCurrentDegree() : 0;
         debugApi = display.debugForDegree(degree);
-        DebugStateDTO state = debugApi.init(new ExecutionRequestDTO(degree, inputs));
+        DebugStateDTO state = debugApi.init(new ExecutionRequestDTO(degree, inputs, null));
         debugStarted = true;
         if (runOptionsController != null) runOptionsController.setDebugBtnsDisabled(false);
         lastDebugState = state;
@@ -611,7 +611,7 @@ public class ExecutionSceneController {
         Task<Void> task = new Task<>() {
             @Override
             protected Void call() {
-                DebugStateDTO state = localDebug.init(new ExecutionRequestDTO(degree, inputs));
+                DebugStateDTO state = localDebug.init(new ExecutionRequestDTO(degree, inputs, null));
                 while (!localDebug.isTerminated() && state.getPc() != bpPc) {
                     state = localDebug.step().getNewState();
                 }

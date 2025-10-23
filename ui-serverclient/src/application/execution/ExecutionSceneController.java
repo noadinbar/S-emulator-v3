@@ -263,7 +263,8 @@ public class ExecutionSceneController {
                 : List.of();
 
         final int degree = headerController.getCurrentDegree();
-        final ExecutionRequestDTO dto = new ExecutionRequestDTO(degree, inputs);
+        final String generation = getSelectedArchitecture();
+        final ExecutionRequestDTO dto = new ExecutionRequestDTO(degree, inputs, generation);
         final String functionUserString = (targetKind == ExecTarget.FUNCTION) ? targetName : null;
         outputsController.clear();
 
@@ -382,7 +383,8 @@ public class ExecutionSceneController {
                 ? inputsController.collectValuesPadded()
                 : List.of();
         final int degree = headerController.getCurrentDegree();
-        final ExecutionRequestDTO dto = new ExecutionRequestDTO(degree, inputs);
+        final String generation = getSelectedArchitecture();
+        final ExecutionRequestDTO dto = new ExecutionRequestDTO(degree, inputs, generation);
         final String functionUserString = (targetKind == ExecTarget.FUNCTION) ? targetName : null;
 
         outputsController.clear();

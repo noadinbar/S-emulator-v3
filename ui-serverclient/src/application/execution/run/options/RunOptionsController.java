@@ -1,3 +1,4 @@
+// file: application/execution/run/options/RunOptionsController.java
 package application.execution.run.options;
 
 import application.execution.ExecutionSceneController;
@@ -13,12 +14,14 @@ public class RunOptionsController {
     @FXML private Button btnResume;
     @FXML private Button btnStepOver;
     @FXML private Button btnStepBack;
+    @FXML private Button btnExecute;
     @FXML private CheckBox chkRun;
     @FXML private CheckBox chkDebug;
-    @FXML private Button btnExecute;
 
     private ExecutionSceneController main;
-    private final BooleanProperty forceExecuteEnabled = new SimpleBooleanProperty(false);
+
+    // Execute button is disabled when this is true.
+    private final BooleanProperty executeForceDisabled = new SimpleBooleanProperty(false);
 
     public void setMainController(ExecutionSceneController main) {
         this.main = main;
@@ -27,127 +30,117 @@ public class RunOptionsController {
     @FXML
     private void initialize() {
         startEnabled(false);
-        setButtonsEnabled(false);
-        chkRun.selectedProperty().addListener((o, was, is) -> {
-            if (is) {
-                chkDebug.setSelected(false);
-                if (main != null) main.setDebugMode(false);
-                setDebugBtnsDisabled(true);
-            }
-        });
+        setButtonsEnabled(false);      // disables both RUN/DEBUG choices initially
+        setDebugBtnsDisabled(true);    // and all debug controls
 
-        chkDebug.selectedProperty().addListener((o, was, is) -> {
-            if (is) {
-                chkRun.setSelected(false);
-                if (main != null) main.setDebugMode(true);
-                setDebugBtnsDisabled(true);
-            } else {
-                if (main != null) main.setDebugMode(false);
-                setDebugBtnsDisabled(true);
-            }
-        });
-        btnExecute.disableProperty().bind(
-                chkRun.selectedProperty().or(chkDebug.selectedProperty()).or(forceExecuteEnabled).not()
-        );
-        chkDebug.selectedProperty().addListener((o, was, is) -> {
-            if (btnStart != null) btnStart.setDisable(is);
-        });
-        if (btnStart != null) btnStart.setDisable(chkDebug.isSelected());
+        // Toggle RUN/DEBUG (mutually exclusive)
+        if (chkRun != null && chkDebug != null) {
+            chkRun.selectedProperty().addListener((o, was, is) -> {
+                if (is) {
+                    chkDebug.setSelected(false);
+                    if (main != null) main.setDebugMode(false);
+                    setDebugBtnsDisabled(true);   // keep debug buttons OFF
+                    if (btnStart != null) btnStart.setDisable(false);
+                }
+            });
+            chkDebug.selectedProperty().addListener((o, was, is) -> {
+                if (is) {
+                    chkRun.setSelected(false);
+                    if (main != null) main.setDebugMode(true);
+                    // IMPORTANT: do NOT enable debug buttons here.
+                    // They will be enabled AFTER successful debug init from the main controller.
+                    setDebugBtnsDisabled(true);
+                    if (btnStart != null) btnStart.setDisable(true);
+                } else {
+                    setDebugBtnsDisabled(true);
+                    if (main != null) main.setDebugMode(false);
+                    if (btnStart != null) btnStart.setDisable(false);
+                }
+            });
+        }
+
+        // Enable Execute only when a mode is selected and not force-disabled
+        if (btnExecute != null && chkRun != null && chkDebug != null) {
+            btnExecute.disableProperty().bind(
+                    executeForceDisabled.or(
+                            chkRun.selectedProperty().or(chkDebug.selectedProperty()).not()
+                    )
+            );
+        }
     }
 
     @FXML
     private void onStartAction() {
+        // “Start” = open inputs for editing
         setButtonsEnabled(true);
         if (chkRun   != null) chkRun.setDisable(false);
         if (chkDebug != null) chkDebug.setDisable(false);
-        if (main != null) {
-            main.showInputsForEditing();
-        }
-    }
-
-    @FXML private void onStopAction() {
-        // TODO: implement stop later
-        startEnabled(false);
-        setButtonsEnabled(false);
-    }
-
-    @FXML private void onResumeAction() {
-        // TODO: implement resume later
-        chkDebug.setSelected(true);
-    }
-
-    @FXML private void onStepOverAction() {
-        // TODO: implement step-over later
-        chkDebug.setSelected(true);
-    }
-
-    @FXML private void onStepBackAction() {
-        // TODO: implement step-back later
-        chkDebug.setSelected(true);
+        if (main != null) main.showInputsForEditing();
     }
 
     @FXML
     private void onExecuteAction() {
-        boolean run   = chkRun   != null && chkRun.isSelected();
-        boolean debug = chkDebug != null && chkDebug.isSelected();
-        if (run && main != null) {
-            main.executeRun();
-        }
+        // v2-style: a single entry point; main decides RUN vs DEBUG based on debugMode
+        if (main != null) main.runExecute();
         startEnabled(true);
-        setButtonsEnabled(debug);
+        // DO NOT enable debug buttons here; they will be enabled after init
+        // setButtonsEnabled(debug) — removed by design
     }
 
+    @FXML
+    private void onResumeAction() {
+        if (main != null) main.debugResume();
+    }
 
-    public void setButtonsEnabled(boolean enabled) {
-        boolean disable = !enabled;
+    @FXML
+    private void onStepOverAction() {
+        if (main != null) main.debugStep();
+    }
 
-        if (chkRun != null) {
-            chkRun.setDisable(disable);
-            if (disable) chkRun.setSelected(false);
-        }
-        if (chkDebug != null) {
-            chkDebug.setDisable(disable);
-            if (disable) chkDebug.setSelected(false);
-        }
+    @FXML
+    private void onStopAction() {
+        if (main != null) main.debugStop();
+        startEnabled(false);
+        setButtonsEnabled(false);
         setDebugBtnsDisabled(true);
     }
 
+    @FXML
+    private void onStepBackAction() {
+        //if (main != null) main.debugStepBack(); // v2 name (no-op for now)
+        if (chkDebug != null) chkDebug.setSelected(true);
+    }
+
+
+    /** Enable/disable only the debug control buttons (Resume/Step/Stop/StepBack). */
     public void setDebugBtnsDisabled(boolean disabled) {
         if (btnStepOver != null) btnStepOver.setDisable(disabled);
-        if (btnResume != null) btnResume.setDisable(disabled);
-        if (btnStop != null) btnStop.setDisable(disabled);
+        if (btnResume   != null) btnResume.setDisable(disabled);
+        if (btnStop     != null) btnStop.setDisable(disabled);
         if (btnStepBack != null) btnStepBack.setDisable(disabled);
     }
 
-    public void setStepBackDisabled(boolean disabled) {
-        if (btnStepBack != null) btnStepBack.setDisable(disabled);
-    }
-
-    public void setResumeBusy(boolean busy) {
-        if (busy) {
-            if (btnStop != null)     btnStop.setDisable(false);
-            if (btnResume != null)   btnResume.setDisable(true);
-            if (btnStepOver != null) btnStepOver.setDisable(true);
-            if (chkRun != null)      chkRun.setDisable(true);
-            if (chkDebug != null)    chkDebug.setDisable(true);
-        }
-        else {
-            boolean debugOn = chkDebug != null && chkDebug.isSelected();
-            if (btnStop != null)     btnStop.setDisable(!debugOn);
-            if (btnResume != null)   btnResume.setDisable(!debugOn);
-            if (btnStepOver != null) btnStepOver.setDisable(!debugOn);
-            if (chkRun != null)      chkRun.setDisable(false);
-            if (chkDebug != null)    chkDebug.setDisable(false);
-        }
+    /** Enable/disable the RUN/DEBUG selectors as a group; keeps debug buttons OFF. */
+    public void setButtonsEnabled(boolean enabled) {
+        final boolean disable = !enabled;
+        if (chkRun   != null) { chkRun.setDisable(disable);   if (disable) chkRun.setSelected(false);   }
+        if (chkDebug != null) { chkDebug.setDisable(disable); if (disable) chkDebug.setSelected(false); }
+        setDebugBtnsDisabled(true);
     }
 
     public void clearRunCheckBox() {
-        if (chkRun  != null) chkRun.setSelected(false);
-        if (chkDebug!= null) chkDebug.setSelected(false);
+        if (chkRun   != null) chkRun.setSelected(false);
+        if (chkDebug != null) chkDebug.setSelected(false);
         setDebugBtnsDisabled(true);
     }
 
+    /** Controls the START button only. */
     public void startEnabled(boolean enabled) {
         if (btnStart != null) btnStart.setDisable(!enabled);
+    }
+
+    // Optional external control if you ever need to lock the Execute button
+    public void setExecuteForceDisabled(boolean disabled) {
+        executeForceDisabled.set(disabled);
     }
 }

@@ -1,7 +1,7 @@
 package application.opening.users;
 
-import client.requests.Users;
-import client.responses.UsersResponder;
+import client.requests.authentication.Users;
+import client.responses.authentication.UsersResponder;
 import org.jetbrains.annotations.NotNull;
 import users.UserTableRowDTO;
 import javafx.application.Platform;

@@ -1,6 +1,6 @@
 package application.opening.programs;
 
-import client.responses.ProgramsResponder;
+import client.responses.info.ProgramsResponder;
 import display.ProgramRowDTO;
 import javafx.application.Platform;
 import okhttp3.Call;

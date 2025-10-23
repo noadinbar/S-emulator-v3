@@ -1,6 +1,6 @@
 package application.opening.functions;
 
-import client.responses.FunctionsResponder;
+import client.responses.info.FunctionsResponder;
 import display.FunctionRowDTO;
 import javafx.application.Platform;
 import okhttp3.Call;

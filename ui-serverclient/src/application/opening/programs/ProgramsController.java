@@ -1,7 +1,7 @@
 package application.opening.programs;
 
 import application.execution.ExecutionSceneController;
-import client.responses.ProgramsResponder;
+import client.responses.info.ProgramsResponder;
 import display.ProgramRowDTO;
 import javafx.application.Platform;
 import javafx.fxml.FXML;

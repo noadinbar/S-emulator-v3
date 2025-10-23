@@ -27,25 +27,21 @@ public class OutputsController {
         }
     }
 
-    /**
-     * lines as non-editable labels.
-     */
     public void setVariableLines(List<String> lines) {
         if (linesBox == null) return;
         linesBox.getChildren().clear();
-        if (lines == null || lines.isEmpty()) return;
+        varLabels.clear(); // important: remove stale label refs
 
+        if (lines == null || lines.isEmpty()) return;
         for (String str : lines) {
             String text = (str == null) ? "" : str.trim();
-            Label line = new Label(" " + text); // leading space as requested
-            line.getStyleClass().add("out-line"); // CSS hook for coloring whole line later
-
+            Label line = new Label(" " + text);
+            line.getStyleClass().add("out-line");
             String varName = text;
             int eq = text.indexOf('=');
             if (eq > 0) varName = text.substring(0, eq).trim(); // "y", "x1", "z2"...
             line.setUserData(varName);
             varLabels.put(varName, line);
-
             linesBox.getChildren().add(line);
         }
     }
@@ -124,4 +120,5 @@ public class OutputsController {
         if (linesBox != null) linesBox.getChildren().clear();
         if (txtCycles != null) txtCycles.clear();
     }
+
 }

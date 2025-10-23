@@ -1,5 +1,6 @@
 package application.opening.users;
 
+import client.responses.authentication.UsersResponder;
 import users.UserTableRowDTO;
 
 import javafx.collections.FXCollections;
@@ -89,7 +90,7 @@ public class UsersController {
     public void loadOnceAsync() {
         new Thread(() -> {
             try {
-                var list = client.responses.UsersResponder.list(); // runSync inside; not on FX thread
+                var list = UsersResponder.list(); // runSync inside; not on FX thread
                 setUsersDto(list);
             } catch (Exception ignore) { }
         }, "users-prime").start();

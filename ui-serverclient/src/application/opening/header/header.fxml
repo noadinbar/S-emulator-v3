@@ -36,7 +36,7 @@
             <right>
                 <HBox spacing="6" alignment="CENTER_RIGHT">
                     <Label text="Available Credits:"/>
-                    <TextField fx:id="availableCreditsField" prefColumnCount="6" editable="false" focusTraversable="false"/>
+                    <Label fx:id="availableCreditsField" text="0" />
                 </HBox>
             </right>
         </BorderPane>

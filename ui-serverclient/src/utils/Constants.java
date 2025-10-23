@@ -4,7 +4,6 @@ import okhttp3.MediaType;
 
 public class Constants {
     public static final String BASE_URL = "http://localhost:8080/server_Web_exploded";
-
     // Existing endpoints
     public static final String API_LOAD     = "/api/load-file";
     public static final String API_STATUS   = "/api/status";
@@ -18,11 +17,13 @@ public class Constants {
     public static final String API_DEBUG_STOP       = "/api/debug/stop";
     public static final String API_DEBUG_RESUME       = "/api/debug/resume";
     public static final String API_DEBUG_HISTORY   = "/api/debug/history";
+    public static final String API_DEBUG_STATE = "/api/debug/state";
     public static final String API_PROGRAMS= "/api/programs";
     public static final String API_PROGRAM_BY_NAME= "/api/programs/by-name";
     public static final String API_FUNCTIONS_KEYS    = "/api/functions/keys";     // רק רשימת user-strings
     public static final String API_FUNCTION_PROGRAM  = "/api/functions/%s/program"; // DisplayDTO של הפונקציה/התוכנית
     public static final String API_USERS = "/api/users";
+    public static final String API_CREDITS_CHARGE = "/api/credits/charge";
 
     // Headers / Content types
     public static final String HEADER_ACCEPT     = "Accept";
@@ -31,9 +32,9 @@ public class Constants {
     public static final MediaType MEDIA_TYPE_XML  = MediaType.parse("application/xml");
     public static final MediaType MEDIA_TYPE_JSON = MediaType.parse("application/json; charset=utf-8");
 
-    // Query params / JSON keys (נוח לאחידות)
     public static final String QP_DEBUG_ID   = "debugId";
     public static final String JSON_FUNCTION = "function";
 
     public static final int REFRESH_RATE_MS = 1000;
+    public static final int SC_TOO_MANY_REQUESTS = 429;
 }

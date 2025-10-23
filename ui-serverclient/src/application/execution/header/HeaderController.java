@@ -8,6 +8,8 @@ import java.util.function.Consumer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import client.responses.info.StatusResponder;
+import com.google.gson.JsonObject;
 import display.InstrOpDTO;
 import display.InstructionBodyDTO;
 import display.InstructionDTO;
@@ -17,6 +19,7 @@ import javafx.beans.property.IntegerProperty;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleIntegerProperty;
 import javafx.beans.property.SimpleObjectProperty;
+import javafx.concurrent.Task;
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
 import javafx.scene.layout.VBox;
@@ -30,7 +33,7 @@ public class HeaderController {
     @FXML private Label  userNameLabel;
     @FXML private Label  titleLabel;
     @FXML private Label runTargetLabel;
-    @FXML private TextField availableCreditsField;
+    @FXML private Label availableCreditsField;
 
     @FXML private Button     btnCollapse;
     @FXML private TextField  txtDegree;
@@ -49,9 +52,9 @@ public class HeaderController {
 
     @FXML
     private void initialize() {
-        // read-only fields
-        availableCreditsField.setEditable(false);
-        availableCreditsField.setFocusTraversable(false);
+        if (availableCreditsField != null) {
+            availableCreditsField.setFocusTraversable(false);
+        }
 
         // current degree (עם ה-formatter הקיים שלך)
         txtDegree.setTextFormatter(integerOnlyFormatter());
@@ -128,7 +131,8 @@ public class HeaderController {
     public void setOnApplyDegree(Runnable r) { this.onApplyDegree.set(r); }
 
     public void setUserName(String name) { userNameLabel.setText(name); }
-    public void setAvailableCredits(int credits) { availableCreditsField.setText(Integer.toString(credits)); }
+    public void setAvailableCredits(int credits) {
+        availableCreditsField.setText(Integer.toString(credits)); }
 
     public void setRunTarget(String txt) {
         if (runTargetLabel != null) runTargetLabel.setText(txt != null ? txt : "");
@@ -195,7 +199,7 @@ public class HeaderController {
         }
 
         List<String> items = new ArrayList<>();
-        items.add("Highlight selection");           // ברירת מחדל (כמו v2)
+        items.add("Highlight selection");
         if (hasY) items.add("y");
         for (Integer i : xs) items.add("x" + i);
         for (Integer i : zs) items.add("z" + i);
@@ -203,8 +207,6 @@ public class HeaderController {
         if (jumpToExit) items.add("EXIT");
 
         cmbHighlight.getItems().setAll(items);
-
-        // שימור בחירה קודמת אם עדיין תקפה
         if (prev != null && items.contains(prev)) {
             cmbHighlight.setValue(prev);
         } else {
@@ -241,6 +243,44 @@ public class HeaderController {
         while (mx.find()) { try { xs.add(Integer.parseInt(mx.group(1))); } catch (Exception ignore) {} }
         Matcher mz = Z_IN_ARGS.matcher(text);
         while (mz.find()) { try { zs.add(Integer.parseInt(mz.group(1))); } catch (Exception ignore) {} }
+    }
+
+    public void refreshStatus() {
+        Task<JsonObject> task = new Task<>() {
+            @Override
+            protected JsonObject call() throws Exception {
+                // GET /api/status (Gson JSON)
+                return StatusResponder.get();
+            }
+        };
+
+        task.setOnSucceeded(ev -> {
+            JsonObject js = task.getValue();
+            if (js == null) {
+                return;
+            }
+
+            // username (may be null before login)
+            if (js.has("username") && !js.get("username").isJsonNull()) {
+                String u = js.get("username").getAsString();
+                if (u != null && !u.isBlank()) {
+                    // Assumes these setters already exist in your HeaderController
+                    setUserName(u);
+                }
+            }
+
+            // credits (show only when present)
+            if (js.has("creditsCurrent") && !js.get("creditsCurrent").isJsonNull()) {
+                int credits = js.get("creditsCurrent").getAsInt();
+                setAvailableCredits(credits);
+            }
+        });
+
+        task.setOnFailed(ev -> {
+            // Optional: log/ignore – header stays as-is on failure
+        });
+
+        new Thread(task, "header-refresh-status").start();
     }
 
     private void showError(String title, String msg) {

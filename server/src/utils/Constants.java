@@ -3,6 +3,10 @@ package utils;
 public class Constants {
     public static final String ATTR_DISPLAY_API = "DISPLAY_API";
     public static final String ATTR_MODE        = "MODE";
+    public static final String ATTR_DEBUG_SESSIONS  = "debug.sessions";
+    public static final String ATTR_DEBUG_LOCKS     = "debug.session.locks"; // per-session mutexes
+    public static final String ATTR_DEBUG_SNAPSHOTS = "debug.snapshots";     // latest DebugStateDTO per debugId
+    public static final String ATTR_DBG_BUSY        = "dbgBusy";
     public static final String MODE_IDLE  = "idle";
     public static final String MODE_RUN   = "run";
     public static final String MODE_DEBUG = "debug";
@@ -17,9 +21,11 @@ public class Constants {
     public static final String API_DEBUG_STOP = "/api/debug/stop";
     public static final String API_DEBUG_TERMINATED = "/api/debug/terminated";
     public static final String API_DEBUG_HISTORY   = "/api/debug/history";
+    public static final String API_DEBUG_STATE = "/api/debug/state";
     public static final String API_FUNCTIONS             = "/api/functions";
     public static final String API_FUNCTION_PROGRAM      = "/api/functions/%s/program";
     public static final String API_FUNCTION_EXPAND       = "/api/functions/%s/expand";
+    public static final String API_CREDITS_CHARGE = "/api/credits/charge";
     public static final String API_LOGIN  = "/api/login";
     public static final String API_LOGOUT = "/api/logout";
     public static final String API_WHOAMI = "/api/whoami";

@@ -1,7 +1,7 @@
 // ui-serverclient/src/application/login/LoginController.java
 package application.login;
 
-import client.responses.LoginResponder;
+import client.responses.authentication.LoginResponder;
 import users.LoginDTO;
 
 import application.opening.OpeningSceneController;

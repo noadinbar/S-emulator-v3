@@ -1,9 +1,10 @@
 package remote;
 
 import api.ExecutionAPI;
-import client.requests.Execute;
-import client.responses.ExecuteResponder;
-import client.responses.StatusResponder;
+import client.requests.runtime.Execute;
+import client.responses.runtime.ExecuteResponder;
+import client.responses.runtime.JobSubmitResult;
+import client.responses.info.StatusResponder;
 import com.google.gson.JsonObject;
 import execution.ExecutionDTO;
 import execution.ExecutionPollDTO;
@@ -44,16 +45,28 @@ public class RemoteExecutionAPI implements ExecutionAPI {
     @Override
     public ExecutionDTO execute(ExecutionRequestDTO request) {
         try {
-            // build original POST to get the exact URL
+            // Build original POST to get the exact URL (keep a single source of truth for the endpoint)
             Request submitReq = Execute.build(request, userString);
             String executeUrl = submitReq.url().toString();
 
-            // submit -> jobId
-            String jobId = ExecuteResponder.submit(
-                    ExecuteResponder.buildSubmitRequest(executeUrl, request, userString)
-            );
+            // ---- SUBMIT PHASE ----
+            // New API: submit(...) returns JobSubmitResult (accepted/busy + jobId/retryMs)
+            String jobId;
+            while (true) {
+                JobSubmitResult sr = ExecuteResponder.submit(
+                        ExecuteResponder.buildSubmitRequest(executeUrl, request, userString)
+                );
+                if (sr.isAccepted()) {
+                    jobId = sr.getJobId();
+                    break;
+                }
+                // Server is busy; wait the suggested backoff and retry
+                try {
+                    Thread.sleep(Math.max(300, sr.getRetryMs()));
+                } catch (InterruptedException ignore) { /* no-op */ }
+            }
 
-            // poll until terminal
+            // ---- POLL PHASE ----
             while (true) {
                 Request pollReq = ExecuteResponder.buildPollRequest(executeUrl, jobId);
                 ExecutionPollDTO pr = ExecuteResponder.poll(pollReq);
@@ -66,6 +79,7 @@ public class RemoteExecutionAPI implements ExecutionAPI {
                         return pr.getResult();
                     case CANCELED:
                         throw new RuntimeException("Canceled");
+                    case TIMED_OUT: // optional: treat as error
                     case ERROR:
                     default:
                         String err = (pr.getError() == null || pr.getError().isBlank())
@@ -78,5 +92,4 @@ public class RemoteExecutionAPI implements ExecutionAPI {
             throw new RuntimeException("Execute failed: " + e.getMessage(), e);
         }
     }
-
 }

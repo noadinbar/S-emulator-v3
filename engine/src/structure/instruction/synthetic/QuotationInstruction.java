@@ -263,7 +263,7 @@ public class QuotationInstruction extends AbstractInstruction {
 
         // ensure mapping for function result 'y'
         convertToZ.putIfAbsent(y, prog.newWorkVar());
-        final Label exitTarget = exitMapped;  // <<< עותק סופי לשימוש בתוך הלמבדָה
+        final Label exitTarget = exitMapped;
 
         // safe label mapping (covers EXIT in both representations)
         java.util.function.Function<Label, Label> mapTarget = (orig) -> {

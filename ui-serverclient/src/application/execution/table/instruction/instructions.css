@@ -1,4 +1,3 @@
-/* הדגשה על כל השורה *וגם* על התאים שבתוכה */
 .table-row-cell.hilite,
 .table-row-cell.hilite .table-cell {
     -fx-background-color: derive(-fx-accent, 60%);
@@ -6,25 +5,21 @@
     -fx-background-radius: 0;
 }
 
-/* כשהשורה גם נבחרת – עדיין שומר צבע הדגשה */
 .table-row-cell:selected.hilite,
 .table-row-cell:selected.hilite .table-cell {
     -fx-background-color: derive(-fx-accent, -10%);
 }
 
-/* טקסט קריא על הרקע */
 .table-row-cell.hilite .text {
     -fx-fill: -fx-text-background-color;
 }
 
-/* טקסט מודגש בשורות עם highlight */
 .table-row-cell.hilite,
 .table-row-cell.hilite .table-cell,
 .table-row-cell.hilite .text {
     -fx-font-weight: bold;
 }
 
-/* רשות: פס צד שמאלי דק להבלטה נוספת */
 .table-row-cell.hilite {
     -fx-border-color: -fx-accent;
     -fx-border-width: 0 0 0 3;

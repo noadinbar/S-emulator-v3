@@ -27,26 +27,22 @@ public class RemoteDebugAPI implements DebugAPI {
         return null;     // no blocking here; state() should be polled by controllers
     }
 
-    /** Single step remains synchronous; updates the local 'terminated' flag best-effort. */
     @Override
     public DebugStepDTO step() {
         ensureId();
         try {
             Request httpReq = Debug.step(debugId);
-            DebugStepDTO dto = DebugResponder.step(httpReq);
+            DebugResults.StepResult result = DebugResponder.step(httpReq);
+            // cache termination flag (server already told us)
+            this.terminated = result.terminated();
+            return result.step();
 
-            // Refresh local terminated flag (best-effort; does not advance the session)
-            try {
-                Request termReq = Debug.terminated(debugId);
-                var t = DebugResponder.terminated(termReq);
-                this.terminated = t.terminated();
-            } catch (Exception ignore) {}
-
-            return dto;
         } catch (Exception e) {
-            throw new RuntimeException("Debug step failed: " + e.getMessage(), e);
+            throw new RuntimeException(
+                    "Debug step failed: " + e.getMessage(), e);
         }
     }
+
 
     @Override
     public boolean isTerminated() {
@@ -100,23 +96,26 @@ public class RemoteDebugAPI implements DebugAPI {
         }
     }
 
-    // ---------------- New async-friendly overrides ----------------
+    // ---------------- async-friendly overrides ----------------
 
     @Override
     public Submit submitInit(ExecutionRequestDTO request) {
         try {
             Request httpReq = Debug.init(request, userString);
-            DebugResults.Submit r = DebugResponder.init(httpReq);
-
-            if (r.accepted() && r.debugId() != null && !r.debugId().isBlank()) {
+            DebugResults.InitResult r = DebugResponder.init(httpReq);
+            if (r.accepted()
+                    && r.debugId() != null
+                    && !r.debugId().isBlank()) {
                 this.debugId = r.debugId();
                 this.terminated = false;
             }
-
-            if (r.accepted()) return Submit.accepted(r.debugId());
-            if (r.locked())   return Submit.locked();     // not expected on init, but safe
+            if (r.accepted()) {
+                return Submit.accepted(r.debugId());
+            }
+            if (r.locked()) {
+                return Submit.locked();
+            }
             return Submit.busy(r.retryMs());
-
         } catch (Exception e) {
             throw new RuntimeException("Debug submitInit failed: " + e.getMessage(), e);
         }

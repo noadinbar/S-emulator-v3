@@ -59,8 +59,6 @@ public class UsersController {
                     usersTable.getSelectionModel().selectedItemProperty().isNull()
             );
         }
-        // שימי לב: כמו בשאר הקונטרולרים, לא מפעילים כאן את הרפרשר.
-        // OpeningSceneController יקרא startUsersRefresher()/stopUsersRefresher().
     }
 
     // -----------------------------

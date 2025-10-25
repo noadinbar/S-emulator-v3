@@ -20,8 +20,8 @@ public class Constants {
     public static final String API_DEBUG_STATE = "/api/debug/state";
     public static final String API_PROGRAMS= "/api/programs";
     public static final String API_PROGRAM_BY_NAME= "/api/programs/by-name";
-    public static final String API_FUNCTIONS_KEYS    = "/api/functions/keys";     // רק רשימת user-strings
-    public static final String API_FUNCTION_PROGRAM  = "/api/functions/%s/program"; // DisplayDTO של הפונקציה/התוכנית
+    public static final String API_FUNCTIONS_KEYS    = "/api/functions/keys";
+    public static final String API_FUNCTION_PROGRAM  = "/api/functions/%s/program";
     public static final String API_USERS = "/api/users";
     public static final String API_CREDITS_CHARGE = "/api/credits/charge";
 

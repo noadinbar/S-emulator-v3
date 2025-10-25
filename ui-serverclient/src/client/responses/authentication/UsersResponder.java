@@ -3,7 +3,7 @@ package client.responses.authentication;
 
 import client.requests.authentication.Users;
 import com.google.gson.reflect.TypeToken;
-import users.UserTableRowDTO;          // שימי לב: package לפי מה שהשתמשת
+import users.UserTableRowDTO;
 import okhttp3.Request;
 import okhttp3.Response;
 import utils.HttpClientUtil;

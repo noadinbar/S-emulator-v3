@@ -7,7 +7,6 @@ import execution.debug.DebugStateDTO;
 import execution.debug.DebugStepDTO;
 
 public interface DebugAPI {
-    // -------- Existing legacy signatures (unchanged) --------
     DebugStateDTO init(ExecutionRequestDTO req);
     DebugStepDTO step();
     boolean isTerminated();

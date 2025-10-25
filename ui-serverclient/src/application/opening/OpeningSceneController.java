@@ -67,10 +67,8 @@ public class OpeningSceneController {
         if (historyController != null) historyController.setHistory(entries);
     }
 
-    // --- Hookים נקודתיים: כאן תוסיפי בהמשך ClientService להעלאה/קרדיטים ---
     private void handleLocalFileChosen(File file) {
         // TODO: upload לשרת דרך ClientService → ואז refresh ל-Programs/Functions/History
-        // דוגמה בהמשך: client.uploadXml(file); refreshLists();
     }
 
     /**

@@ -241,7 +241,6 @@ public class ExecutionSceneController {
     // Call this from RunOptionsController's Execute button (recommended).
     // =====================================================================================
     public void runExecute() {
-        System.out.println("[UI][runExecute] debugMode=" + debugMode);
         if (!Platform.isFxApplicationThread()) {
             Platform.runLater(this::runExecute);
             return;
@@ -249,18 +248,15 @@ public class ExecutionSceneController {
         if (display == null || inputsController == null) return;
 
         if (debugMode) {
-            System.out.println("[UI][runExecute] path=DEBUG ensureDebugInit()");
             ensureDebugInit(); // will pull the first state immediately and enable buttons
             return;
         }
 
-        System.out.println("[UI][runExecute] path=RUN executeRun()");
         // Regular run:
         executeRun();
     }
 
     public void executeRun() {
-        System.out.println("[UI][executeRun][IN]");
         if (headerController == null || outputsController == null) return;
         List<Long> inputs = (inputsController != null)
                 ? inputsController.collectValuesPadded()
@@ -270,28 +266,20 @@ public class ExecutionSceneController {
         final String generation = getSelectedArchitecture();
         final ExecutionRequestDTO dto = new ExecutionRequestDTO(degree, inputs, generation);
         final String functionUserString = (targetKind == ExecTarget.FUNCTION) ? targetName : null;
-        System.out.println("[UI][executeRun] degree=" + degree + " generation=" + generation + " target=" + functionUserString + " inputs=" + inputs);
         outputsController.clear();
         if (headerController != null) {
-            System.out.println("[UI][executeRun] startCreditsRefresher()");
             headerController.startCreditsRefresher();
         }
-
-        System.out.println("[UI][executeRun] starting background thread");
         new Thread(() -> {
             try {
                 // 1) build the original POST (we reuse it to extract the correct /api/execute URL)
-                System.out.println("[CLIENT][EXEC] build submit request");
                 Request submitReq = Execute.build(dto, functionUserString);
                 String executeUrl = submitReq.url().toString();
-                System.out.println("[CLIENT][POST] " + executeUrl + " body=" + dto);
                 String jobId;
                 while (true) {
                     JobSubmitResult sr = ExecuteResponder.submit(
                             ExecuteResponder.buildSubmitRequest(executeUrl, dto, functionUserString)
                     );
-                    System.out.println("[CLIENT][SUBMIT][RESP] accepted=" + sr.isAccepted() +
-                            (sr.isAccepted() ? (" jobId=" + sr.getJobId()) : (" retryMs=" + sr.getRetryMs())));
                     if (sr.isAccepted()) {
                         jobId = sr.getJobId();
                         break;
@@ -300,15 +288,12 @@ public class ExecutionSceneController {
                 }
 
                 // 3) POLL until terminal state
-                System.out.println("[CLIENT][POLL-START] jobId=" + jobId);
                 ExecutionDTO result = null;
                 String errorMsg = null;
 
                 while (true) {
                     Request pollReq = ExecuteResponder.buildPollRequest(executeUrl, jobId);
-                    System.out.println("[CLIENT][GET] " + executeUrl + "?jobId=" + jobId);
                     ExecutionPollDTO pr = ExecuteResponder.poll(pollReq);
-                    System.out.println("[CLIENT][POLL][RESP] status=" + pr.getStatus() + " error=" + pr.getError());
 
                     switch (pr.getStatus()) {
                         case PENDING:
@@ -317,7 +302,6 @@ public class ExecutionSceneController {
                             continue;
                         case DONE:
                             result = pr.getResult();
-                            System.out.println("[CLIENT][POLL][DONE] result=" + (result != null ? ("totalCycles=" + result.getTotalCycles()) : "null"));
                             Platform.runLater(() -> {
                                 if (headerController != null) {
                                     headerController.refreshStatus();
@@ -327,7 +311,6 @@ public class ExecutionSceneController {
                             break;
                         case CANCELED:
                             errorMsg = "Canceled";
-                            System.out.println("[CLIENT][POLL][TERM] status=CANCELED");
                             Platform.runLater(() -> {
                                 if (headerController != null) {
                                     headerController.refreshStatus();
@@ -337,7 +320,6 @@ public class ExecutionSceneController {
                             break;
                         case TIMED_OUT:
                             errorMsg = "Timed out";
-                            System.out.println("[CLIENT][POLL][TERM] status=TIMED_OUT");
                             Platform.runLater(() -> {
                                 if (headerController != null)
                                 {
@@ -348,7 +330,6 @@ public class ExecutionSceneController {
                             break;
                         case ERROR:
                             errorMsg = (pr.getError() == null || pr.getError().isBlank()) ? "Unknown error" : pr.getError();
-                            System.out.println("[CLIENT][POLL][TERM] status=ERROR err=" + errorMsg);
                             Platform.runLater(() -> {
                                 if (headerController != null) {
                                     headerController.refreshStatus();
@@ -360,13 +341,11 @@ public class ExecutionSceneController {
                             errorMsg = (pr.getError() == null || pr.getError().isBlank())
                                     ? "Unknown error"
                                     : pr.getError();
-                            System.out.println("[CLIENT][POLL][TERM] status=" + pr.getStatus() + " err=" + errorMsg);
                             break;
                     }
                     break;
                 }
 
-                System.out.println("[UI][executeRun] result=" + (result != null ? "OK" : "ERROR"));
                 if (result != null) {
                     final ExecutionDTO finalResult = result;
                     Platform.runLater(() -> {
@@ -432,51 +411,81 @@ public class ExecutionSceneController {
         final List<Long> inputs = (inputsController != null)
                 ? inputsController.collectValuesPadded()
                 : List.of();
+
         final int degree = headerController.getCurrentDegree();
         final String generation = getSelectedArchitecture();
         final ExecutionRequestDTO dto = new ExecutionRequestDTO(degree, inputs, generation);
         final String functionUserString = (targetKind == ExecTarget.FUNCTION) ? targetName : null;
-
         outputsController.clear();
 
         new Thread(() -> {
             try {
-                // 1) Initialize debug session (with simple retry while busy)
-                String id;
+                // 1) Initialize debug session (with retry if server is busy)
+                String id = null;
+                int creditsAfterInit = 0;
+
                 while (true) {
-                    DebugResults.Submit res = DebugResponder.init(Debug.init(dto, functionUserString));
-                    if (res.accepted()) { id = res.debugId(); break; }
-                    if (res.locked()) {
-                        showError("Debug locked",
-                                "This program/function is currently locked by another session.\nPlease try again later.");
+                    DebugResults.InitResult res = DebugResponder.init(
+                            Debug.init(dto, functionUserString)
+                    );
+
+                    if (res.accepted()) {
+                        // success: we got a debugId and the server already charged
+                        // the architecture (generation) cost.
+                        id = res.debugId();
+                        creditsAfterInit = res.creditsCurrent();
+                        break;
+                    }
+
+                    // server said "busy, retry later"
+                    int delayMs = Math.max(300, res.retryMs());
+                    try {
+                        Thread.sleep(delayMs);
+                    } catch (InterruptedException ie) {
                         return;
                     }
-                    try { Thread.sleep(Math.max(300, res.retryMs())); } catch (InterruptedException ie) { return; }
                 }
+
                 debugId = id;
                 debugActive = true;
                 debugStarted = true;
                 debugStopRequested = false;
 
-                // 2) Try to pull the first state (may be null for a brief moment) — retry a little.
+                // 2) Try to pull the first machine state snapshot (may briefly be null)
                 DebugStateDTO first = null;
                 for (int i = 0; i < 10 && first == null; i++) {
                     try {
                         first = DebugResponder.state(Debug.state(id));
-                    } catch (Exception ignore) { /* transient */ }
+                    } catch (Exception ignore) {
+                        // transient - init might still be finishing server-side
+                    }
                     if (first == null) {
-                        try { Thread.sleep(100); } catch (InterruptedException ie) { return; }
+                        try {
+                            Thread.sleep(100);
+                        } catch (InterruptedException ie) {
+                            return;
+                        }
                     }
                 }
-                lastDebugState = first; // may still be null; that's OK
+                lastDebugState = first; // may still be null, that's fine
 
-                // 3) Update UI (single runLater, null-safe)
+                // 3) Update UI on FX thread
                 final DebugStateDTO firstState = first;
-                Platform.runLater(() -> {
-                    if (runOptionsController != null) runOptionsController.setDebugBtnsDisabled(false);
-                    if (inputsController != null) inputsController.setInputsEditable(false);
+                final int creditsNow = creditsAfterInit;
 
-                    // Use plain table selection (no highlight predicate)
+                Platform.runLater(() -> {
+                    if (headerController != null) {
+                        headerController.setAvailableCredits(creditsNow);
+                    }
+
+                    if (runOptionsController != null) {
+                        runOptionsController.setDebugBtnsDisabled(false);
+                    }
+                    if (inputsController != null) {
+                        inputsController.setInputsEditable(false);
+                    }
+
+                    // table highlight mode for debug: initially no highlight predicate
                     if (programTableController != null) {
                         programTableController.setHighlightPredicate(i -> false);
                         if (programTableController.getTableView() != null) {
@@ -484,22 +493,33 @@ public class ExecutionSceneController {
                         }
                     }
 
-                    // If we already have a first state, render it and select its PC
+                    // if we already have an initial state from server:
                     if (firstState != null) {
+                        // render registers/memory/output etc.
                         showDebugState(firstState);
+
+                        // scroll + select current PC line
                         selectAndScrollProgramRow(firstState.getPc());
-                        if (outputsController != null) outputsController.highlightChanged(Set.of());
+
+                        // no variable-change highlight yet on the very first frame
+                        if (outputsController != null) {
+                            outputsController.highlightChanged(Set.of());
+                        }
                     } else {
-                        // No state yet: clear previous highlights; user can Step/Resume to proceed
-                        if (outputsController != null) outputsController.highlightChanged(Set.of());
+                        // still no state? fine, we just start with a clean panel.
+                        if (outputsController != null) {
+                            outputsController.highlightChanged(Set.of());
+                        }
                     }
                 });
+
             } catch (Exception ex) {
                 ex.printStackTrace();
                 showError("Debug error", ex.getMessage());
             }
         }, "dbg-init").start();
     }
+
 
     /** Resume from current pause and behave like a regular run:
      *  - no state() polling while running (avoids starving the run)
@@ -512,46 +532,83 @@ public class ExecutionSceneController {
             ensureDebugInit();
             return;
         }
-        // We don't want the state() poller during resume – it can block the run.
+
+        // While resume is running we do NOT want the live poller stepping on it
         stopDebugPoller();
         stopResumeWatcher();
-        // Clear red/bold step highlight when switching to continuous run
+
+        // Clear step-change highlight when switching to continuous run
         if (outputsController != null) {
             Platform.runLater(() -> outputsController.highlightChanged(Set.of()));
         }
+
         debugStopRequested = false;
+
+        // This thread will:
+        //   1. send /resume
+        //   2. wait until /terminated says we're done
+        //   3. pull final state
+        //   4. update UI + header credits
         resumeWatcher = new Thread(() -> {
             try {
                 // 1) send resume (retry a bit if server is busy)
                 int attempts = 0;
                 while (attempts < 5) {
                     DebugResults.Submit res = DebugResponder.resume(Debug.resume(id));
-                    if (res.accepted()) break;
-                    try { Thread.sleep(Math.max(300, res.retryMs())); } catch (InterruptedException ie) { return; }
+                    if (res.accepted()) {
+                        break;
+                    }
+                    try {
+                        Thread.sleep(Math.max(300, res.retryMs()));
+                    } catch (InterruptedException ie) {
+                        return;
+                    }
                     attempts++;
                 }
 
-                // 2) wait until terminated(), without calling state() in a loop
+                // 2) wait until server reports terminated()
+                //    while we're waiting, remember the final creditsCurrent
+                int creditsAfterResume = -1;
                 while (debugActive && !debugStopRequested) {
                     DebugResults.Terminated done = DebugResponder.terminated(Debug.terminated(id));
-                    if (done != null && done.terminated()) break;
-                    try { Thread.sleep(Math.max(300, Constants.REFRESH_RATE_MS)); } catch (InterruptedException ie) { return; }
+                    if (done != null && done.terminated()) {
+                        creditsAfterResume = done.creditsCurrent();
+                        break;
+                    }
+                    try {
+                        Thread.sleep(Math.max(300, Constants.REFRESH_RATE_MS));
+                    } catch (InterruptedException ie) {
+                        return;
+                    }
                 }
 
-                // 3) one final snapshot at the very end (execute-like)
+                // 3) final snapshot at the very end
                 DebugStateDTO finalState;
                 try {
                     finalState = DebugResponder.state(Debug.state(id));
                 } catch (Exception ignore) {
-                    finalState = lastDebugState; // fallback if state endpoint already closed
+                    // If /state is already closed by the server, fall back to the last known state
+                    finalState = lastDebugState;
                 }
+
                 final DebugStateDTO fs = finalState;
+                final int creditsFinal = creditsAfterResume;
 
                 Platform.runLater(() -> {
-                    showDebugState(fs);                             // update outputs + cycles
-                    if (outputsController != null) outputsController.highlightChanged(Set.of());
-                    onDebugTerminated(fs);                          // local cleanup; DO NOT call stop() (avoids 404)
+                    // draw final state (registers, outputs, cycles...)
+                    showDebugState(fs);
+
+                    if (outputsController != null) {
+                        outputsController.highlightChanged(Set.of());
+                    }
+
+                    // update header credits to reflect the aggregated resume charge
+                    if (headerController != null && creditsFinal >= 0) {
+                        headerController.setAvailableCredits(creditsFinal);
+                    }
+                    onDebugTerminated(fs);
                 });
+
             } catch (Exception ex) {
                 ex.printStackTrace();
                 Platform.runLater(() -> showError("Resume failed", ex.getMessage()));
@@ -568,33 +625,77 @@ public class ExecutionSceneController {
 
         new Thread(() -> {
             try {
-                DebugStepDTO step = DebugResponder.step(Debug.step(id));
-                if (step != null && step.getNewState() != null) {
-                    DebugStateDTO st = step.getNewState();
+                // Ask server to perform 1 debug step
+                DebugResults.StepResult result = DebugResponder.step(Debug.step(id));
 
-                    // Compute "changed" BEFORE replacing lastDebugState
-                    final Set<String> changed = diffChangedNames(lastDebugState, st);
+                final int creditsAfter = result.creditsCurrent();
+                final boolean terminatedNow = result.terminated();
+                final DebugStepDTO stepDto = result.step();
+                final DebugStateDTO st = (stepDto != null) ? stepDto.getNewState() : null;
 
+                // We detect which vars changed BEFORE we update lastDebugState
+                final Set<String> changed = diffChangedNames(lastDebugState, st);
+
+                if (terminatedNow) {
+                    // Program finished after this step.
+                    // We jump straight to "finalize debug" logic.
                     Platform.runLater(() -> {
+                        // 0) update credits in header
+                        if (headerController != null) {
+                            headerController.setAvailableCredits(creditsAfter);
+                        }
+
+                        // 1) finalize + clean UI for ended debug session
+                        //    (disables Step Over / Resume / Stop,
+                        //     stops poller, clears debugId, etc.)
+                        onDebugTerminated(st);
+                    });
+
+                } else if (st != null) {
+                    // Normal step: refresh UI with new state
+                    Platform.runLater(() -> {
+                        // 0) update credits in header after charging this step
+                        if (headerController != null) {
+                            headerController.setAvailableCredits(creditsAfter);
+                        }
+
                         // 1) render fresh outputs/cycles
                         showDebugState(st);
-                        // 2) clear old highlight, then apply only the changed vars
+
+                        // 2) highlight which vars changed in this step
                         if (outputsController != null) {
                             outputsController.highlightChanged(Set.of());
                             outputsController.highlightChanged(changed);
                         }
-                        // 3) select/scroll using v2 logic (handles jumps)
+
+                        // 3) scroll/select the current instruction row (handles jumps)
                         rowToHighlight(lastDebugState, st);
                     });
 
+                } else {
+                    // Edge case: no new state, but still update credits and maybe disable buttons
+                    Platform.runLater(() -> {
+                        if (headerController != null) {
+                            headerController.setAvailableCredits(creditsAfter);
+                        }
+                        if (terminatedNow && runOptionsController != null) {
+                            runOptionsController.setDebugBtnsDisabled(true);
+                        }
+                    });
+                }
+
+                // Cache last snapshot locally for next diff
+                if (st != null) {
                     lastDebugState = st;
                 }
+
             } catch (Exception ex) {
                 ex.printStackTrace();
                 showError("Step failed", ex.getMessage());
             }
         }, "dbg-step").start();
     }
+
 
     /** Stop the debug session on server and clean up UI. */
     public void debugStop() {
@@ -828,7 +929,7 @@ public class ExecutionSceneController {
         Platform.runLater(inputsController::focusFirstField);
     }
 
-    // ===== API לשימוש האפליקציה בהמשך =====
+
     public void setArchitectureOptions(List<String> options) {
         cmbArchitecture.getItems().setAll(options);
     }

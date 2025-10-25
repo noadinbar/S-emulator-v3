@@ -70,13 +70,11 @@ public class LoadServlet extends HttpServlet {
         }
 
         try {
-            // 3) Validate & build DTO (עבודת parsing/בדיקות — ללא נעילה)
+            // 3) Validate & build DTO
             LoadAPI loader = new LoadAPIImpl();
             DisplayAPI display = loader.loadFromXml(tmp); // throws on invalid/semantic errors
-            DisplayDTO dto = display.getDisplay();        // מה שנחזיר וגם נרשום
-
-            // גזירת שם בסיסי מהקובץ
-            String submitted = filePart.getSubmittedFileName(); // e.g. "MyProg.xml"
+            DisplayDTO dto = display.getDisplay();
+            String submitted = filePart.getSubmittedFileName();
             String baseName = submitted != null
                     ? Paths.get(submitted).getFileName().toString()
                     : "program";
@@ -113,7 +111,6 @@ public class LoadServlet extends HttpServlet {
                     }
                 }
 
-                // רישום פונקציות שנגזרו מהתוכנית
                 if (fm != null) {
                     Map<String, DisplayAPI> fnMap = display.functionDisplaysByUserString();
                     for (Map.Entry<String, DisplayAPI> e : fnMap.entrySet()) {

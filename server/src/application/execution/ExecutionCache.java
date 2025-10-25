@@ -34,7 +34,7 @@ public final class ExecutionCache {
     }
 
     private static String buildKey(DisplayAPI target, int degree) {
-             int id = System.identityHashCode(target); // יציב לכל חיי התוכנית/הפונקציה בשרת
+             int id = System.identityHashCode(target);
              return id + "|" + degree;
         }
 

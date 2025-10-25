@@ -58,7 +58,6 @@ public class HeaderController {
             availableCreditsField.setFocusTraversable(false);
         }
 
-        // current degree (עם ה-formatter הקיים שלך)
         txtDegree.setTextFormatter(integerOnlyFormatter());
         txtDegree.setText("0");
 

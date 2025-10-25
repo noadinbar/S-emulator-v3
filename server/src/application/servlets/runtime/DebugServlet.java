@@ -165,6 +165,7 @@ public class DebugServlet extends HttpServlet {
             return;
         }
 
+        // Per-session mutex: only one STEP/RESUME at a time for this debugId
         Semaphore lock = getLocks().computeIfAbsent(debugId, k -> new Semaphore(1));
         if (!lock.tryAcquire()) {
             writeJsonError(resp, HttpServletResponse.SC_CONFLICT, "busy");
@@ -172,38 +173,35 @@ public class DebugServlet extends HttpServlet {
         }
 
         try {
+            // Advance exactly one logical step in the debugged program
             DebugStepDTO step = dbg.step();
 
-            // Update snapshot with the new state
+            // Save latest machine state snapshot so /api/debug/state can return it
             try {
-                DebugStateDTO after = (step != null) ? step.getNewState() : null;
-                if (after != null) getSnapshots().put(debugId, after);
-            } catch (Throwable ignore) { /* best-effort */ }
+                if (step != null && step.getNewState() != null) {
+                    getSnapshots().put(debugId, step.getNewState());
+                }
+            } catch (Throwable ignore) {
+                // best-effort snapshot update; debugger should not crash if UI can't cache
+            }
 
+            // DO NOT clean up here, even if dbg.isTerminated() == true.
             writeJson(resp, HttpServletResponse.SC_OK, step);
 
-            // Cleanup if terminated
-            boolean term = false;
-            try { term = dbg.isTerminated(); } catch (Throwable ignore) { /* tolerate */ }
-            if (term) {
-                getSessions().remove(debugId);
-                getLocks().remove(debugId);
-                getSnapshots().remove(debugId);
-                boolean anyLeft = !getSessions().isEmpty();
-                getServletContext().setAttribute(ATTR_DBG_BUSY, anyLeft ? Boolean.TRUE : Boolean.FALSE);
-            }
         } catch (Exception e) {
-            writeJsonError(resp, HttpServletResponse.SC_INTERNAL_SERVER_ERROR,
-                    "Debug step failed: " + e.getMessage());
+            writeJsonError(
+                    resp,
+                    HttpServletResponse.SC_INTERNAL_SERVER_ERROR,
+                    "Debug step failed: " + e.getMessage()
+            );
         } finally {
             lock.release();
         }
     }
 
-    /** POST /api/debug/resume (query/body: debugId)
-     *  Now async via thread-pool: returns 202 {debugId} or 429 {retryMs}.
-     *  Per-session serialization: if another command is running for the same debugId → 409 busy.
-     *  The per-session lock is acquired here and released inside the background job (finally).
+
+    /**
+     * POST /api/debug/resume (query/body: debugId)
      */
     private void handleResume(HttpServletRequest req, HttpServletResponse resp) throws IOException {
         String debugId = readDebugId(req);
@@ -218,92 +216,106 @@ public class DebugServlet extends HttpServlet {
             return;
         }
 
-        // Per-session mutex to enforce serial semantics on this debugId
+        // Serialize commands for this debugId
         Semaphore lock = getLocks().computeIfAbsent(debugId, k -> new Semaphore(1));
         if (!lock.tryAcquire()) {
-            // Another step/resume in progress for this session
+            // Someone is already stepping/resuming this same debugId
             writeJsonError(resp, HttpServletResponse.SC_CONFLICT, "busy");
             return;
         }
 
-        // Submit the long-running resume to the pool; keep the lock held until the job completes.
-        JobSubmitResult res = ExecutionTaskManager.trySubmit(() -> {
+        // Hand off the long "run until done" work to the executor thread-pool
+        JobSubmitResult submitResult = ExecutionTaskManager.trySubmit(() -> {
             try {
                 DebugStepDTO last = null;
 
-                while (!dbg.isTerminated()) {
-                    // If the pool decides to cancel (future.cancel/timeout), we exit gracefully.
-                    if (Thread.currentThread().isInterrupted()) break;
+                // Keep stepping until program reports isTerminated() OR thread interrupted
+                while (true) {
+                    boolean alreadyDone = false;
+                    try {
+                        alreadyDone = dbg.isTerminated();
+                    } catch (Throwable ignore) {
+                        // tolerate weird debug engine states
+                    }
+                    if (alreadyDone) {
+                        break;
+                    }
 
+                    // If executor canceled us (timeout / shutdown), exit gracefully
+                    if (Thread.currentThread().isInterrupted()) {
+                        break;
+                    }
+
+                    // Advance execution
                     last = dbg.step();
 
-                    // Update snapshot after each step (best-effort)
+                    // Update latest snapshot for /api/debug/state
                     try {
                         if (last != null && last.getNewState() != null) {
                             getSnapshots().put(debugId, last.getNewState());
                         }
-                    } catch (Throwable ignore) { /* best-effort */ }
+                    } catch (Throwable ignore) {
+                        // best-effort snapshot update
+                    }
                 }
 
-                // Cleanup if terminated
-                boolean term = false;
-                try { term = dbg.isTerminated(); } catch (Throwable ignore) { /* tolerate */ }
-                if (term) {
-                    getSessions().remove(debugId);
-                    getSnapshots().remove(debugId);
-                }
-
-                // Keep dbgBusy accurate
-                boolean anyLeft = !getSessions().isEmpty();
-                getServletContext().setAttribute(ATTR_DBG_BUSY, anyLeft ? Boolean.TRUE : Boolean.FALSE);
+                // NOTE:
+                // We DO NOT call getSessions().remove(...) here.
+                // We DO NOT clear getSnapshots() here.
+                //
+                // We intentionally leave:
+                //   - getSessions().get(debugId) == dbg
+                //   - getSnapshots().get(debugId) == final state
+                //
+                // So the client can:
+                //   1. Ask /api/debug/terminated → gets terminated=true
+                //   2. Immediately call /api/debug/state  → gets the final snapshot
+                //
+                // Actual teardown will happen later (delayed) in handleTerminated(...).
 
             } catch (Throwable t) {
-                // On failure, keep a snapshot if you have one; clean up session if it's gone.
-                try {
-                    boolean term = false;
-                    try { term = dbg.isTerminated(); } catch (Throwable ignore) {}
-                    if (term) {
-                        getSessions().remove(debugId);
-                        getSnapshots().remove(debugId);
-                    }
-                    boolean anyLeft = !getSessions().isEmpty();
-                    getServletContext().setAttribute(ATTR_DBG_BUSY, anyLeft ? Boolean.TRUE : Boolean.FALSE);
-                } finally {
-                    // Make sure we don't swallow the error silently: let the pool mark the job as ERROR.
-                }
+                // If resume crashes mid-run:
+                // We STILL do not purge the session/snapshot here.
+                // Client can inspect /api/debug/state or try /api/debug/terminated.
                 throw t;
             } finally {
-                // Release the per-session lock and drop the lock handle from the map
-                try { lock.release(); } catch (Throwable ignore) {}
+                // Always release and drop the per-session lock so this debugId is no longer "actively running".
+                try {
+                    lock.release();
+                } catch (Throwable ignore) {
+                    // swallow
+                }
                 getLocks().remove(debugId);
             }
             return null;
         });
 
-        if (!res.isAccepted()) {
-            // Overloaded: return 429 + Retry-After header (seconds) + body {retryMs}
-            int retryMs = res.getRetryAfterMs();
+        if (!submitResult.isAccepted()) {
+            // Executor is overloaded. Tell the client to retry later.
+            int retryMs = submitResult.getRetryAfterMs();
             int retrySec = (int) Math.ceil(retryMs / 1000.0);
             resp.setHeader("Retry-After", String.valueOf(retrySec));
+
+            // Since job was NOT accepted, we must free the lock now.
+            try {
+                lock.release();
+            } catch (Throwable ignore) {
+                // swallow
+            }
+            getLocks().remove(debugId);
 
             JsonObject out = new JsonObject();
             out.addProperty("error", "busy");
             out.addProperty("retryMs", retryMs);
-
-            // Release the lock since the job wasn't accepted; allow client to retry later
-            try { lock.release(); } catch (Throwable ignore) {}
-            getLocks().remove(debugId);
-
             writeJson(resp, SC_TOO_MANY_REQUESTS, out);
             return;
         }
 
-        // Accepted: async run started; client should poll /api/debug/state and /api/debug/terminated
+        // Job accepted (202): client will now poll /api/debug/state and /api/debug/terminated
         JsonObject out = new JsonObject();
         out.addProperty("debugId", debugId);
         writeJson(resp, HttpServletResponse.SC_ACCEPTED, out);
     }
-
 
     /** POST /api/debug/stop — stops a specific session (by debugId) and clears snapshot. */
     private void handleStop(HttpServletRequest req, HttpServletResponse resp) throws IOException {
@@ -333,7 +345,9 @@ public class DebugServlet extends HttpServlet {
         writeJson(resp, HttpServletResponse.SC_OK, out);
     }
 
-    /** POST /api/debug/terminated (query/body: debugId) → { "terminated": boolean } */
+    /**
+     * POST /api/debug/terminated (query/body: debugId)
+     */
     private void handleTerminated(HttpServletRequest req, HttpServletResponse resp) throws IOException {
         String debugId = readDebugId(req);
         if (debugId == null) {
@@ -345,18 +359,28 @@ public class DebugServlet extends HttpServlet {
         DebugAPI dbg = getSessions().get(debugId);
 
         if (dbg == null) {
-            // If no session exists, consider it terminated and no snapshot guaranteed
+            // Session already cleaned up earlier (e.g. user pressed Stop).
+            // From the client's POV, it's definitely done.
             term = true;
         } else {
-            boolean t = false;
-            try { t = dbg.isTerminated(); } catch (Throwable ignore) { /* tolerate */ }
-            term = t;
+            boolean done = false;
+            try {
+                done = dbg.isTerminated();
+            } catch (Throwable ignore) {
+                // tolerate any weird internal engine state
+            }
+            term = done;
+
             if (term) {
-                getSessions().remove(debugId);
-                getLocks().remove(debugId);
-                getSnapshots().remove(debugId);
-                boolean anyLeft = !getSessions().isEmpty();
-                getServletContext().setAttribute(ATTR_DBG_BUSY, anyLeft ? Boolean.TRUE : Boolean.FALSE);
+                // Program really is finished now.
+                // We still KEEP the snapshot and session for a tiny grace window,
+                // so the client can immediately fetch /api/debug/state.
+                //
+                // After that short grace window, we'll wipe everything using
+                // cleanupDebugSessionSoon(debugId), which:
+                //   - removes session / snapshot / lock from the maps
+                //   - updates ATTR_DBG_BUSY to reflect no active debug
+                cleanupDebugSessionSoon(debugId);
             }
         }
 
@@ -364,6 +388,7 @@ public class DebugServlet extends HttpServlet {
         out.addProperty("terminated", term);
         writeJson(resp, HttpServletResponse.SC_OK, out);
     }
+
 
     /** GET /api/debug/state?debugId=... → { debugId, state: DebugStateDTO } or 204/404 */
     private void handleState(HttpServletRequest req, HttpServletResponse resp) throws IOException {
@@ -490,4 +515,34 @@ public class DebugServlet extends HttpServlet {
         if (sb.isEmpty()) return null;
         return gson.fromJson(sb.toString(), JsonObject.class);
     }
+
+    /**
+     * Gracefully destroy a finished debug session after a short delay.
+     */
+    private void cleanupDebugSessionSoon(final String debugId) {
+        Thread cleaner = new Thread(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    // Small grace period so the client can still read /api/debug/state
+                    Thread.sleep(500L);
+                } catch (InterruptedException ignored) {
+                    Thread.currentThread().interrupt();
+                }
+
+                // Remove the debug session, its lock, and its last snapshot
+                getSessions().remove(debugId);
+                getLocks().remove(debugId);
+                getSnapshots().remove(debugId);
+
+                // Update "busy" flag: if there are no more sessions, dbgBusy=false
+                boolean anyLeft = !getSessions().isEmpty();
+                getServletContext().setAttribute(ATTR_DBG_BUSY, anyLeft ? Boolean.TRUE : Boolean.FALSE);
+            }
+        }, "debug-cleanup-" + debugId);
+
+        cleaner.setDaemon(true); // does not block server shutdown
+        cleaner.start();
+    }
+
 }

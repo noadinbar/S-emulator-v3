@@ -20,10 +20,6 @@ public class StatusServlet extends HttpServlet {
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException {
-        System.out.println("[STATUS][SESSION] id=" + req.getRequestedSessionId()
-                + " valid=" + req.isRequestedSessionIdValid()
-                + " hasSess=" + (req.getSession(false) != null));
-
         resp.setContentType("application/json");
 
         JsonObject json = new JsonObject();
@@ -50,7 +46,7 @@ public class StatusServlet extends HttpServlet {
                         int fMax = 0;
                         try {
                             fMax = e.getValue().execution().getMaxDegree();
-                        } catch (Exception ignore) { /* נשאיר 0 */ }
+                        } catch (Exception ignore) { /* keep 0 */ }
                         functionsMax.addProperty(e.getKey(), fMax);
                     }
                 }

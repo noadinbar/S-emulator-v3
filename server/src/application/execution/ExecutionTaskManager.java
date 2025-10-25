@@ -136,13 +136,11 @@ public final class ExecutionTaskManager {
                 }
             });
             job.attach(f);
-            // קובע timeout אוטומטי: אם לא הסתיים בזמן → מסמן TIMED_OUT ומבצע interrupt
             job.timeoutHandle = SCHED.schedule(() -> {
-                // נוודא שלא כבר הסתיים
                 if (job.status == Status.PENDING || job.status == Status.RUNNING) {
                     job.timeout();                 // status=TIMED_OUT + finishedAt
                     Future<?> ff = job.future;
-                    if (ff != null) ff.cancel(true); // interrupt לריצה
+                    if (ff != null) ff.cancel(true);
                 }
                 }, TIMEOUT_MS, TimeUnit.MILLISECONDS);
             submitted = true;

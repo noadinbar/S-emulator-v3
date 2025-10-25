@@ -4,7 +4,7 @@ import com.google.gson.Gson;
 import okhttp3.Request;
 import okhttp3.Response;
 import utils.HttpClientUtil;
-import client.requests.runtime.LoadFile;            // נשאר השם שלך לבקשה
+import client.requests.runtime.LoadFile;
 import display.UploadResultDTO;
 
 import java.io.IOException;

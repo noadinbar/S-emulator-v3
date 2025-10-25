@@ -23,6 +23,7 @@ import display.InstructionBodyDTO;
 import display.InstructionDTO;
 
 import javafx.scene.control.cell.PropertyValueFactory;
+import javafx.util.Callback;
 import javafx.util.Duration;
 import types.LabelDTO;
 import types.VarRefDTO;
@@ -104,6 +105,33 @@ public class InstructionsController {
                 tblInstructions.getStylesheets().add(url);
             }
         }
+
+        // Row highlight: apply CSS class "hilite" when highlightPredicate(item) == true.
+        tblInstructions.setRowFactory(new Callback<TableView<InstructionDTO>, TableRow<InstructionDTO>>() {
+            @Override
+            public TableRow<InstructionDTO> call(TableView<InstructionDTO> tv) {
+                return new TableRow<InstructionDTO>() {
+                    @Override
+                    protected void updateItem(InstructionDTO item, boolean empty) {
+                        super.updateItem(item, empty);
+                        // Always remove previous highlight before re-evaluating
+                        getStyleClass().remove(InstructionsController.HILITE_CLASS);
+
+                        if (empty || item == null) {
+                            return;
+                        }
+
+                        // If predicate says "highlight this row", add the CSS class
+                        if (highlightPredicate != null && highlightPredicate.test(item)) {
+                            if (!getStyleClass().contains(InstructionsController.HILITE_CLASS)) {
+                                getStyleClass().add(InstructionsController.HILITE_CLASS);
+                            }
+                        }
+                    }
+                };
+            }
+        });
+
     }
 
     public String getMaxGenerationValue() {

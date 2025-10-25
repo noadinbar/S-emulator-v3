@@ -39,8 +39,6 @@ public class ExecuteServlet extends HttpServlet {
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) {
         resp.setContentType("application/json");
         try {
-            System.out.println("[EXEC][POST-IN]");
-
             StringBuilder sb = new StringBuilder();
             try (BufferedReader r = req.getReader()) {
                 String line;
@@ -48,7 +46,6 @@ public class ExecuteServlet extends HttpServlet {
             }
             JsonObject in = gson.fromJson(sb.toString(), JsonObject.class);
             if (in == null) in = new JsonObject();
-            System.out.println("[EXEC][POST] body=" + in);
 
             String functionUserString = in.has("function") && !in.get("function").isJsonNull()
                     ? in.get("function").getAsString()
@@ -84,14 +81,8 @@ public class ExecuteServlet extends HttpServlet {
                     ? req.getSession(false).getAttribute(SESSION_USERNAME)
                     : null);
             final UserManager um = AppContextListener.getUsers(getServletContext());
-            System.out.println("[EXEC][CTX] captured username=" + username);
-            System.out.println("[EXEC][SESSION] id=" + req.getRequestedSessionId()
-                    + " valid=" + req.isRequestedSessionIdValid()
-                    + " hasSess=" + (req.getSession(false) != null));
 
-            System.out.println("[EXEC][SUBMIT] about to submit job");
             JobSubmitResult res = ExecutionTaskManager.trySubmit(() -> {
-                System.out.println("[EXEC][WORKER] started on thread=" + Thread.currentThread().getName());
 
                 // Build DebugAPI under read lock (heavy objects are cached by DisplayAPI)
                 final DebugAPI dbgApi;
@@ -104,15 +95,11 @@ public class ExecuteServlet extends HttpServlet {
 
                 // Generation via enum directly (assumes UI sends "I" | "II" | "III" | "IV")
                 final Generation gen = Generation.valueOf(execReqRef.getGeneration());
-                System.out.println("[EXEC][WORKER] username=" + username + " gen=" + execReqRef.getGeneration());
                 // TODO(input): if you want fail-fast 400 on bad generation, validate before scheduling.
 
                 // 1) One-time opening charge for the selected generation
                 if (username != null) {
                     um.adjustCredits(username, -gen.getCredits());
-                    System.out.println("[CREDITS][GEN] user=" + username
-                            + " genCost=" + gen.getCredits()
-                            + " balanceAfter=" + AppContextListener.getUsers(getServletContext()).get(username).getCreditsCurrent());
                     // TODO(credits): define rollback policy on CANCEL/ERROR (whether to refund gen cost).
                 }
 
@@ -127,9 +114,6 @@ public class ExecuteServlet extends HttpServlet {
 
                     if (username != null && delta > 0L) {
                         um.adjustCredits(username, (int) -delta); // charge after the command completed
-                        System.out.println("[CREDITS][STEP] user=" + username
-                                + " delta=" + delta
-                                + " balanceAfter=" + AppContextListener.getUsers(getServletContext()).get(username).getCreditsCurrent());
                         // TODO(credits): if not enough credits for this step → abort gracefully and return an error.
                     }
                     prev = curr;
@@ -146,8 +130,6 @@ public class ExecuteServlet extends HttpServlet {
                 }
                 return result;
             });
-            System.out.println("[EXEC][SUBMIT] accepted=" + res.isAccepted() +
-                    (res.isAccepted() ? (" jobId=" + res.getJobId()) : (" retryMs=" + res.getRetryAfterMs())));
 
             if (!res.isAccepted()) {
                 resp.setStatus(SC_TOO_MANY_REQUESTS); // 429
@@ -171,8 +153,6 @@ public class ExecuteServlet extends HttpServlet {
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) {
         resp.setContentType("application/json");
-        System.out.println("[EXEC][GET-IN] uri=" + req.getRequestURI() + " query=" + req.getQueryString());
-
         try {
             String jobId = req.getParameter("jobId");
             if (jobId == null || jobId.isBlank()) {

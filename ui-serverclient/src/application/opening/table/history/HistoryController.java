@@ -45,7 +45,6 @@ public class HistoryController {
         colCycles.setCellValueFactory(cd -> new ReadOnlyIntegerWrapper(cd.getValue().getCycles()));
     }
 
-    // ---- API זהה ברוח ה-ui-fx ----
     public void setHistory(List<RunHistoryEntryDTO> list) { items.setAll(list); }
     public void clear() { items.clear(); }
     public TableView<RunHistoryEntryDTO> getTableView() { return tblHistory; }

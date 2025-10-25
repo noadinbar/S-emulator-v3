@@ -16,14 +16,9 @@
         <VBox fx:id="contentRoot" minHeight="410.0" minWidth="600.0" prefHeight="600.0" prefWidth="800.0" styleClass="content-root">
 
             <children>
-                <!-- Header למעלה -->
                 <fx:include fx:id="header" source="header/header.fxml" />
-
-                <!-- יותר מקום לשמאל: 78% בערך -->
                 <SplitPane dividerPositions="0.78" VBox.vgrow="ALWAYS">
                     <items>
-
-                        <!-- צד שמאל: טבלאות + Summary -->
                         <VBox maxHeight="Infinity" maxWidth="Infinity" spacing="8.0" VBox.vgrow="ALWAYS">
                             <children>
                                 <StackPane VBox.vgrow="ALWAYS">
@@ -41,7 +36,6 @@
                             </padding>
                         </VBox>
 
-                        <!-- צד ימין: Run Options + Outputs + (Architecture + Inputs) + Back -->
                         <VBox maxWidth="Infinity" minWidth="320.0" prefWidth="340.0" spacing="8.0">
                             <children>
 
@@ -49,29 +43,26 @@
 
                                 <HBox fillHeight="true" spacing="8.0">
                                     <children>
-                                        <!-- Variables / Outputs מתרחב -->
-                                        <StackPane prefWidth="136.0" HBox.hgrow="ALWAYS">
+                                        <StackPane prefHeight="455.0" prefWidth="182.0" HBox.hgrow="ALWAYS">
                                             <fx:include fx:id="outputs" source="outputs/outputs.fxml" />
                                         </StackPane>
 
-                                        <!-- Architecture Selection + Inputs (רוחב קבוע-יחסית) -->
-                                        <VBox maxWidth="Infinity" minWidth="220.0" prefWidth="240.0" spacing="6.0" HBox.hgrow="NEVER">
+                                        <VBox maxWidth="Infinity" minWidth="130.0" prefWidth="130.0" spacing="6.0" HBox.hgrow="NEVER">
                                             <children>
                                                 <Label text="Architecture Selection" />
                                                 <ComboBox fx:id="cmbArchitecture" promptText="Architecture" />
                                                 <StackPane>
                                                     <fx:include fx:id="inputs" source="inputs/inputs.fxml" />
                                                 </StackPane>
+            
+                                            <HBox alignment="CENTER_RIGHT">
+                                                <children>
+                                                    <javafx.scene.control.Button fx:id="btnBackToOpening" onAction="#onBackToOpening" text="Back to dashboard" />
+                                                </children>
+                                            </HBox>
                                             </children>
                                             <padding><Insets right="10.0" /></padding>
                                         </VBox>
-                                    </children>
-                                </HBox>
-
-                                <!-- כפתור חזרה -->
-                                <HBox alignment="CENTER_RIGHT">
-                                    <children>
-                                        <javafx.scene.control.Button fx:id="btnBackToOpening" onAction="#onBackToOpening" text="Back to opening" />
                                     </children>
                                 </HBox>
                             </children>

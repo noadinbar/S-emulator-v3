@@ -241,7 +241,6 @@ public class ExecutionSceneController {
     // Call this from RunOptionsController's Execute button (recommended).
     // =====================================================================================
     public void runExecute() {
-        System.out.println("[UI][runExecute] debugMode=" + debugMode);
         if (!Platform.isFxApplicationThread()) {
             Platform.runLater(this::runExecute);
             return;
@@ -249,18 +248,15 @@ public class ExecutionSceneController {
         if (display == null || inputsController == null) return;
 
         if (debugMode) {
-            System.out.println("[UI][runExecute] path=DEBUG ensureDebugInit()");
             ensureDebugInit(); // will pull the first state immediately and enable buttons
             return;
         }
 
-        System.out.println("[UI][runExecute] path=RUN executeRun()");
         // Regular run:
         executeRun();
     }
 
     public void executeRun() {
-        System.out.println("[UI][executeRun][IN]");
         if (headerController == null || outputsController == null) return;
         List<Long> inputs = (inputsController != null)
                 ? inputsController.collectValuesPadded()
@@ -270,28 +266,20 @@ public class ExecutionSceneController {
         final String generation = getSelectedArchitecture();
         final ExecutionRequestDTO dto = new ExecutionRequestDTO(degree, inputs, generation);
         final String functionUserString = (targetKind == ExecTarget.FUNCTION) ? targetName : null;
-        System.out.println("[UI][executeRun] degree=" + degree + " generation=" + generation + " target=" + functionUserString + " inputs=" + inputs);
         outputsController.clear();
         if (headerController != null) {
-            System.out.println("[UI][executeRun] startCreditsRefresher()");
             headerController.startCreditsRefresher();
         }
-
-        System.out.println("[UI][executeRun] starting background thread");
         new Thread(() -> {
             try {
                 // 1) build the original POST (we reuse it to extract the correct /api/execute URL)
-                System.out.println("[CLIENT][EXEC] build submit request");
                 Request submitReq = Execute.build(dto, functionUserString);
                 String executeUrl = submitReq.url().toString();
-                System.out.println("[CLIENT][POST] " + executeUrl + " body=" + dto);
                 String jobId;
                 while (true) {
                     JobSubmitResult sr = ExecuteResponder.submit(
                             ExecuteResponder.buildSubmitRequest(executeUrl, dto, functionUserString)
                     );
-                    System.out.println("[CLIENT][SUBMIT][RESP] accepted=" + sr.isAccepted() +
-                            (sr.isAccepted() ? (" jobId=" + sr.getJobId()) : (" retryMs=" + sr.getRetryMs())));
                     if (sr.isAccepted()) {
                         jobId = sr.getJobId();
                         break;
@@ -300,15 +288,12 @@ public class ExecutionSceneController {
                 }
 
                 // 3) POLL until terminal state
-                System.out.println("[CLIENT][POLL-START] jobId=" + jobId);
                 ExecutionDTO result = null;
                 String errorMsg = null;
 
                 while (true) {
                     Request pollReq = ExecuteResponder.buildPollRequest(executeUrl, jobId);
-                    System.out.println("[CLIENT][GET] " + executeUrl + "?jobId=" + jobId);
                     ExecutionPollDTO pr = ExecuteResponder.poll(pollReq);
-                    System.out.println("[CLIENT][POLL][RESP] status=" + pr.getStatus() + " error=" + pr.getError());
 
                     switch (pr.getStatus()) {
                         case PENDING:
@@ -317,7 +302,6 @@ public class ExecutionSceneController {
                             continue;
                         case DONE:
                             result = pr.getResult();
-                            System.out.println("[CLIENT][POLL][DONE] result=" + (result != null ? ("totalCycles=" + result.getTotalCycles()) : "null"));
                             Platform.runLater(() -> {
                                 if (headerController != null) {
                                     headerController.refreshStatus();
@@ -327,7 +311,6 @@ public class ExecutionSceneController {
                             break;
                         case CANCELED:
                             errorMsg = "Canceled";
-                            System.out.println("[CLIENT][POLL][TERM] status=CANCELED");
                             Platform.runLater(() -> {
                                 if (headerController != null) {
                                     headerController.refreshStatus();
@@ -337,7 +320,6 @@ public class ExecutionSceneController {
                             break;
                         case TIMED_OUT:
                             errorMsg = "Timed out";
-                            System.out.println("[CLIENT][POLL][TERM] status=TIMED_OUT");
                             Platform.runLater(() -> {
                                 if (headerController != null)
                                 {
@@ -348,7 +330,6 @@ public class ExecutionSceneController {
                             break;
                         case ERROR:
                             errorMsg = (pr.getError() == null || pr.getError().isBlank()) ? "Unknown error" : pr.getError();
-                            System.out.println("[CLIENT][POLL][TERM] status=ERROR err=" + errorMsg);
                             Platform.runLater(() -> {
                                 if (headerController != null) {
                                     headerController.refreshStatus();
@@ -360,13 +341,11 @@ public class ExecutionSceneController {
                             errorMsg = (pr.getError() == null || pr.getError().isBlank())
                                     ? "Unknown error"
                                     : pr.getError();
-                            System.out.println("[CLIENT][POLL][TERM] status=" + pr.getStatus() + " err=" + errorMsg);
                             break;
                     }
                     break;
                 }
 
-                System.out.println("[UI][executeRun] result=" + (result != null ? "OK" : "ERROR"));
                 if (result != null) {
                     final ExecutionDTO finalResult = result;
                     Platform.runLater(() -> {
@@ -828,7 +807,7 @@ public class ExecutionSceneController {
         Platform.runLater(inputsController::focusFirstField);
     }
 
-    // ===== API לשימוש האפליקציה בהמשך =====
+
     public void setArchitectureOptions(List<String> options) {
         cmbArchitecture.getItems().setAll(options);
     }

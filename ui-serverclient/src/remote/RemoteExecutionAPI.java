@@ -12,7 +12,7 @@ import execution.ExecutionRequestDTO;
 import okhttp3.Request;
 
 public class RemoteExecutionAPI implements ExecutionAPI {
-    private final String userString; // null = תוכנית ראשית
+    private final String userString;
 
     public RemoteExecutionAPI() {
         this.userString = null;

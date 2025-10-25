@@ -20,6 +20,10 @@ public class StatusServlet extends HttpServlet {
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException {
+        System.out.println("[STATUS][SESSION] id=" + req.getRequestedSessionId()
+                + " valid=" + req.isRequestedSessionIdValid()
+                + " hasSess=" + (req.getSession(false) != null));
+
         resp.setContentType("application/json");
 
         JsonObject json = new JsonObject();

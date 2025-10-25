@@ -1,6 +1,8 @@
 package application.opening.header;
 
 import java.io.File;
+import java.util.Timer;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 
 import client.responses.info.StatusResponder;
@@ -13,6 +15,8 @@ import javafx.scene.control.*;
 import javafx.scene.layout.VBox;
 import javafx.stage.FileChooser;
 import javafx.stage.Window;
+import utils.Constants;
+import utils.CreditsRefresher;
 
 public class HeaderController {
     @FXML private VBox headerOpeningRoot;
@@ -29,6 +33,8 @@ public class HeaderController {
 
     private Consumer<File> onLocalFileChosen;
     private Consumer<Integer> onChargeCredits;
+    private final AtomicBoolean creditsShouldUpdate = new AtomicBoolean(false);
+    private Timer creditsTimer;
 
     @FXML
     private void initialize() {
@@ -160,6 +166,33 @@ public class HeaderController {
         new Thread(task, "header-refresh-status").start();
     }
 
+    public void startCreditsRefresher() {
+        stopCreditsRefresher();
+        creditsShouldUpdate.set(true);
+        creditsTimer = new Timer(true); // daemon
+        creditsTimer.scheduleAtFixedRate(
+                new CreditsRefresher(creditsShouldUpdate, this::applyStatusJson),
+                Constants.REFRESH_RATE_MS,
+                Constants.REFRESH_RATE_MS
+        );
+    }
+
+    private void applyStatusJson(JsonObject js) {
+        if (js == null) return;
+        if (!js.has("creditsCurrent") || js.get("creditsCurrent").isJsonNull()) return;
+
+        int credits = js.get("creditsCurrent").getAsInt();
+        setAvailableCredits(credits);
+    }
+
+    public void stopCreditsRefresher() {
+        creditsShouldUpdate.set(false);
+        if (creditsTimer != null) {
+            creditsTimer.cancel();
+            creditsTimer.purge();
+            creditsTimer = null;
+        }
+    }
 
     private void showError(String title, String msg) {
         Alert alert = new Alert(Alert.AlertType.ERROR);

@@ -1,5 +1,7 @@
 package api;
 
+import display.DisplayDTO;
+import execution.ExecutionDTO;
 import execution.ExecutionRequestDTO;
 import execution.debug.DebugStateDTO;
 import execution.debug.DebugStepDTO;
@@ -38,7 +40,25 @@ public interface DebugAPI {
         throw new UnsupportedOperationException("state() is not supported by this DebugAPI");
     }
 
-    // -------- Small internal DTO to avoid new external types --------
+    // ----- Single-pass execution helpers -----
+    /**
+     * Returns a DisplayDTO snapshot of the program actually being executed
+     */
+    default DisplayDTO executedDisplaySnapshot() {
+        throw new UnsupportedOperationException("executedDisplaySnapshot not implemented");
+    }
+
+    /*
+     Builds a complete ExecutionDTO from the final debug state (y, cycles, finals),
+     */
+    default ExecutionDTO finalizeExecution(ExecutionRequestDTO request, DisplayDTO executedDisplay) {
+        // TODO(history): record per-user run (inputs, y, cycles, generation, timestamp)
+        throw new UnsupportedOperationException("finalizeExecution not implemented");
+    }
+
+
+
+
     final class Submit {
         private final boolean accepted;
         private final String debugId;

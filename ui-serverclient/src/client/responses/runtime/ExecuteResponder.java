@@ -42,13 +42,15 @@ public class ExecuteResponder {
 
     // במקום: public static SubmitResult submit(...)
     public static JobSubmitResult submit(Request postSubmit) throws Exception {
+        System.out.println("[CLIENT][SUBMIT] " + postSubmit.url());
         try (Response rs = HttpClientUtil.runSync(postSubmit)) {
             String body = rs.body() != null ? rs.body().string() : "";
             int code = rs.code();
-
+            System.out.println("[CLIENT][SUBMIT] " + postSubmit.url());
             if (code == 429) {
                 // גוף השרת מחזיר {"error":"busy","retryMs":...} + כותרת Retry-After בשניות
                 int retryMs = 500;
+                System.out.println("[CLIENT][SUBMIT][BUSY] retryMs=" + retryMs);
                 try {
                     JsonObject obj = JsonUtils.GSON.fromJson(body, JsonObject.class);
                     if (obj != null && obj.has("retryMs")) retryMs = obj.get("retryMs").getAsInt();
@@ -82,8 +84,10 @@ public class ExecuteResponder {
     }
 
     public static ExecutionPollDTO poll(Request getPoll) throws Exception {
+        System.out.println("[CLIENT][POLL] " + getPoll.url());
         try (Response rs = HttpClientUtil.runSyncWithTimeout(getPoll, 3, TimeUnit.SECONDS)) {
             String body = rs.body() != null ? rs.body().string() : "";
+            System.out.println("[CLIENT][POLL][RESP] code=" + rs.code() + " body=" + body);
             if (rs.code() < 200 || rs.code() >= 300) {
                 throw new RuntimeException("POLL failed: HTTP " + rs.code() + " | " + body);
             }

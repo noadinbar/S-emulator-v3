@@ -1,6 +1,8 @@
 package exportToDTO;
 
 import api.DebugAPI;
+import display.DisplayDTO;
+import execution.ExecutionDTO;
 import execution.ExecutionRequestDTO;
 import execution.VarValueDTO;
 import execution.debug.DebugStateDTO;
@@ -176,5 +178,34 @@ public class DebugAPIImpl implements DebugAPI {
         ).thenComparingInt(v -> v.getVar().getIndex()));
 
         return out;
+    }
+
+    // --- Single-pass helpers (server-side only) ---
+
+    @Override
+    public DisplayDTO executedDisplaySnapshot() {
+        return DisplayMapper.toCommand2(expanded);
+    }
+
+    @Override
+    public ExecutionDTO finalizeExecution(ExecutionRequestDTO request, DisplayDTO executedDisplay) {
+        // Build finals from the current (final) debug context
+        // y first, then x ascending, then z ascending (snapshotVars() already sorts accordingly).
+        List<VarValueDTO> finals = snapshotVars(context);
+
+        // Extract y from finals (default 0 if not present)
+        long yValue = 0L;
+        for (VarValueDTO vv : finals) {
+            if (vv.getVar().getVariable() == VarOptionsDTO.y) {
+                yValue = vv.getValue();
+                break;
+            }
+        }
+
+        // Total cycles = what we've actually stepped (matches per-command charging).
+        long totalCycles = logicalCyclesSoFar;
+        // TODO(history): record per-user run (inputs, yValue, totalCycles, request.getGeneration(), timestamp)
+        // Assemble the single-pass result (no second engine run needed).
+        return new ExecutionDTO(yValue, totalCycles, finals, executedDisplay);
     }
 }

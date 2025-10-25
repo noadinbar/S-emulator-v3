@@ -34,6 +34,7 @@ public class OpeningSceneController {
         headerController.setOnLocalFileChosen(this::handleLocalFileChosen);
         headerController.setOnChargeCredits(this::handleChargeCredits);
         headerController.refreshStatus();
+        headerController.startCreditsRefresher();
         programsController.loadOnceAsync();
         programsController.startProgramsRefresher();
         functionsController.loadOnceAsync();

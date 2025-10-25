@@ -1,9 +1,7 @@
 package application.execution.header;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.SortedSet;
-import java.util.TreeSet;
+import java.util.*;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -27,6 +25,8 @@ import javafx.util.StringConverter;
 import javafx.scene.control.TextFormatter;
 import types.LabelDTO;
 import types.VarRefDTO;
+import utils.Constants;
+import utils.CreditsRefresher;
 
 public class HeaderController {
     @FXML private VBox   executionHeaderRoot;
@@ -49,6 +49,8 @@ public class HeaderController {
     private final ObjectProperty<Runnable> onApplyDegree = new SimpleObjectProperty<>();
     private static final Pattern X_IN_ARGS = Pattern.compile("\\bx(\\d+)\\b");
     private static final Pattern Z_IN_ARGS = Pattern.compile("\\bz(\\d+)\\b");
+    private final AtomicBoolean creditsShouldUpdate = new AtomicBoolean(false);
+    private Timer creditsTimer;
 
     @FXML
     private void initialize() {
@@ -280,6 +282,34 @@ public class HeaderController {
         });
 
         new Thread(task, "header-refresh-status").start();
+    }
+
+    public void startCreditsRefresher() {
+        stopCreditsRefresher();
+        creditsShouldUpdate.set(true);
+        creditsTimer = new Timer(true); // daemon
+        creditsTimer.scheduleAtFixedRate(
+                new CreditsRefresher(creditsShouldUpdate, this::applyStatusJson),
+                Constants.REFRESH_RATE_MS,
+                Constants.REFRESH_RATE_MS
+        );
+    }
+
+    public void stopCreditsRefresher() {
+        creditsShouldUpdate.set(false);
+        if (creditsTimer != null) {
+            creditsTimer.cancel();
+            creditsTimer.purge();
+            creditsTimer = null;
+        }
+    }
+
+    private void applyStatusJson(JsonObject js) {
+        if (js == null) return;
+        if (!js.has("creditsCurrent") || js.get("creditsCurrent").isJsonNull()) return;
+
+        int credits = js.get("creditsCurrent").getAsInt();
+        setAvailableCredits(credits);
     }
 
     private void showError(String title, String msg) {

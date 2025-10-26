@@ -68,6 +68,25 @@ public class ExecuteResponder {
         }
     }
 
+    // NEW: program + function (function optional)
+    public static Request buildSubmitRequest(String executeEndpointUrl,
+                                             ExecutionRequestDTO dto,
+                                             String programName,
+                                             String functionUserString) {
+        JsonObject root = (JsonObject) JsonUtils.GSON.toJsonTree(dto);
+        if (programName != null && !programName.isBlank()) {
+            root.addProperty("program", programName);
+        }
+        if (functionUserString != null && !functionUserString.isBlank()) {
+            root.addProperty("function", functionUserString);
+        }
+        RequestBody body = RequestBody.create(JSON, JsonUtils.GSON.toJson(root));
+        return new Request.Builder()
+                .url(executeEndpointUrl)
+                .post(body)
+                .build();
+    }
+
 
     // ---- POLL: GET /api/execute?jobId=... -> ExecutionPollDTO ----
     public static Request buildPollRequest(String executeEndpointUrl, String jobId) {

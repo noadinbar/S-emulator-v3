@@ -68,7 +68,7 @@ public class FunctionsController {
 
             controller.init(ExecTarget.FUNCTION,
                     sel.getName(),
-                    sel.getMaxDegree());
+                    sel.getMaxDegree(), sel.getProgramName());
         } catch (Exception ex) {
             ex.printStackTrace();
         }

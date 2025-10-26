@@ -54,4 +54,18 @@ public class ProgramManager {
     public List<ProgramTableRow> listRecords() {
         return new ArrayList<>(rows.values());
     }
+
+    /** +1 to runCount for a given program, if it exists. */
+    public void incRunCount(String name) {
+        if (name == null) return;
+        String key = name.trim();
+        ProgramTableRow row = rows.get(key);
+        if (row != null) {
+            // Keep it simple; rows is concurrent, but we only mutate a single int.
+            synchronized (row) {
+                row.setRunCount(row.getRunCount() + 1);
+            }
+        }
+    }
+
 }

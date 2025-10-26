@@ -66,6 +66,11 @@ public class ExecutionSceneController {
     private ExpandDTO lastExpanded = null;
     private String currentHighlight;
     private DisplayDTO display;
+    // programContextName is always the program's name.
+    // If we opened a full program, it's that program's own name.
+    // If we opened a function, it's the parent program's name for that function.
+    private String programContextName;
+
 
     // --- Debug session state (server-driven) ---
     private volatile String       debugId            = null;
@@ -112,10 +117,11 @@ public class ExecutionSceneController {
         }
     }
 
-    public void init(ExecTarget target, String name, int maxDegree) {
+    public void init(ExecTarget target, String name, int maxDegree, String programContextName) {
         targetKind = target;
         targetName = name;
         this.maxDegree  = Math.max(0, maxDegree);
+        this.programContextName = programContextName;
 
         // 1) Header title + degrees
         if (headerController != null) {
@@ -265,6 +271,7 @@ public class ExecutionSceneController {
         final int degree = headerController.getCurrentDegree();
         final String generation = getSelectedArchitecture();
         final ExecutionRequestDTO dto = new ExecutionRequestDTO(degree, inputs, generation);
+        final String programName = programContextName;
         final String functionUserString = (targetKind == ExecTarget.FUNCTION) ? targetName : null;
         outputsController.clear();
         if (headerController != null) {
@@ -273,12 +280,12 @@ public class ExecutionSceneController {
         new Thread(() -> {
             try {
                 // 1) build the original POST (we reuse it to extract the correct /api/execute URL)
-                Request submitReq = Execute.build(dto, functionUserString);
+                Request submitReq = Execute.build(dto, programName, functionUserString);
                 String executeUrl = submitReq.url().toString();
                 String jobId;
                 while (true) {
                     JobSubmitResult sr = ExecuteResponder.submit(
-                            ExecuteResponder.buildSubmitRequest(executeUrl, dto, functionUserString)
+                            ExecuteResponder.buildSubmitRequest(executeUrl, dto, programName, functionUserString)
                     );
                     if (sr.isAccepted()) {
                         jobId = sr.getJobId();

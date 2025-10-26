@@ -68,7 +68,7 @@ public class ProgramsController {
                     openExecutionScene("Execution - Program: " + sel.getName());
             controller.init(ExecTarget.PROGRAM,
                     sel.getName(),
-                    sel.getMaxDegree());
+                    sel.getMaxDegree(), sel.getName());
         } catch (Exception ex) {
             ex.printStackTrace();
         }

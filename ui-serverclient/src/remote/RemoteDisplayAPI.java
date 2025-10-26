@@ -84,9 +84,14 @@ public class RemoteDisplayAPI implements DisplayAPI {
 
     @Override public void saveState(Path path) { }
     @Override public DisplayAPI loadState(Path path) { return this; }
+
     @Override
     public DebugAPI debugForDegree(int degree) {
-        return new RemoteDebugAPI(name);
+        DisplayDTO d = getDisplay();
+        String programName = (d != null) ? d.getProgramName() : null;
+        // 'name' here is the function user-string when this RemoteDisplayAPI wraps a function; may be null for program root.
+        return new RemoteDebugAPI(programName, name);
     }
+
 
 }

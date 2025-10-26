@@ -12,11 +12,16 @@ import okhttp3.Request;
 public class RemoteDebugAPI implements DebugAPI {
 
     private final String userString;     // optional function user-string
+    private final String programName;
     private String debugId;              // assigned on accepted init
     private volatile boolean terminated; // cached flag from /terminated
 
-    public RemoteDebugAPI() { this(null); }
-    public RemoteDebugAPI(String functionUserString) { this.userString = functionUserString; }
+    public RemoteDebugAPI() { this(null, null); }
+    public RemoteDebugAPI(String functionUserString) { this(null, functionUserString); }
+    public RemoteDebugAPI(String programName, String functionUserString) {
+        this.programName = programName;
+        this.userString = functionUserString;
+    }
 
     // ---------------- Legacy signatures (kept to match DebugAPI) ----------------
 
@@ -101,7 +106,7 @@ public class RemoteDebugAPI implements DebugAPI {
     @Override
     public Submit submitInit(ExecutionRequestDTO request) {
         try {
-            Request httpReq = Debug.init(request, userString);
+            Request httpReq = Debug.init(request, programName, userString);
             DebugResults.InitResult r = DebugResponder.init(httpReq);
             if (r.accepted()
                     && r.debugId() != null

@@ -2,8 +2,6 @@ package application.servlets.runtime;
 
 import api.DebugAPI;
 import application.credits.Generation;
-import application.execution.ExecutionCache;
-import application.execution.ProgramLocks;
 import application.listeners.AppContextListener;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
@@ -16,7 +14,6 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
 import api.DisplayAPI;
-import api.ExecutionAPI;
 import execution.ExecutionDTO;
 import execution.ExecutionRequestDTO;
 
@@ -27,7 +24,8 @@ import application.execution.JobSubmitResult;
 import users.UserManager;
 
 import java.io.BufferedReader;
-import java.util.concurrent.locks.ReadWriteLock;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 import static utils.Constants.*;
 
@@ -37,6 +35,7 @@ public class ExecuteServlet extends HttpServlet {
 
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) {
+
         resp.setContentType("application/json");
         try {
             StringBuilder sb = new StringBuilder();
@@ -47,36 +46,39 @@ public class ExecuteServlet extends HttpServlet {
             JsonObject in = gson.fromJson(sb.toString(), JsonObject.class);
             if (in == null) in = new JsonObject();
 
+            String programKey = in.has("program") && !in.get("program").isJsonNull()
+                    ? in.get("program").getAsString()
+                    : null;
             String functionUserString = in.has("function") && !in.get("function").isJsonNull()
                     ? in.get("function").getAsString()
                     : null;
 
             ExecutionRequestDTO execReq = gson.fromJson(in, ExecutionRequestDTO.class);
 
-            DisplayAPI root = (DisplayAPI) getServletContext().getAttribute(ATTR_DISPLAY_API);
-            if (root == null || root.getDisplay() == null) {
-                resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
-                resp.getWriter().write("{\"error\":\"no program loaded\"}");
-                return;
-            }
+            Map<String, DisplayAPI> registry = getDisplayRegistry();
 
-            DisplayAPI target = root;
+            DisplayAPI target = null;
             if (functionUserString != null && !functionUserString.isBlank()) {
-                DisplayAPI f = root.functionDisplaysByUserString().get(functionUserString);
-                if (f == null) {
+                target = registry.get(functionUserString);
+                if (target == null) {
                     resp.setStatus(HttpServletResponse.SC_NOT_FOUND);
                     resp.getWriter().write("{\"error\":\"function not found\"}");
                     return;
                 }
-                target = f;
+            } else if (programKey != null && !programKey.isBlank()) {
+                target = registry.get(programKey);
+                if (target == null) {
+                    resp.setStatus(HttpServletResponse.SC_NOT_FOUND);
+                    resp.getWriter().write("{\"error\":\"program not found\"}");
+                    return;
+                }
             }
 
             final int degree = Math.max(0, execReq.getDegree());
             final DisplayAPI targetRef = target;
             final ExecutionRequestDTO execReqRef = execReq;
-            final ReadWriteLock rw = ProgramLocks.lockFor("REPO");
 
-            // >>> Capture session-bound data BEFORE scheduling (don't touch req inside worker)
+            // Capture session-bound data BEFORE scheduling (don't touch req inside worker)
             final String username = (String) (req.getSession(false) != null
                     ? req.getSession(false).getAttribute(SESSION_USERNAME)
                     : null);
@@ -84,14 +86,8 @@ public class ExecuteServlet extends HttpServlet {
 
             JobSubmitResult res = ExecutionTaskManager.trySubmit(() -> {
 
-                // Build DebugAPI under read lock (heavy objects are cached by DisplayAPI)
-                final DebugAPI dbgApi;
-                rw.readLock().lock();
-                try {
-                    dbgApi = targetRef.debugForDegree(degree);
-                } finally {
-                    rw.readLock().unlock();
-                }
+                // Build DebugAPI for this run (no global locking).
+                final DebugAPI dbgApi = targetRef.debugForDegree(degree);
 
                 // Generation via enum directly (assumes UI sends "I" | "II" | "III" | "IV")
                 final Generation gen = Generation.valueOf(execReqRef.getGeneration());
@@ -128,6 +124,7 @@ public class ExecuteServlet extends HttpServlet {
                     um.onRunExecuted(username, 0);
                     // TODO(history): when implementing per-user run history, persist full record (inputs, y, cycles, generation, timestamp).
                 }
+
                 return result;
             });
 
@@ -221,5 +218,16 @@ public class ExecuteServlet extends HttpServlet {
         job.cancel(); // future.cancel(true) + status=CANCELED
         resp.setStatus(HttpServletResponse.SC_OK);
         resp.getWriter().write("{\"status\":\"CANCELED\"}");
+    }
+
+    @SuppressWarnings("unchecked")
+    private Map<String, DisplayAPI> getDisplayRegistry() {
+        Object obj = getServletContext().getAttribute(ATTR_DISPLAY_REGISTRY);
+        if (obj instanceof Map<?, ?> m) {
+            return (Map<String, DisplayAPI>) m;
+        }
+        Map<String, DisplayAPI> created = new ConcurrentHashMap<>();
+        getServletContext().setAttribute(ATTR_DISPLAY_REGISTRY, created);
+        return created;
     }
 }

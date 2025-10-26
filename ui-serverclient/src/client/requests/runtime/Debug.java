@@ -28,6 +28,23 @@ public final class Debug {
                 .build();
     }
 
+    /** POST /api/debug/init  (body: { degree, inputs, program, function? }) */
+    public static Request init(ExecutionRequestDTO dto, String programName, String functionUserString) {
+        JsonObject body = JsonUtils.GSON.toJsonTree(dto).getAsJsonObject();
+        if (programName != null && !programName.isBlank()) {
+            body.addProperty("program", programName);
+        }
+        if (functionUserString != null && !functionUserString.isBlank()) {
+            body.addProperty("function", functionUserString);
+        }
+        RequestBody rb = RequestBody.create(body.toString(), Constants.MEDIA_TYPE_JSON);
+        return new Request.Builder()
+                .url(Constants.BASE_URL + Constants.API_DEBUG_INIT)
+                .post(rb)
+                .addHeader(Constants.HEADER_ACCEPT, Constants.CONTENT_TYPE_JSON)
+                .build();
+    }
+
     /** POST /api/debug/step  (body: { debugId }) */
     public static Request step(String debugId) {
         JsonObject body = new JsonObject();

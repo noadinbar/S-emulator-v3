@@ -7,6 +7,7 @@ public class Constants {
     public static final String ATTR_DEBUG_LOCKS     = "debug.session.locks"; // per-session mutexes
     public static final String ATTR_DEBUG_SNAPSHOTS = "debug.snapshots";     // latest DebugStateDTO per debugId
     public static final String ATTR_DBG_BUSY        = "dbgBusy";
+    public static final String ATTR_DISPLAY_REGISTRY = "display.registry";
     public static final String MODE_IDLE  = "idle";
     public static final String MODE_RUN   = "run";
     public static final String MODE_DEBUG = "debug";

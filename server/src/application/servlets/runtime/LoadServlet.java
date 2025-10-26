@@ -16,6 +16,7 @@ import jakarta.servlet.annotation.MultipartConfig;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.*;
 
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReadWriteLock;
 
 import java.io.IOException;
@@ -70,20 +71,22 @@ public class LoadServlet extends HttpServlet {
         }
 
         try {
-            // 3) Validate & build DTO
+            // 3) Validate & build DTO/model from uploaded XML
             LoadAPI loader = new LoadAPIImpl();
-            DisplayAPI display = loader.loadFromXml(tmp); // throws on invalid/semantic errors
+            DisplayAPI display = loader.loadFromXml(tmp); // throws if XML invalid or semantic error
             DisplayDTO dto = display.getDisplay();
+
             String submitted = filePart.getSubmittedFileName();
             String baseName = submitted != null
                     ? Paths.get(submitted).getFileName().toString()
                     : "program";
-            baseName = baseName.replaceFirst("\\.[^.]+$", ""); // strip extension
+            baseName = baseName.replaceFirst("\\.[^.]+$", ""); // strip extension ".xml" etc.
 
             String uploader = "anonymous";
             HttpSession session = req.getSession(false);
-            if (session != null && session.getAttribute("username") != null)
+            if (session != null && session.getAttribute("username") != null) {
                 uploader = session.getAttribute("username").toString();
+            }
 
             ProgramManager pm = (ProgramManager) getServletContext().getAttribute(AppContextListener.ATTR_PROGRAMS);
             FunctionManager fm = (FunctionManager) getServletContext().getAttribute(AppContextListener.ATTR_FUNCTIONS);
@@ -92,12 +95,50 @@ public class LoadServlet extends HttpServlet {
             final ReadWriteLock rw = ProgramLocks.lockFor("REPO");
             rw.writeLock().lock();
             try {
+                // --------------------------
+                // (A) old global behavior:
+                // keep the "current" DisplayAPI for backwards compatibility
+                // (ExecuteServlet / DebugServlet still expect this for now)
+                // --------------------------
                 getServletContext().setAttribute(ATTR_DISPLAY_API, display);
                 ExecutionCache.clearAll();
+
+                // --------------------------
+                // (B) NEW behavior:
+                // Add this program + all its functions into the global registry map
+                // so multiple programs/functions can coexist.
+                //
+                // Key idea:
+                // - The program itself is registered under baseName (derived from file name).
+                // - Each function is registered under its user-facing name (the same string
+                //   the UI shows in the functions table).
+                //
+                // Later, ExecuteServlet / DebugServlet will STOP using ATTR_DISPLAY_API
+                // and instead pick the right DisplayAPI from this registry.
+                // --------------------------
+
+                Map<String, DisplayAPI> registry = getDisplayRegistry();
+
+                // Register the whole program under baseName
+                registry.put(baseName, display);
+
+                // Register each function separately under its "user string"
+                Map<String, DisplayAPI> fnMap = display.functionDisplaysByUserString();
+                for (Map.Entry<String, DisplayAPI> e : fnMap.entrySet()) {
+                    String userString = e.getKey();     // function name shown to the user
+                    DisplayAPI fApi   = e.getValue();   // DisplayAPI scoped to that function
+                    registry.put(userString, fApi);
+                }
+                // --------------------------
+                // (C) Update ProgramManager / FunctionManager tables for the UI lists,
+                // --------------------------
                 if (pm != null) {
                     pm.put(baseName, dto);
+
                     int maxDegree = 0;
-                    try { maxDegree = display.execution().getMaxDegree(); } catch (Exception ignore) {}
+                    try {
+                        maxDegree = display.execution().getMaxDegree();
+                    } catch (Exception ignore) { }
 
                     pm.putRecord(new ProgramTableRow(
                             baseName,
@@ -107,19 +148,22 @@ public class LoadServlet extends HttpServlet {
                     ));
 
                     if (um != null && uploader != null && !uploader.isBlank()) {
-                        try { um.onMainProgramUploaded(uploader); } catch (Exception ignore) {}
+                        try {
+                            um.onMainProgramUploaded(uploader);
+                        } catch (Exception ignore) { }
                     }
                 }
 
                 if (fm != null) {
-                    Map<String, DisplayAPI> fnMap = display.functionDisplaysByUserString();
                     for (Map.Entry<String, DisplayAPI> e : fnMap.entrySet()) {
                         String userString = e.getKey();
                         DisplayAPI fApi   = e.getValue();
                         DisplayDTO fDto   = fApi.getDisplay();
                         int fBaseInstr = fDto.numberOfInstructions();
                         int fMaxDegree = 0;
-                        try { fMaxDegree = fApi.execution().getMaxDegree(); } catch (Exception ignore) {}
+                        try {
+                            fMaxDegree = fApi.execution().getMaxDegree();
+                        } catch (Exception ignore) { }
 
                         fm.put(userString, fDto);
                         fm.putRecord(new FunctionTableRow(
@@ -129,27 +173,46 @@ public class LoadServlet extends HttpServlet {
                                 fBaseInstr,
                                 fMaxDegree
                         ));
-
                         if (um != null && uploader != null && !uploader.isBlank()) {
-                            try { um.onFunctionUploaded(uploader); } catch (Exception ignore) {}
+                            try {
+                                um.onFunctionUploaded(uploader);
+                            } catch (Exception ignore) { }
                         }
                     }
                 }
-
             } finally {
                 rw.writeLock().unlock();
             }
-            // ========== /NEW ==========
 
+            // 4) Respond to client with the "program name" we registered under.
+            // UI already expects UploadResultDTO(baseName) so we keep that.
             UploadResultDTO uploadResult = new UploadResultDTO(baseName);
             writeJson(resp, HttpServletResponse.SC_CREATED, uploadResult);
 
         } catch (Exception e) {
-            String msg = e.getClass().getSimpleName() + ": " + (e.getMessage() == null ? "" : e.getMessage());
+            String msg = e.getClass().getSimpleName() + ": " +
+                    (e.getMessage() == null ? "" : e.getMessage());
             writeJsonError(resp, HttpServletResponse.SC_BAD_REQUEST, msg);
         } finally {
-            try { Files.deleteIfExists(tmp); } catch (Exception ignore) {}
+            try {
+                Files.deleteIfExists(tmp);
+            } catch (Exception ignore) { }
         }
     }
+
+
+    @SuppressWarnings("unchecked")
+    private Map<String, DisplayAPI> getDisplayRegistry() {
+        Object obj = getServletContext().getAttribute(ATTR_DISPLAY_REGISTRY);
+        if (obj instanceof Map<?, ?> m) {
+            return (Map<String, DisplayAPI>) m;
+        }
+
+        // first time: create the registry map and store it in the context.
+        Map<String, DisplayAPI> created = new ConcurrentHashMap<>();
+        getServletContext().setAttribute(ATTR_DISPLAY_REGISTRY, created);
+        return created;
+    }
+
 
 }

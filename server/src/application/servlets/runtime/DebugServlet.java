@@ -83,29 +83,38 @@ public class DebugServlet extends HttpServlet {
      * On success: stores session and initial snapshot (DebugStateDTO).
      */
     private void handleInit(HttpServletRequest req, HttpServletResponse resp) throws IOException {
-        DisplayAPI root = getRootOrError(resp);
-        if (root == null) return;
-
+        // Parse JSON body
         JsonObject in = readJson(req);
         if (in == null) in = new JsonObject();
 
-        String functionKey = (in.has("function") && !in.get("function").isJsonNull())
-                ? in.get("function").getAsString()
-                : null;
+        // Which program/function did the client ask to debug?
+        String programKey = null;
+        if (in.has("program") && !in.get("program").isJsonNull()) {
+            programKey = in.get("program").getAsString();
+        }
 
+        String functionKey = null;
+        if (in.has("function") && !in.get("function").isJsonNull()) {
+            functionKey = in.get("function").getAsString();
+        }
+
+        // Build the DTO for execution parameters (degree / inputs / generation)
         ExecutionRequestDTO execReq = gson.fromJson(in, ExecutionRequestDTO.class);
         if (execReq == null) {
-            writeJsonError(resp, HttpServletResponse.SC_BAD_REQUEST, "Missing execution request body.");
+            writeJsonError(resp,
+                    HttpServletResponse.SC_BAD_REQUEST,
+                    "Missing execution request body.");
             return;
         }
         int degree = Math.max(0, execReq.getDegree());
-
-        DisplayAPI target = resolveTarget(root, functionKey);
+        // Resolve which DisplayAPI to debug, based on registry + user selection
+        DisplayAPI target = resolveTargetFromRegistry(programKey, functionKey, resp);
         if (target == null) {
-            writeJsonError(resp, HttpServletResponse.SC_NOT_FOUND,
-                    "Function not found: " + functionKey);
+            // resolveTargetFromRegistry already wrote the error response
             return;
         }
+
+        // Identify which logged-in user is starting this debug session
         HttpSession httpSess = req.getSession(false);
         String username = null;
         if (httpSess != null) {
@@ -120,60 +129,81 @@ public class DebugServlet extends HttpServlet {
         int creditsNowAfterInit = 0;
         try {
             Generation gen = Generation.valueOf(execReq.getGeneration());
+
             if (username != null) {
-                // TODO(credits): if not enough credits for gen.getCredits(), return 402/409 with a clear error
+                // TODO(credits): if not enough credits to afford gen.getCredits(),
+                // return an error instead of going forward.
                 um.adjustCredits(username, -gen.getCredits());
+
                 UserTableRow row = um.get(username);
                 if (row != null) {
                     creditsNowAfterInit = row.getCreditsCurrent();
                 }
             }
         } catch (Exception ignore) {
-            // If generation parsing fails, just proceed; dbg.init may still catch schema issues.
-            // TODO(credits): consider refund logic if we later fail to init the debug session.
+            // If parsing generation fails or user is null we just continue.
+            // TODO(credits): consider refund / rollback on failure later.
         }
 
-        // Pre-generate debug session id for client polling upon acceptance.
+        // We pre-generate a debug session id for the client
         String id = UUID.randomUUID().toString();
 
+        // Submit heavy work (building the actual DebugAPI and init state) to the executor
         JobSubmitResult res = ExecutionTaskManager.trySubmit(() -> {
             try {
                 DebugAPI dbg = target.debugForDegree(degree);
+
                 DebugStateDTO state = dbg.init(execReq);
 
-                // Store session and per-session lock
+                // Store session data for ongoing debug:
+                // - getSessions(): debugId -> DebugAPI (engine handle)
+                // - getLocks():    debugId -> Semaphore    (to serialize step/resume)
+                // - getSnapshots():debugId -> DebugStateDTO (last known machine state)
                 getSessions().put(id, dbg);
                 getLocks().computeIfAbsent(id, k -> new Semaphore(1));
-                // Store initial snapshot for GET /state
                 getSnapshots().put(id, state);
 
-                // Mark "busy" if at least one session exists
+                // Mark system "busy" = true if at least one debug session is active
                 getServletContext().setAttribute(ATTR_DBG_BUSY, Boolean.TRUE);
 
+                // TODO(history):
+                // Here we can also stash per-session metadata (user, programKey, etc.)
+                // so that later when this session ends we can bump run counters safely.
+                // We'll add that in the history/count stage.
+
             } catch (Throwable t) {
-                // Clean up on failure
+                // Rollback partial session data if init failed
                 getSessions().remove(id);
                 getLocks().remove(id);
                 getSnapshots().remove(id);
+
                 boolean anyLeft = !getSessions().isEmpty();
-                getServletContext().setAttribute(ATTR_DBG_BUSY, anyLeft ? Boolean.TRUE : Boolean.FALSE);
+                getServletContext().setAttribute(
+                        ATTR_DBG_BUSY,
+                        anyLeft ? Boolean.TRUE : Boolean.FALSE
+                );
                 throw t;
             }
-            return null; // ExecutionTaskManager result not used for debug flow
+            return null;
         });
 
+        // If thread-pool was too busy we tell the client "try again"
         if (!res.isAccepted()) {
             int retryMs = res.getRetryAfterMs();
             int retrySec = (int) Math.ceil(retryMs / 1000.0);
+
             resp.setHeader("Retry-After", String.valueOf(retrySec));
 
-            JsonObject out = new JsonObject();
-            out.addProperty("error", "busy");
-            out.addProperty("retryMs", retryMs);
-            writeJson(resp, SC_TOO_MANY_REQUESTS, out);
+            JsonObject outBusy = new JsonObject();
+            outBusy.addProperty("error", "busy");
+            outBusy.addProperty("retryMs", retryMs);
+
+            // NOTE: we keep 429 here like קודם (Too Many Requests)
+            writeJson(resp, SC_TOO_MANY_REQUESTS, outBusy);
             return;
         }
 
+        // Success: return debugId + credits after upfront generation billing
         JsonObject out = new JsonObject();
         out.addProperty("debugId", id);
         out.addProperty("creditsCurrent", creditsNowAfterInit);
@@ -738,6 +768,57 @@ public class DebugServlet extends HttpServlet {
 
         cleaner.setDaemon(true); // does not block server shutdown
         cleaner.start();
+    }
+
+    @SuppressWarnings("unchecked")
+    private Map<String, DisplayAPI> getDisplayRegistry() {
+        Object obj = getServletContext().getAttribute(ATTR_DISPLAY_REGISTRY);
+        if (obj instanceof Map<?, ?> m) {
+            return (Map<String, DisplayAPI>) m;
+        }
+
+        // First access: create empty registry so we never get null
+        Map<String, DisplayAPI> created = new ConcurrentHashMap<>();
+        getServletContext().setAttribute(ATTR_DISPLAY_REGISTRY, created);
+        return created;
+    }
+
+    private DisplayAPI resolveTargetFromRegistry(String programKey, String functionKey, HttpServletResponse resp) throws IOException {
+        Map<String, DisplayAPI> registry = getDisplayRegistry();
+        DisplayAPI target = null;
+        if (functionKey != null && !functionKey.isBlank()) {
+            // User asked to debug a function directly
+            target = registry.get(functionKey);
+            if (target == null) {
+                writeJsonError(resp,
+                        HttpServletResponse.SC_NOT_FOUND,
+                        "Function not found: " + functionKey);
+                return null;
+            }
+        } else {
+            // User asked to debug the whole program
+            if (programKey == null || programKey.isBlank()) {
+                writeJsonError(resp,
+                        HttpServletResponse.SC_BAD_REQUEST,
+                        "Missing program");
+                return null;
+            }
+            target = registry.get(programKey);
+            if (target == null) {
+                writeJsonError(resp,
+                        HttpServletResponse.SC_NOT_FOUND,
+                        "Program not found: " + programKey);
+                return null;
+            }
+        }
+
+        if (safeDisplay(target) == null) {
+            writeJsonError(resp, HttpServletResponse.SC_CONFLICT,
+                    "Selected program/function is not available anymore.");
+            return null;
+        }
+
+        return target;
     }
 
 }

@@ -5,7 +5,6 @@ import com.google.gson.GsonBuilder;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 
-/** Small servlet helpers: shared Gson (via Builder) + uniform JSON writers. */
 public class ServletUtils {
 
     // Gson via Builder (classroom style)
@@ -28,4 +27,5 @@ public class ServletUtils {
         String safe = message == null ? "" : message.replace("\"", "'");
         resp.getWriter().write("{\"" + Constants.JSON_ERROR + "\":\"" + safe + "\"}");
     }
+
 }

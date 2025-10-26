@@ -28,15 +28,21 @@ public final class Debug {
                 .build();
     }
 
-    /** POST /api/debug/init  (body: { degree, inputs, program, function? }) */
-    public static Request init(ExecutionRequestDTO dto, String programName, String functionUserString) {
+    // POST /api/debug/init
+// Body we send: { degree, inputs, generation, program, function? }
+    public static Request init(ExecutionRequestDTO dto,
+                               String programName,
+                               String functionUserString) {
         JsonObject body = JsonUtils.GSON.toJsonTree(dto).getAsJsonObject();
+        // tell the server which program this debug session is for
         if (programName != null && !programName.isBlank()) {
             body.addProperty("program", programName);
         }
+        // if we're debugging a specific function, include its unique user string
         if (functionUserString != null && !functionUserString.isBlank()) {
             body.addProperty("function", functionUserString);
         }
+
         RequestBody rb = RequestBody.create(body.toString(), Constants.MEDIA_TYPE_JSON);
         return new Request.Builder()
                 .url(Constants.BASE_URL + Constants.API_DEBUG_INIT)

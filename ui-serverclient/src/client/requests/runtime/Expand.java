@@ -1,40 +1,36 @@
 package client.requests.runtime;
 
-import okhttp3.HttpUrl;
+import com.google.gson.JsonObject;
 import okhttp3.Request;
+import okhttp3.RequestBody;
 import utils.Constants;
+import utils.JsonUtils;
 
+/**
+ * Build POST /api/expand
+ * Body includes { degree, program, function? }
+ */
 public class Expand {
-    public static Request build(int degree) {
-        HttpUrl base = HttpUrl.parse(Constants.BASE_URL + Constants.API_EXPAND);
-        if (base == null) {
-            throw new IllegalArgumentException("Invalid BASE_URL/API_EXPAND");
+
+    public static Request build(int degree,
+                                String programName,
+                                String functionUserString) {
+
+        JsonObject body = new JsonObject();
+        body.addProperty("degree", degree);
+        body.addProperty("program", programName);
+        if (functionUserString != null && !functionUserString.isBlank()) {
+            body.addProperty("function", functionUserString);
         }
-        HttpUrl url = base.newBuilder()
-                .addQueryParameter("degree", String.valueOf(degree))
-                .build();
+
+        RequestBody rb = RequestBody.create(
+                body.toString(),
+                Constants.MEDIA_TYPE_JSON
+        );
 
         return new Request.Builder()
-                .url(url)
-                .get()
-                .addHeader(Constants.HEADER_ACCEPT, Constants.CONTENT_TYPE_JSON)
-                .build();
-    }
-
-    /** Build GET /api/expand?degree=N&function={userString} */
-    public static Request build(String functionUserString, int degree) {
-        HttpUrl base = HttpUrl.parse(Constants.BASE_URL + Constants.API_EXPAND);
-        if (base == null) {
-            throw new IllegalArgumentException("Invalid BASE_URL/API_EXPAND");
-        }
-        HttpUrl url = base.newBuilder()
-                .addQueryParameter("degree", String.valueOf(degree))
-                .addQueryParameter("function", functionUserString)
-                .build();
-
-        return new Request.Builder()
-                .url(url)
-                .get()
+                .url(Constants.BASE_URL + Constants.API_EXPAND)
+                .post(rb)
                 .addHeader(Constants.HEADER_ACCEPT, Constants.CONTENT_TYPE_JSON)
                 .build();
     }

@@ -51,6 +51,7 @@ public class HeaderController {
     private static final Pattern Z_IN_ARGS = Pattern.compile("\\bz(\\d+)\\b");
     private final AtomicBoolean creditsShouldUpdate = new AtomicBoolean(false);
     private Timer creditsTimer;
+    private String programContextName;
 
     @FXML
     private void initialize() {
@@ -137,9 +138,15 @@ public class HeaderController {
     public void setRunTarget(String txt) {
         if (runTargetLabel != null) runTargetLabel.setText(txt != null ? txt : "");
     }
+
     public void setHighlightOptions(List<String> options) {
         cmbHighlight.getItems().setAll(options);
     }
+
+    public void setProgramContextName(String name) {
+        this.programContextName = name;
+    }
+
 
     public int getCurrentDegree() {
         return currentDegree.get();
@@ -249,38 +256,33 @@ public class HeaderController {
         Task<JsonObject> task = new Task<>() {
             @Override
             protected JsonObject call() throws Exception {
-                // GET /api/status (Gson JSON)
-                return StatusResponder.get();
+                return StatusResponder.get(programContextName);
             }
         };
-
         task.setOnSucceeded(ev -> {
             JsonObject js = task.getValue();
             if (js == null) {
                 return;
             }
-
-            // username (may be null before login)
+            // --- username (for header display) ---
             if (js.has("username") && !js.get("username").isJsonNull()) {
                 String u = js.get("username").getAsString();
                 if (u != null && !u.isBlank()) {
-                    // Assumes these setters already exist in your HeaderController
                     setUserName(u);
                 }
             }
-
-            // credits (show only when present)
+            // --- credits (live balance after runs / debug steps) ---
             if (js.has("creditsCurrent") && !js.get("creditsCurrent").isJsonNull()) {
                 int credits = js.get("creditsCurrent").getAsInt();
                 setAvailableCredits(credits);
             }
         });
-
         task.setOnFailed(ev -> {
-            // Optional: log/ignore – header stays as-is on failure
+            // Silent failure: if the server is temporarily unreachable,
         });
-
-        new Thread(task, "header-refresh-status").start();
+        Thread t = new Thread(task, "exec-header-refresh-status");
+        t.setDaemon(true);
+        t.start();
     }
 
     public void startCreditsRefresher() {
@@ -288,7 +290,7 @@ public class HeaderController {
         creditsShouldUpdate.set(true);
         creditsTimer = new Timer(true); // daemon
         creditsTimer.scheduleAtFixedRate(
-                new CreditsRefresher(creditsShouldUpdate, this::applyStatusJson),
+                new CreditsRefresher(creditsShouldUpdate, this::applyStatusJson, programContextName),
                 Constants.REFRESH_RATE_MS,
                 Constants.REFRESH_RATE_MS
         );

@@ -19,43 +19,52 @@ public class CreditsRefresher extends TimerTask {
 
     private final AtomicBoolean shouldUpdate;
     private final Consumer<JsonObject> onUpdate;
+    private final String programName;
 
-    public CreditsRefresher(AtomicBoolean shouldUpdate, Consumer<JsonObject> onUpdate) {
+    public CreditsRefresher(AtomicBoolean shouldUpdate,
+                            Consumer<JsonObject> onUpdate,
+                            String programName) {
         this.shouldUpdate = shouldUpdate;
         this.onUpdate = onUpdate;
+        this.programName = programName;
     }
 
     @Override
     public void run() {
-        if (!shouldUpdate.get()) return;
+        if (!shouldUpdate.get()) {
+            return;
+        }
 
-        // Build request to /api/status
-        Request req = Status.build();
+        // Build GET /api/status?program=<programName>
+        Request req = Status.build(programName);
 
-        // Async HTTP call; do not block Timer thread
+        // async call so we don't block the timer thread
         HttpClientUtil.runAsync(req, new Callback() {
             @Override
             public void onFailure(Call call, IOException e) {
-                // Best-effort: ignore failures; try again on next tick
+                // ignore network errors; header just won't update this tick
             }
 
             @Override
             public void onResponse(Call call, Response response) throws IOException {
-                if (!shouldUpdate.get()) { response.close(); return; }
-                if (!response.isSuccessful() || response.body() == null) {
-                    response.close();
-                    return;
-                }
-
-                String json = response.body().string();
-                response.close();
-                JsonObject js = GSON.fromJson(json, JsonObject.class);
-
-                Platform.runLater(() -> {
-                    if (shouldUpdate.get()) {
-                        onUpdate.accept(js);
+                try {
+                    if (!response.isSuccessful() || response.body() == null) {
+                        response.close();
+                        return;
                     }
-                });
+
+                    String json = response.body().string();
+                    response.close();
+                    JsonObject js = GSON.fromJson(json, JsonObject.class);
+
+                    Platform.runLater(() -> {
+                        if (shouldUpdate.get()) {
+                            onUpdate.accept(js);
+                        }
+                    });
+                } catch (Exception ignore) {
+                    // swallow parse/close failures safely
+                }
             }
         });
     }

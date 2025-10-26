@@ -132,8 +132,7 @@ public class HeaderController {
         Task<JsonObject> task = new Task<>() {
             @Override
             protected JsonObject call() throws Exception {
-                // GET /api/status (Gson JSON)
-                return StatusResponder.get();
+                return StatusResponder.get("");
             }
         };
 
@@ -147,7 +146,6 @@ public class HeaderController {
             if (js.has("username") && !js.get("username").isJsonNull()) {
                 String u = js.get("username").getAsString();
                 if (u != null && !u.isBlank()) {
-                    // Assumes these setters already exist in your HeaderController
                     setUserName(u);
                 }
             }
@@ -160,22 +158,28 @@ public class HeaderController {
         });
 
         task.setOnFailed(ev -> {
-            // Optional: log/ignore – header stays as-is on failure
+            // ignore network errors; header stays as-is
         });
 
-        new Thread(task, "header-refresh-status").start();
+        new Thread(task, "opening-header-refresh-status").start();
     }
+
 
     public void startCreditsRefresher() {
         stopCreditsRefresher();
         creditsShouldUpdate.set(true);
         creditsTimer = new Timer(true); // daemon
         creditsTimer.scheduleAtFixedRate(
-                new CreditsRefresher(creditsShouldUpdate, this::applyStatusJson),
+                new CreditsRefresher(
+                        creditsShouldUpdate,
+                        this::applyStatusJson,
+                        ""
+                ),
                 Constants.REFRESH_RATE_MS,
                 Constants.REFRESH_RATE_MS
         );
     }
+
 
     private void applyStatusJson(JsonObject js) {
         if (js == null) return;

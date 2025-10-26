@@ -34,7 +34,6 @@ public class Constants {
     public static final String API_PROGRAM_BY_NAME= "/api/programs/by-name";
     public static final String API_USERS = "/api/users";
 
-
     public static final String SESSION_USERNAME = "username";
     public static final String HEADER_CONTENT_TYPE = "Content-Type";
     public static final String CONTENT_TYPE_JSON   = "application/json";

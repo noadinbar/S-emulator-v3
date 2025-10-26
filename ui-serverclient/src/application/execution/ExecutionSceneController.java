@@ -129,6 +129,7 @@ public class ExecutionSceneController {
             headerController.setRunTarget(prefix + name);
             headerController.setMaxDegree(this.maxDegree);
             headerController.setCurrentDegree(0);
+            headerController.setProgramContextName(this.programContextName);
             headerController.setOnExpand(()  -> changeDegreeAndShow(+1));
             headerController.setOnCollapse(() -> changeDegreeAndShow(-1));
             headerController.setOnApplyDegree(() -> doApply(headerController.getCurrentDegree()));
@@ -218,8 +219,8 @@ public class ExecutionSceneController {
         new Thread(() -> {
             try {
                 ExpandDTO dto = (targetKind == ExecTarget.PROGRAM)
-                        ? ExpandResponder.execute(target)
-                        : ExpandResponder.execute(targetName, target);
+                        ? ExpandResponder.expandProgram(programContextName, target)
+                        : ExpandResponder.expandFunction(targetName, target);
                 Platform.runLater(() -> {
                     lastExpanded = dto;
                     if (programTableController != null) {
@@ -422,6 +423,7 @@ public class ExecutionSceneController {
         final int degree = headerController.getCurrentDegree();
         final String generation = getSelectedArchitecture();
         final ExecutionRequestDTO dto = new ExecutionRequestDTO(degree, inputs, generation);
+        final String programName = programContextName;
         final String functionUserString = (targetKind == ExecTarget.FUNCTION) ? targetName : null;
         outputsController.clear();
 
@@ -433,7 +435,7 @@ public class ExecutionSceneController {
 
                 while (true) {
                     DebugResults.InitResult res = DebugResponder.init(
-                            Debug.init(dto, functionUserString)
+                            Debug.init(dto, programName, functionUserString)
                     );
 
                     if (res.accepted()) {

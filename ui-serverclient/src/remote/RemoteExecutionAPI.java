@@ -12,19 +12,23 @@ import execution.ExecutionRequestDTO;
 import okhttp3.Request;
 
 public class RemoteExecutionAPI implements ExecutionAPI {
+    private final String programName;
     private final String userString;
 
-    public RemoteExecutionAPI() {
+    public RemoteExecutionAPI(String programName) {
+        this.programName = programName;
         this.userString = null;
     }
-    public RemoteExecutionAPI(String functionKey) {
+
+    public RemoteExecutionAPI(String programName, String functionKey) {
+        this.programName = programName;
         this.userString = functionKey;
     }
 
     @Override
     public int getMaxDegree() {
         try {
-            JsonObject js = StatusResponder.get();
+            JsonObject js = StatusResponder.get(programName);
             if (js == null) return 0;
 
             if (userString == null || userString.isBlank()) {
@@ -45,25 +49,21 @@ public class RemoteExecutionAPI implements ExecutionAPI {
     @Override
     public ExecutionDTO execute(ExecutionRequestDTO request) {
         try {
-            // Build original POST to get the exact URL (keep a single source of truth for the endpoint)
-            Request submitReq = Execute.build(request, userString);
+            // Build once to get the exact URL (single source of truth)
+            Request submitReq = Execute.build(request, programName, userString);
             String executeUrl = submitReq.url().toString();
 
             // ---- SUBMIT PHASE ----
-            // New API: submit(...) returns JobSubmitResult (accepted/busy + jobId/retryMs)
             String jobId;
             while (true) {
                 JobSubmitResult sr = ExecuteResponder.submit(
-                        ExecuteResponder.buildSubmitRequest(executeUrl, request, userString)
+                        ExecuteResponder.buildSubmitRequest(executeUrl, request, programName, userString)
                 );
                 if (sr.isAccepted()) {
                     jobId = sr.getJobId();
                     break;
                 }
-                // Server is busy; wait the suggested backoff and retry
-                try {
-                    Thread.sleep(Math.max(300, sr.getRetryMs()));
-                } catch (InterruptedException ignore) { /* no-op */ }
+                try { Thread.sleep(Math.max(300, sr.getRetryMs())); } catch (InterruptedException ignore) {}
             }
 
             // ---- POLL PHASE ----
@@ -79,7 +79,7 @@ public class RemoteExecutionAPI implements ExecutionAPI {
                         return pr.getResult();
                     case CANCELED:
                         throw new RuntimeException("Canceled");
-                    case TIMED_OUT: // optional: treat as error
+                    case TIMED_OUT:
                     case ERROR:
                     default:
                         String err = (pr.getError() == null || pr.getError().isBlank())

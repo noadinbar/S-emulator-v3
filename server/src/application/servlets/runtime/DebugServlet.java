@@ -152,9 +152,7 @@ public class DebugServlet extends HttpServlet {
         JobSubmitResult res = ExecutionTaskManager.trySubmit(() -> {
             try {
                 DebugAPI dbg = target.debugForDegree(degree);
-
                 DebugStateDTO state = dbg.init(execReq);
-
                 // Store session data for ongoing debug:
                 // - getSessions(): debugId -> DebugAPI (engine handle)
                 // - getLocks():    debugId -> Semaphore    (to serialize step/resume)

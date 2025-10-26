@@ -8,12 +8,14 @@ import jakarta.servlet.annotation.*;
 
 import java.io.IOException;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 import api.DisplayAPI;
 import users.UserManager;
 import users.UserTableRow;
 
 import static utils.Constants.*;
+
 @WebServlet(name = "StatusServlet", urlPatterns = {API_STATUS})
 public class StatusServlet extends HttpServlet {
     private final Gson gson = new Gson();
@@ -23,44 +25,57 @@ public class StatusServlet extends HttpServlet {
         resp.setContentType("application/json");
 
         JsonObject json = new JsonObject();
-        DisplayAPI display = (DisplayAPI) getServletContext().getAttribute(ATTR_DISPLAY_API);
 
-        boolean loaded = (display != null && display.getDisplay() != null);
+        // which program are we asking status about?
+        String programKey = req.getParameter("program");
+
+        // pull the correct DisplayAPI for that program from the registry
+        Map<String, DisplayAPI> registry = getDisplayRegistry();
+        DisplayAPI progApi = null;
+        if (programKey != null && !programKey.isBlank()) {
+            progApi = registry.get(programKey);
+        }
+
+        boolean loaded = (progApi != null && progApi.getDisplay() != null);
         json.addProperty("loaded", loaded);
 
         if (loaded) {
-            String programName = display.getDisplay().getProgramName();
+            String progName = progApi.getDisplay().getProgramName();
+
             int maxDegree = 0;
             try {
-                maxDegree = display.execution().getMaxDegree();
-            } catch (Exception ignore) {  }
+                maxDegree = progApi.execution().getMaxDegree();
+            } catch (Exception ignore) { }
 
-            json.addProperty("programName", programName);
+            json.addProperty("programName", progName);
             json.addProperty("maxDegree", maxDegree);
 
+            // for each function: what's the maxDegree it supports
             JsonObject functionsMax = new JsonObject();
             try {
-                Map<String, DisplayAPI> funcs = display.functionDisplaysByUserString();
+                Map<String, DisplayAPI> funcs = progApi.functionDisplaysByUserString();
                 if (funcs != null) {
                     for (Map.Entry<String, DisplayAPI> e : funcs.entrySet()) {
                         int fMax = 0;
                         try {
                             fMax = e.getValue().execution().getMaxDegree();
-                        } catch (Exception ignore) { /* keep 0 */ }
+                        } catch (Exception ignore) { }
                         functionsMax.addProperty(e.getKey(), fMax);
                     }
                 }
-            } catch (Exception ignore) {  }
+            } catch (Exception ignore) { }
             json.add("functionsMaxDegrees", functionsMax);
 
         } else {
+            // programKey not found in registry or no display
             json.addProperty("programName", (String) null);
             json.addProperty("maxDegree", 0);
             json.add("functionsMaxDegrees", new JsonObject());
         }
 
+        // debugBusy/executeBusy snapshot for UI "mode" indicator
         Boolean execBusy = (Boolean) getServletContext().getAttribute("execBusy");
-        Boolean dbgBusy  = (Boolean) getServletContext().getAttribute("dbgBusy");
+        Boolean dbgBusy  = (Boolean) getServletContext().getAttribute(ATTR_DBG_BUSY);
         boolean eb = execBusy != null && execBusy;
         boolean db = dbgBusy  != null && dbgBusy;
 
@@ -80,7 +95,7 @@ public class StatusServlet extends HttpServlet {
             if (um != null) {
                 UserTableRow row = um.get(username);
                 if (row != null) {
-                    creditsCurrent = row.getCreditsCurrent(); // per user, starts at 0
+                    creditsCurrent = row.getCreditsCurrent();
                     creditsUsed    = row.getCreditsUsed();
                 }
             }
@@ -90,5 +105,16 @@ public class StatusServlet extends HttpServlet {
 
         resp.setStatus(HttpServletResponse.SC_OK);
         resp.getWriter().write(gson.toJson(json));
+    }
+
+    @SuppressWarnings("unchecked")
+    private Map<String, DisplayAPI> getDisplayRegistry() {
+        Object obj = getServletContext().getAttribute(ATTR_DISPLAY_REGISTRY);
+        if (obj instanceof Map<?, ?> m) {
+            return (Map<String, DisplayAPI>) m;
+        }
+        Map<String, DisplayAPI> created = new ConcurrentHashMap<>();
+        getServletContext().setAttribute(ATTR_DISPLAY_REGISTRY, created);
+        return created;
     }
 }

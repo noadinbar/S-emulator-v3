@@ -1,6 +1,7 @@
 package structure.program;
 
 import exceptions.UndefinedFunctionException;
+import exceptions.UndefinedLabelException;
 import structure.expand.ExpandResult;
 import structure.expand.ProgramExpander;
 import structure.function.Function;
@@ -77,7 +78,6 @@ public class ProgramImpl implements Program, Serializable {
     @Override
     public void validate() {
         Set<String> definedLabels = new HashSet<>();
-        Set<String> definedFunctions = new HashSet<>();
         List<String> errors = new ArrayList<>();
 
         for (Instruction instr : instructions) {
@@ -90,21 +90,16 @@ public class ProgramImpl implements Program, Serializable {
             }
         }
 
-        for (Function func : functions) {
-            if (func != null && func.getName() != null) {
-                definedFunctions.add(func.getName().trim());
-            }
-        }
 
         for (int i = 0; i < instructions.size(); i++) {
             Instruction instr = instructions.get(i);
 
             Label targetLabel = switch (instr.getName()) {
-                case "JUMP_NOT_ZERO"       -> ((JumpNotZeroInstruction) instr).getTargetLabel();
-                case "JUMP_ZERO"           -> ((JumpZeroInstruction) instr).getTargetLabel();
+                case "JUMP_NOT_ZERO" -> ((JumpNotZeroInstruction) instr).getTargetLabel();
+                case "JUMP_ZERO" -> ((JumpZeroInstruction) instr).getTargetLabel();
                 case "JUMP_EQUAL_CONSTANT" -> ((JumpEqualConstantInstruction) instr).getTargetLabel();
                 case "JUMP_EQUAL_VARIABLE" -> ((JumpEqualVariableInstruction) instr).getTargetLabel();
-                case "GOTO_LABEL"          -> ((GoToInstruction) instr).getTarget();
+                case "GOTO_LABEL" -> ((GoToInstruction) instr).getTarget();
                 case "JUMP_EQUAL_FUNCTION" -> ((JumpEqualFunctionInstruction) instr).getTargetLabel();
                 default -> null;
             };
@@ -116,31 +111,12 @@ public class ProgramImpl implements Program, Serializable {
                 errors.add("Undefined label '" + targetLabel.getLabelRepresentation() +
                         "' referenced at " + where(instr, i + 1) + " (main).");
             }
-
-            for (String fn : referencedFunctionsInOrder(instr)) {
-                if (!definedFunctions.contains(fn)) {
-                    errors.add("Undefined function '" + fn +
-                            "' referenced at " + where(instr, i + 1) + " (main).");
-                }
-            }
-        }
-
-        for (Function func : functions) {
-            List<Instruction> body = func.getInstructions();
-            for (int i = 0; i < body.size(); i++) {
-                Instruction instr = body.get(i);
-                for (String fn : referencedFunctionsInOrder(instr)) {
-                    if (!definedFunctions.contains(fn)) {
-                        errors.add("Undefined function '" + fn +
-                                "' referenced inside function '" + func.getName() +
-                                "' at " + where(instr, i + 1) + ".");
-                    }
-                }
-            }
         }
 
         if (!errors.isEmpty()) {
-            throw new UndefinedFunctionException("Validation failed:\n" + String.join("\n", errors));
+            throw new UndefinedLabelException(
+                    "Validation failed:\n" + String.join("\n", errors)
+            );
         }
     }
 

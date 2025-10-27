@@ -20,9 +20,7 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Collections;
-import java.util.LinkedHashMap;
-import java.util.Map;
+import java.util.*;
 
 
 public class DisplayAPIImpl implements DisplayAPI {
@@ -133,5 +131,77 @@ public class DisplayAPIImpl implements DisplayAPI {
         }
         functionToDisplayAPI = Collections.unmodifiableMap(map);
         return functionToDisplayAPI;
+    }
+
+    public List<String> listFunctionUserStrings() {
+        List<String> result = new ArrayList<>();
+        Set<String> seen = new LinkedHashSet<>();
+
+        List<Function> funcs = program.getFunctions();
+        for (Function f : funcs) {
+            if (f == null) {
+                continue;
+            }
+            String us = f.getUserString();
+            if (us == null || us.isBlank()) {
+                continue;
+            }
+            if (seen.add(us)) {
+                result.add(us);
+            }
+        }
+
+        return result;
+    }
+
+    /**
+     * Returns the Function object with the given userString, or null if not found.
+     */
+    public Function findFunctionByUserString(String userString) {
+        if (userString == null || userString.isBlank()) {
+            return null;
+        }
+
+        List<Function> funcs = program.getFunctions();
+        for (Function f : funcs) {
+            if (f == null) {
+                continue;
+            }
+            String us = f.getUserString();
+            if (us != null && us.equals(userString)) {
+                return f;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Attaches all functions from the given list into this program
+     * if they are not already present (by userString).
+     * This mutates only this program. The server does not call program.addFunction() directly.
+     */
+    public void attachFunctions(List<Function> externalFunctions) {
+        if (externalFunctions == null || externalFunctions.isEmpty()) {
+            return;
+        }
+
+        // collect existing userStrings so we do not add duplicates
+        Set<String> existing = new LinkedHashSet<>(listFunctionUserStrings());
+
+        for (Function f : externalFunctions) {
+            if (f == null) {
+                continue;
+            }
+            String us = f.getUserString();
+            if (us == null || us.isBlank()) {
+                continue;
+            }
+            if (!existing.contains(us)) {
+                // add to program and mark as existing
+                program.addFunction(f);
+                existing.add(us);
+            }
+        }
     }
 }

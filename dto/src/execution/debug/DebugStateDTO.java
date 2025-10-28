@@ -20,5 +20,9 @@ public final class DebugStateDTO {
     public int getPc() { return pc; }
     public long getCyclesSoFar() { return cyclesSoFar; }
     public List<VarValueDTO> getVars() { return vars; }
+    public long getY()
+    {
+        return vars.getFirst().getValue();
+    }
 
 }

@@ -2,6 +2,7 @@ package application.listeners;
 
 import application.execution.ExecutionTaskManager;
 import application.functions.FunctionManager;
+import application.history.HistoryManager;
 import application.programs.ProgramManager;
 import jakarta.servlet.ServletContext;
 import jakarta.servlet.ServletContextEvent;
@@ -14,13 +15,15 @@ public class AppContextListener implements ServletContextListener {
     public static final String ATTR_USERS     = "userManager";
     public static final String ATTR_PROGRAMS  = "programsRegistry";
     public static final String ATTR_FUNCTIONS = "functionsRegistry";
+    public static final String ATTR_HISTORY   = "historyManager";
 
     @Override
     public void contextInitialized(ServletContextEvent sce) {
         ServletContext ctx = sce.getServletContext();
-        ctx.setAttribute(ATTR_USERS,    new UserManager());
-        ctx.setAttribute(ATTR_PROGRAMS, new ProgramManager());
+        ctx.setAttribute(ATTR_USERS,     new UserManager());
+        ctx.setAttribute(ATTR_PROGRAMS,  new ProgramManager());
         ctx.setAttribute(ATTR_FUNCTIONS, new FunctionManager());
+        ctx.setAttribute(ATTR_HISTORY,   new HistoryManager());
     }
 
     public static UserManager getUsers(ServletContext ctx) {
@@ -35,9 +38,12 @@ public class AppContextListener implements ServletContextListener {
         return (FunctionManager) ctx.getAttribute(ATTR_FUNCTIONS);
     }
 
+    public static HistoryManager getHistory(ServletContext ctx) {
+        return (HistoryManager) ctx.getAttribute(ATTR_HISTORY);
+    }
+
     @Override
     public void contextDestroyed(ServletContextEvent sce) {
-        // Clean shutdown of async execution pool (prevents thread leaks on redeploy)
         ExecutionTaskManager.shutdown();
     }
 }

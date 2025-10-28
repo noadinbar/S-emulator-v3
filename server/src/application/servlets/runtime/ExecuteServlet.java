@@ -2,28 +2,30 @@ package application.servlets.runtime;
 
 import api.DebugAPI;
 import application.credits.Generation;
+import application.history.HistoryManager;
 import application.listeners.AppContextListener;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import display.DisplayDTO;
+import execution.ExecutionDTO;
+import execution.ExecutionRequestDTO;
 import execution.debug.DebugStateDTO;
 import execution.debug.DebugStepDTO;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-
-import api.DisplayAPI;
-import execution.ExecutionDTO;
-import execution.ExecutionRequestDTO;
-
 import application.execution.ExecutionTaskManager;
 import application.execution.ExecutionTaskManager.Job;
 import application.execution.ExecutionTaskManager.Status;
 import application.execution.JobSubmitResult;
 import users.UserManager;
 
+import api.DisplayAPI;
+
 import java.io.BufferedReader;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -41,10 +43,14 @@ public class ExecuteServlet extends HttpServlet {
             StringBuilder sb = new StringBuilder();
             try (BufferedReader r = req.getReader()) {
                 String line;
-                while ((line = r.readLine()) != null) sb.append(line);
+                while ((line = r.readLine()) != null) {
+                    sb.append(line);
+                }
             }
             JsonObject in = gson.fromJson(sb.toString(), JsonObject.class);
-            if (in == null) in = new JsonObject();
+            if (in == null) {
+                in = new JsonObject();
+            }
 
             String programKey = in.has("program") && !in.get("program").isJsonNull()
                     ? in.get("program").getAsString()
@@ -78,18 +84,21 @@ public class ExecuteServlet extends HttpServlet {
             final DisplayAPI targetRef = target;
             final ExecutionRequestDTO execReqRef = execReq;
 
-            // Capture session-bound data BEFORE scheduling (don't touch req inside worker)
+            final String programKeyRef = programKey;
+            final String functionUserStringRef = functionUserString;
+
             final String username = (String) (req.getSession(false) != null
                     ? req.getSession(false).getAttribute(SESSION_USERNAME)
                     : null);
+
             final UserManager um = AppContextListener.getUsers(getServletContext());
+            final HistoryManager hmRef = AppContextListener.getHistory(getServletContext());
 
             JobSubmitResult res = ExecutionTaskManager.trySubmit(() -> {
 
-                // Build DebugAPI for this run (no global locking).
+                // Build DebugAPI for this run
                 final DebugAPI dbgApi = targetRef.debugForDegree(degree);
 
-                // Generation via enum directly (assumes UI sends "I" | "II" | "III" | "IV")
                 final Generation gen = Generation.valueOf(execReqRef.getGeneration());
                 // TODO(input): if you want fail-fast 400 on bad generation, validate before scheduling.
 
@@ -99,27 +108,70 @@ public class ExecuteServlet extends HttpServlet {
                     // TODO(credits): define rollback policy on CANCEL/ERROR (whether to refund gen cost).
                 }
 
-                // 2) Step the program and charge AFTER each command according to actual cycles
+                // 2) Step program and charge AFTER each command according to actual cycles
                 DebugStateDTO state = dbgApi.init(execReqRef);
                 long prev = state.getCyclesSoFar();
 
+                DebugStateDTO lastState = state;
+
                 while (!dbgApi.isTerminated()) {
                     DebugStepDTO step = dbgApi.step();
-                    long curr  = step.getNewState().getCyclesSoFar();
+                    DebugStateDTO newState = step.getNewState();
+                    long curr = newState.getCyclesSoFar();
                     long delta = Math.max(0L, curr - prev);
 
                     if (username != null && delta > 0L) {
                         um.adjustCredits(username, (int) -delta); // charge after the command completed
                         // TODO(credits): if not enough credits for this step → abort gracefully and return an error.
                     }
+
                     prev = curr;
+                    lastState = newState;
                 }
 
-                // 3) Single-pass result (no second execute run)
+                // 3) Finalize result
                 DisplayDTO executedDisplay = dbgApi.executedDisplaySnapshot();
                 ExecutionDTO result = dbgApi.finalizeExecution(execReqRef, executedDisplay);
 
-                // Optional aggregate metrics (not per-run history yet)
+                // 4) Persist run history entry (mode = EXECUTION)
+                try {
+                    String targetType = (functionUserStringRef != null && !functionUserStringRef.isBlank())
+                            ? "FUNCTION"
+                            : "PROGRAM";
+                    String targetName = (functionUserStringRef != null && !functionUserStringRef.isBlank())
+                            ? functionUserStringRef
+                            : programKeyRef;
+
+                    String architectureType = execReqRef.getGeneration();
+                    long cyclesCount = lastState.getCyclesSoFar();
+
+                    long finalY = 0L;
+                    finalY=lastState.getY();
+                    List<Long> inputsList = execReqRef.getInputs();
+
+                    List<String> outputsSnapshot = new ArrayList<>();
+                    // Keep a serialized final snapshot for "show status" button
+                    outputsSnapshot.add(gson.toJson(lastState));
+
+                    if (username != null && hmRef != null) {
+                        hmRef.addRunRecord(
+                                username,
+                                targetType,
+                                targetName,
+                                architectureType,
+                                degree,
+                                finalY,
+                                cyclesCount,
+                                inputsList,
+                                outputsSnapshot,
+                                "EXECUTION"
+                        );
+                    }
+                } catch (Exception ignore) {
+                    // best-effort only, history failure should not kill the run
+                }
+
+                // 5) Optional aggregate metrics (kept from previous code)
                 if (username != null) {
                     um.onRunExecuted(username, 0);
                     // TODO(history): when implementing per-user run history, persist full record (inputs, y, cycles, generation, timestamp).
@@ -143,7 +195,8 @@ public class ExecuteServlet extends HttpServlet {
             try {
                 resp.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
                 resp.getWriter().write("{\"error\":\"" + ex.getMessage() + "\"}");
-            } catch (Exception ignore) {}
+            } catch (Exception ignore) {
+            }
         }
     }
 
@@ -194,7 +247,8 @@ public class ExecuteServlet extends HttpServlet {
             try {
                 resp.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
                 resp.getWriter().write("{\"error\":\"" + ex.getMessage() + "\"}");
-            } catch (Exception ignore) {}
+            } catch (Exception ignore) {
+            }
         }
     }
 

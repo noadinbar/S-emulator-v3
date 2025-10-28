@@ -22,7 +22,6 @@ public class Expand {
         if (functionUserString != null && !functionUserString.isBlank()) {
             body.addProperty("function", functionUserString);
         }
-
         RequestBody rb = RequestBody.create(
                 body.toString(),
                 Constants.MEDIA_TYPE_JSON

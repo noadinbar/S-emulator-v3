@@ -8,6 +8,7 @@ public class Constants {
     public static final String ATTR_DEBUG_SNAPSHOTS = "debug.snapshots";     // latest DebugStateDTO per debugId
     public static final String ATTR_DBG_BUSY        = "dbgBusy";
     public static final String ATTR_DISPLAY_REGISTRY = "display.registry";
+    public static final String ATTR_DEBUG_META = "debugMeta";
     public static final String MODE_IDLE  = "idle";
     public static final String MODE_RUN   = "run";
     public static final String MODE_DEBUG = "debug";
@@ -28,7 +29,6 @@ public class Constants {
     public static final String API_FUNCTION_EXPAND       = "/api/functions/%s/expand";
     public static final String API_CREDITS_CHARGE = "/api/credits/charge";
     public static final String API_LOGIN  = "/api/login";
-    public static final String API_LOGOUT = "/api/logout";
     public static final String API_WHOAMI = "/api/whoami";
     public static final String API_PROGRAMS = "/api/programs";
     public static final String API_PROGRAM_BY_NAME= "/api/programs/by-name";

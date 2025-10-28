@@ -1,46 +1,65 @@
 package application.servlets.runtime;
 
-import com.google.gson.Gson;
+import application.history.HistoryManager;
+import application.history.HistoryTableRow;
+import application.listeners.AppContextListener;
+import execution.RunHistoryEntryDTO;
 import jakarta.servlet.annotation.WebServlet;
-import jakarta.servlet.http.*;
-import java.io.IOException;
-import java.util.Map;
+import jakarta.servlet.http.HttpServlet;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpSession;
 
-import api.DisplayAPI;
-import execution.HistoryDTO;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 
 import static utils.Constants.API_HISTORY;
-import static utils.Constants.ATTR_DISPLAY_API;
+import static utils.Constants.SESSION_USERNAME;
+import static utils.ServletUtils.writeJson;
 
-@WebServlet(name = "HistoryServlet", urlPatterns = {API_HISTORY})
+@WebServlet(name = "HistoryServlet", urlPatterns = { API_HISTORY })
 public class HistoryServlet extends HttpServlet {
-    private final Gson gson = new Gson();
-
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException {
-        resp.setContentType("application/json");
 
-        DisplayAPI root = (DisplayAPI) getServletContext().getAttribute(ATTR_DISPLAY_API);
-        if (root == null || root.getDisplay() == null) {
-            resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
-            resp.getWriter().write("{\"error\":\"no program loaded\"}");
-            return;
-        }
+        String usernameToShow = req.getParameter("user");
 
-        String function = req.getParameter("function");
-        DisplayAPI target = root;
-        if (function != null && !function.isBlank()) {
-            Map<String, DisplayAPI> map = root.functionDisplaysByUserString();
-            target = (map != null) ? map.get(function) : null;
-            if (target == null) {
-                resp.setStatus(HttpServletResponse.SC_NOT_FOUND);
-                resp.getWriter().write("{\"error\":\"function not found\"}");
-                return;
+        if (usernameToShow == null || usernameToShow.isBlank()) {
+            HttpSession session = req.getSession(false);
+            if (session != null && session.getAttribute(SESSION_USERNAME) != null) {
+                usernameToShow = session.getAttribute(SESSION_USERNAME).toString();
             }
         }
 
-        HistoryDTO history = target.getHistory();
-        resp.setStatus(HttpServletResponse.SC_OK);
-        resp.getWriter().write(gson.toJson(history));
+        List<RunHistoryEntryDTO> dtoList;
+        if (usernameToShow == null || usernameToShow.isBlank()) {
+            dtoList = Collections.emptyList();
+        } else {
+            HistoryManager hm = AppContextListener.getHistory(getServletContext());
+            List<HistoryTableRow> rows = hm.getUserHistoryRows(usernameToShow);
+
+            // Convert server rows -> DTOs for the client
+            List<RunHistoryEntryDTO> tmp = new ArrayList<>(rows.size());
+            for (HistoryTableRow row : rows) {
+                RunHistoryEntryDTO dto = new RunHistoryEntryDTO(
+                        row.getRunNumber(),
+                        row.getUsername(),
+                        row.getTargetType(),
+                        row.getTargetName(),
+                        row.getArchitectureType(),
+                        row.getDegree(),
+                        row.getFinalY(),
+                        row.getCyclesCount(),
+                        row.getInputs(),
+                        row.getOutputsSnapshot(),
+                        row.getRunMode()
+                );
+                tmp.add(dto);
+            }
+            dtoList = tmp;
+        }
+        writeJson(resp, HttpServletResponse.SC_OK, dtoList);
     }
 }

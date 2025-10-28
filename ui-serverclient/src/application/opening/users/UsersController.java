@@ -1,28 +1,24 @@
 package application.opening.users;
 
 import client.responses.authentication.UsersResponder;
+import javafx.scene.layout.BorderPane;
 import users.UserTableRowDTO;
+import utils.Constants;
 
-import javafx.collections.FXCollections;
-import javafx.collections.ObservableList;
+import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.control.cell.PropertyValueFactory;
-import javafx.scene.layout.BorderPane;
 
 import java.util.List;
 import java.util.Timer;
 import java.util.concurrent.atomic.AtomicBoolean;
-
-import utils.Constants;
+import java.util.function.Consumer;
 
 public class UsersController {
-
-    @FXML private BorderPane usersRoot;
-    @FXML private Label titleLabel;
 
     @FXML private TableView<UserTableRowDTO> usersTable;
     @FXML private TableColumn<UserTableRowDTO, String>  colUserName;
@@ -33,19 +29,18 @@ public class UsersController {
     @FXML private TableColumn<UserTableRowDTO, Integer> colRuns;
 
     @FXML private Button unselectButton;
+    @FXML private Label titleLabel;      // stays even if not used right now
+    @FXML private BorderPane usersRoot; // stays
 
-    private final ObservableList<UserTableRowDTO> rows = FXCollections.observableArrayList();
-
-    // Refresher infra (identical shape to Programs/Functions)
-    private final AtomicBoolean shouldUpdate = new AtomicBoolean(false);
+    private final AtomicBoolean shouldUpdate = new AtomicBoolean(true);
     private Timer timer;
+    private UsersRefresher refresher;
+    private String selectedUserName;
+    private Consumer<String> onUserSelectionChanged;
 
     @FXML
     private void initialize() {
-        // Bind table to model
-        usersTable.setItems(rows);
-
-        // Column → DTO getters
+        // bind table columns to DTO getters
         colUserName.setCellValueFactory(new PropertyValueFactory<>("name"));
         colMainPrograms.setCellValueFactory(new PropertyValueFactory<>("mainPrograms"));
         colFunctions.setCellValueFactory(new PropertyValueFactory<>("functions"));
@@ -53,26 +48,43 @@ public class UsersController {
         colCreditsUsed.setCellValueFactory(new PropertyValueFactory<>("creditsUsed"));
         colRuns.setCellValueFactory(new PropertyValueFactory<>("runs"));
 
-        // Disable button when nothing is selected
-        if (unselectButton != null) {
-            unselectButton.disableProperty().bind(
-                    usersTable.getSelectionModel().selectedItemProperty().isNull()
-            );
+        // disable the "unselect" button if nothing is selected
+        unselectButton.disableProperty().bind(
+                usersTable.getSelectionModel().selectedItemProperty().isNull()
+        );
+
+        // track selection and notify listener
+        usersTable.getSelectionModel().selectedItemProperty().addListener((obs, oldVal, newVal) -> {
+            selectedUserName = (newVal != null ? newVal.getName() : null);
+
+            if (onUserSelectionChanged != null) {
+                if (newVal == null) {
+                    // no selection -> show current user's history
+                    onUserSelectionChanged.accept(null);
+                } else {
+                    // a specific user row was selected -> show that user's history
+                    onUserSelectionChanged.accept(newVal.getName());
+                }
+            }
+        });
+    }
+
+    @FXML
+    private void onUnselectUser() {
+        usersTable.getSelectionModel().clearSelection();
+        if (onUserSelectionChanged != null) {
+            // null means "show the logged-in user's own history"
+            onUserSelectionChanged.accept(null);
         }
     }
 
-    // -----------------------------
-    // Refresher control (async)
-    // -----------------------------
     public void startUsersRefresher() {
-        stopUsersRefresher();
-        shouldUpdate.set(true);
-        timer = new Timer(true); // daemon
-        timer.scheduleAtFixedRate(
-                new UsersRefresher(shouldUpdate, this::setUsersDto),
-                0,
-                Constants.REFRESH_RATE_MS
-        );
+        if (timer != null) {
+            return;
+        }
+        refresher = new UsersRefresher(shouldUpdate, this::applyRows);
+        timer = new Timer(true);
+        timer.schedule(refresher, Constants.REFRESH_RATE_MS, Constants.REFRESH_RATE_MS);
     }
 
     public void stopUsersRefresher() {
@@ -84,42 +96,52 @@ public class UsersController {
         }
     }
 
-    // Optional: one-time prime to avoid the first 1s wait
+    // one-time prime, same idea כמו loadOnceAsync ב-ProgramsController
     public void loadOnceAsync() {
-        new Thread(() -> {
+        Thread t = new Thread(() -> {
             try {
-                var list = UsersResponder.list(); // runSync inside; not on FX thread
-                setUsersDto(list);
+                List<UserTableRowDTO> list = UsersResponder.list();
+                Platform.runLater(() -> applyRows(list));
             } catch (Exception ignore) { }
-        }, "users-prime").start();
+        }, "users-prime");
+        t.setDaemon(true);
+        t.start();
     }
 
-    // -----------------------------
-    // Public API
-    // -----------------------------
-    /** Set full DTO rows (used by refresher/prime). */
-    public void setUsersDto(List<UserTableRowDTO> dtos) {
-        rows.setAll(dtos);
+    private void applyRows(List<UserTableRowDTO> rows) {
+        String keep = selectedUserName;
+
+        usersTable.getItems().setAll(rows);
+
+        if (keep != null) {
+            for (int i = 0; i < rows.size(); i++) {
+                if (keep.equalsIgnoreCase(rows.get(i).getName())) {
+                    usersTable.getSelectionModel().select(i);
+                    usersTable.scrollTo(i);
+                    return;
+                }
+            }
+        }
+        // if the previously selected user no longer exists in the refreshed list
+        usersTable.getSelectionModel().clearSelection();
     }
 
-    /** Back-compat: accept only names and wrap to empty DTOs (useful if old code still calls setUsers). */
-    public void setUsers(List<String> names) {
-        rows.setAll(names.stream()
-                .map(n -> new UserTableRowDTO(n, 0, 0, 0, 0, 0))
-                .toList());
+    public void setOnUserSelectionChanged(Consumer<String> consumer) {
+        this.onUserSelectionChanged = consumer;
     }
 
-    /** Return selected user's name (or null). */
     public String getSelectedUser() {
-        var sel = usersTable.getSelectionModel().getSelectedItem();
+        UserTableRowDTO sel = usersTable.getSelectionModel().getSelectedItem();
         return sel == null ? null : sel.getName();
     }
 
-    /** Select a row by user name. */
     public void selectUser(String user) {
-        if (user == null) return;
-        for (int i = 0; i < rows.size(); i++) {
-            if (user.equalsIgnoreCase(rows.get(i).getName())) {
+        if (user == null) {
+            return;
+        }
+        List<UserTableRowDTO> current = usersTable.getItems();
+        for (int i = 0; i < current.size(); i++) {
+            if (user.equalsIgnoreCase(current.get(i).getName())) {
                 usersTable.getSelectionModel().select(i);
                 usersTable.scrollTo(i);
                 break;
@@ -127,9 +149,13 @@ public class UsersController {
         }
     }
 
-    // --- Actions ---
-    @FXML
-    private void onUnselectUser() {
-        usersTable.getSelectionModel().clearSelection();
+    public void setUsers(List<String> names) {
+        if (names == null) {
+            return;
+        }
+        List<UserTableRowDTO> dtoList = names.stream()
+                .map(n -> new UserTableRowDTO(n, 0, 0, 0, 0, 0))
+                .toList();
+        applyRows(dtoList);
     }
 }

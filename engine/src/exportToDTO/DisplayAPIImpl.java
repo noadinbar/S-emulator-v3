@@ -8,7 +8,6 @@ import api.DebugAPI;
 import display.ExpandDTO;
 import exceptions.InvalidDegreeException;
 import exceptions.StatePersistenceException;
-import execution.HistoryDTO;
 import structure.expand.ExpandResult;
 import structure.expand.ProgramExpander;
 import structure.function.Function;
@@ -48,9 +47,6 @@ public class DisplayAPIImpl implements DisplayAPI {
         ((ProgramImpl) program).setCurrentRunDegree(0);
         return new ExecutionAPIImpl(((ProgramImpl) program), ((ProgramImpl) program));
     }
-
-    @Override
-    public HistoryDTO getHistory() { return HistoryMapper.toHistory(program); }
 
     @Override
     public ExecutionAPI executionForDegree(int degree) {

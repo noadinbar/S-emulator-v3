@@ -3,6 +3,7 @@ package application.servlets.runtime;
 import api.DebugAPI;
 import api.DisplayAPI;
 import application.credits.Generation;
+import application.history.HistoryManager;
 import application.listeners.AppContextListener;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
@@ -14,42 +15,32 @@ import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpSession;
+import users.UserManager;
+import users.UserTableRow;
+import application.execution.ExecutionTaskManager;
+import application.execution.JobSubmitResult;
 
 import java.io.BufferedReader;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Semaphore;
 
-import application.execution.ExecutionTaskManager;
-import application.execution.JobSubmitResult;
-import jakarta.servlet.http.HttpSession;
-import users.UserManager;
-import users.UserTableRow;
-
 import static utils.Constants.*;
 import static utils.ServletUtils.writeJson;
 import static utils.ServletUtils.writeJsonError;
 
-@WebServlet(
-        name = "DebugServlet",
-        urlPatterns = {
-                API_DEBUG_INIT,
-                API_DEBUG_STEP,
-                API_DEBUG_RESUME,
-                API_DEBUG_STOP,
-                API_DEBUG_TERMINATED,
-                API_DEBUG_HISTORY,
-                API_DEBUG_STATE
-        }
-)
+@WebServlet(name = "DebugServlet", urlPatterns = { API_DEBUG_INIT, API_DEBUG_STEP, API_DEBUG_RESUME, API_DEBUG_STOP, API_DEBUG_TERMINATED, API_DEBUG_HISTORY, API_DEBUG_STATE})
 public class DebugServlet extends HttpServlet {
     private final Gson gson = new Gson();
 
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException {
-        String route = req.getServletPath(); // full mapping
+        String route = req.getServletPath();
         switch (route) {
             case API_DEBUG_INIT       -> handleInit(req, resp);
             case API_DEBUG_STEP       -> handleStep(req, resp);
@@ -77,17 +68,16 @@ public class DebugServlet extends HttpServlet {
 
     /**
      * POST /api/debug/init
-     * Body: { degree: number, inputs: number[], function?: string }
-     * Async behavior: returns 202 {debugId} or 429 {retryMs}.
-     * Heavy work (build DebugAPI + dbg.init) runs on the thread-pool via trySubmit.
-     * On success: stores session and initial snapshot (DebugStateDTO).
+     * Body: { degree: number, inputs: number[], program?: string, function?: string, generation: "I"/... }
+     * Returns 202 {debugId, creditsCurrent} or 429 busy.
+     * Creates the debug session (engine handle + snapshot + lock + meta).
      */
     private void handleInit(HttpServletRequest req, HttpServletResponse resp) throws IOException {
-        // Parse JSON body
         JsonObject in = readJson(req);
-        if (in == null) in = new JsonObject();
+        if (in == null) {
+            in = new JsonObject();
+        }
 
-        // Which program/function did the client ask to debug?
         String programKey = null;
         if (in.has("program") && !in.get("program").isJsonNull()) {
             programKey = in.get("program").getAsString();
@@ -98,7 +88,6 @@ public class DebugServlet extends HttpServlet {
             functionKey = in.get("function").getAsString();
         }
 
-        // Build the DTO for execution parameters (degree / inputs / generation)
         ExecutionRequestDTO execReq = gson.fromJson(in, ExecutionRequestDTO.class);
         if (execReq == null) {
             writeJsonError(resp,
@@ -106,15 +95,14 @@ public class DebugServlet extends HttpServlet {
                     "Missing execution request body.");
             return;
         }
+
         int degree = Math.max(0, execReq.getDegree());
-        // Resolve which DisplayAPI to debug, based on registry + user selection
+
         DisplayAPI target = resolveTargetFromRegistry(programKey, functionKey, resp);
         if (target == null) {
-            // resolveTargetFromRegistry already wrote the error response
             return;
         }
 
-        // Identify which logged-in user is starting this debug session
         HttpSession httpSess = req.getSession(false);
         String username = null;
         if (httpSess != null) {
@@ -125,7 +113,7 @@ public class DebugServlet extends HttpServlet {
         }
 
         UserManager um = AppContextListener.getUsers(getServletContext());
-        // Charge architecture (generation) up-front for DEBUG init
+
         int creditsNowAfterInit = 0;
         try {
             Generation gen = Generation.valueOf(execReq.getGeneration());
@@ -141,39 +129,56 @@ public class DebugServlet extends HttpServlet {
                 }
             }
         } catch (Exception ignore) {
-            // If parsing generation fails or user is null we just continue.
             // TODO(credits): consider refund / rollback on failure later.
         }
 
-        // We pre-generate a debug session id for the client
         String id = UUID.randomUUID().toString();
 
-        // Submit heavy work (building the actual DebugAPI and init state) to the executor
+        final String usernameRef = username;
+        final int degreeRef = degree;
+        final ExecutionRequestDTO execReqRef = execReq;
+        final String programKeyRef = programKey;
+        final String functionKeyRef = functionKey;
+        final DisplayAPI targetRef = target;
+
         JobSubmitResult res = ExecutionTaskManager.trySubmit(() -> {
             try {
-                DebugAPI dbg = target.debugForDegree(degree);
-                DebugStateDTO state = dbg.init(execReq);
-                // Store session data for ongoing debug:
-                // - getSessions(): debugId -> DebugAPI (engine handle)
-                // - getLocks():    debugId -> Semaphore    (to serialize step/resume)
-                // - getSnapshots():debugId -> DebugStateDTO (last known machine state)
+                DebugAPI dbg = targetRef.debugForDegree(degreeRef);
+                DebugStateDTO state = dbg.init(execReqRef);
+
                 getSessions().put(id, dbg);
                 getLocks().computeIfAbsent(id, k -> new Semaphore(1));
                 getSnapshots().put(id, state);
 
-                // Mark system "busy" = true if at least one debug session is active
                 getServletContext().setAttribute(ATTR_DBG_BUSY, Boolean.TRUE);
 
-                // TODO(history):
-                // Here we can also stash per-session metadata (user, programKey, etc.)
-                // so that later when this session ends we can bump run counters safely.
-                // We'll add that in the history/count stage.
+                // Store meta for this debug session so we can later write it to history.
+                String targetType = (functionKeyRef != null && !functionKeyRef.isBlank())
+                        ? "FUNCTION"
+                        : "PROGRAM";
+                String targetName = (functionKeyRef != null && !functionKeyRef.isBlank())
+                        ? functionKeyRef
+                        : programKeyRef;
+
+                DebugSessionMeta meta = new DebugSessionMeta(
+                        usernameRef,
+                        targetType,
+                        targetName,
+                        execReqRef.getGeneration(),
+                        degreeRef,
+                        execReqRef.getInputs()
+                );
+
+                getDebugMetas().put(id, meta);
+
+                // TODO(history): when user clicks "back to opening" without calling /api/debug/stop,
+                // the UI should still call a dedicated endpoint to finalize and persist history.
 
             } catch (Throwable t) {
-                // Rollback partial session data if init failed
                 getSessions().remove(id);
                 getLocks().remove(id);
                 getSnapshots().remove(id);
+                getDebugMetas().remove(id);
 
                 boolean anyLeft = !getSessions().isEmpty();
                 getServletContext().setAttribute(
@@ -185,7 +190,6 @@ public class DebugServlet extends HttpServlet {
             return null;
         });
 
-        // If thread-pool was too busy we tell the client "try again"
         if (!res.isAccepted()) {
             int retryMs = res.getRetryAfterMs();
             int retrySec = (int) Math.ceil(retryMs / 1000.0);
@@ -196,12 +200,10 @@ public class DebugServlet extends HttpServlet {
             outBusy.addProperty("error", "busy");
             outBusy.addProperty("retryMs", retryMs);
 
-            // NOTE: we keep 429 here like קודם (Too Many Requests)
             writeJson(resp, SC_TOO_MANY_REQUESTS, outBusy);
             return;
         }
 
-        // Success: return debugId + credits after upfront generation billing
         JsonObject out = new JsonObject();
         out.addProperty("debugId", id);
         out.addProperty("creditsCurrent", creditsNowAfterInit);
@@ -209,8 +211,10 @@ public class DebugServlet extends HttpServlet {
     }
 
     /**
-     * POST /api/debug/step (query/body: debugId) — synchronous, serialized per session.
-     * Returns DebugStepDTO and updates the latest snapshot to step.getNewState().
+     * POST /api/debug/step
+     * Body or param: debugId
+     * Charges credits for this single step, advances state, returns DebugStepDTO + termination flag.
+     * If after this step the program reached EXIT (terminated=true), we write history.
      */
     private void handleStep(HttpServletRequest req, HttpServletResponse resp) throws IOException {
         String debugId = readDebugId(req);
@@ -225,7 +229,6 @@ public class DebugServlet extends HttpServlet {
             return;
         }
 
-        // Identify which logged-in user is doing this debug step.
         HttpSession httpSess = req.getSession(false);
         String username = null;
         if (httpSess != null) {
@@ -237,7 +240,6 @@ public class DebugServlet extends HttpServlet {
 
         UserManager um = AppContextListener.getUsers(getServletContext());
 
-        // Ensure only one STEP/RESUME runs at a time for this debugId
         Semaphore lock = getLocks().computeIfAbsent(debugId, k -> new Semaphore(1));
         if (!lock.tryAcquire()) {
             writeJsonError(resp, HttpServletResponse.SC_CONFLICT, "busy");
@@ -245,17 +247,14 @@ public class DebugServlet extends HttpServlet {
         }
 
         try {
-            // === 1) cycles BEFORE the step ===
             long prevCycles = 0L;
             DebugStateDTO beforeSnap = getSnapshots().get(debugId);
             if (beforeSnap != null) {
                 prevCycles = beforeSnap.getCyclesSoFar();
             }
 
-            // === 2) advance one "step over" in the debug engine ===
             DebugStepDTO step = dbg.step();
 
-            // === 3) save latest machine snapshot for /api/debug/state ===
             DebugStateDTO afterSnap = null;
             if (step != null) {
                 afterSnap = step.getNewState();
@@ -264,8 +263,6 @@ public class DebugServlet extends HttpServlet {
                 }
             }
 
-            // === 4) bill credits for THIS step ===
-            // We measure how many cycles were actually executed in this step.
             int creditsCurrent = 0;
             int creditsUsed = 0;
 
@@ -277,18 +274,11 @@ public class DebugServlet extends HttpServlet {
                 }
 
                 if (delta > 0L) {
-                    // TODO(credits):
-                    // if user does NOT have enough credits to pay for "delta",
-                    // we should:
-                    //   1. stop this debug session,
-                    //   2. mark reason = "ended due to insufficient credits",
-                    //   3. return an error instead of normal step result.
-                    //
-                    // For now we assume enough credits and just deduct:
+                    // TODO(credits): if user does NOT have enough credits to pay for this step,
+                    // persist partial history (ended due to insufficient credits) and close session.
                     um.adjustCredits(username, (int)(-delta));
                 }
 
-                // after charging, read updated balance
                 UserTableRow row = um.get(username);
                 if (row != null) {
                     creditsCurrent = row.getCreditsCurrent();
@@ -296,61 +286,30 @@ public class DebugServlet extends HttpServlet {
                 }
             }
 
-            // === 5) check if the program is done after this step ===
             boolean term = false;
             try {
                 term = dbg.isTerminated();
-            } catch (Throwable ignore) {
-                // tolerate engine weirdness
+            } catch (Throwable ignore) { }
+
+            // if program just finished because of this step -> write debug history now
+            if (term) {
+                saveHistoryForDebugSession(debugId, afterSnap);
+                // we do NOT clean up here so the client can still call /api/debug/state
+                // cleanup will still happen after /api/debug/terminated
             }
 
-            // === 6) build JSON response for the client UI ===
-            // We are NOT mutating DebugStepDTO.
-            // We wrap it in a JsonObject that also reports credits + termination.
             JsonObject root = new JsonObject();
 
-            // "step" field: the raw debug step info (pc, vars, newState...)
-            // Gson will serialize the DebugStepDTO as-is.
-            Gson gson = new Gson();
             root.add("step", gson.toJsonTree(step));
 
-            // "credits" field: remaining/used AFTER this step
             JsonObject creditsJson = new JsonObject();
             creditsJson.addProperty("current", creditsCurrent);
             creditsJson.addProperty("used", creditsUsed);
             root.add("credits", creditsJson);
 
-            // "terminated" field: true if program cannot continue stepping
             root.addProperty("terminated", term);
 
-            // === 7) write response ===
-            // client will use:
-            //   - credits.current to refresh Available Credits live
-            //   - terminated=true to disable Step Over/Resume buttons
             writeJson(resp, HttpServletResponse.SC_OK, root);
-
-            // === 8) IMPORTANT: do NOT purge the debug session here ===
-            // We keep getSessions()/getSnapshots() alive for now.
-            //
-            // Why:
-            // - The client might immediately ask /api/debug/state to render final state.
-            // - Resume flow also relies on the session still existing.
-            //
-            // Cleanup and history will be handled in:
-            //   - /api/debug/terminated (end-of-run)
-            //   - /api/debug/stop      (manual stop)
-            //
-            // TODO(history):
-            // When 'term == true', we will later log this debug run:
-            //   - username
-            //   - which program/function ran
-            //   - inputs
-            //   - total cycles
-            //   - total credits burned
-            //   - reason = "completed via step over"
-            //   - timestamp
-            //
-            // Also future: if term==true we will probably schedule cleanup.
 
         } catch (Exception e) {
             writeJsonError(
@@ -364,7 +323,11 @@ public class DebugServlet extends HttpServlet {
     }
 
     /**
-     * POST /api/debug/resume (query/body: debugId)
+     * POST /api/debug/resume
+     * Body or param: debugId
+     * Runs steps in a loop until program terminates or the worker thread is interrupted.
+     * Charges credits once for the full resume window.
+     * After finishing, persists debug history.
      */
     private void handleResume(HttpServletRequest req, HttpServletResponse resp) throws IOException {
         String debugId = readDebugId(req);
@@ -379,7 +342,6 @@ public class DebugServlet extends HttpServlet {
             return;
         }
 
-        // Identify current logged-in user for billing
         HttpSession httpSess = req.getSession(false);
         String username = null;
         if (httpSess != null) {
@@ -391,62 +353,48 @@ public class DebugServlet extends HttpServlet {
 
         UserManager um = AppContextListener.getUsers(getServletContext());
 
-        // Snapshot cycles at the exact moment resume is requested.
-        // We will later bill ONLY for cycles that happened after this point.
         DebugStateDTO startSnap = getSnapshots().get(debugId);
         final long resumeStartCycles = (startSnap != null) ? startSnap.getCyclesSoFar() : 0L;
 
-        // We must capture values as final/effectively-final for the lambda below
         final String usernameCaptured = username;
         final UserManager umCaptured = um;
+        final String debugIdRef = debugId;
 
-        // Serialize commands for this debugId using a per-session lock
         Semaphore lock = getLocks().computeIfAbsent(debugId, k -> new Semaphore(1));
         if (!lock.tryAcquire()) {
-            // Someone is already stepping/resuming this same debugId
             writeJsonError(resp, HttpServletResponse.SC_CONFLICT, "busy");
             return;
         }
 
-        // Hand off the "run-until-done" work to the executor thread-pool
         JobSubmitResult submitResult = ExecutionTaskManager.trySubmit(() -> {
             try {
-                DebugStepDTO last = null;
+                DebugStepDTO last;
 
-                // Keep stepping until program reports isTerminated() OR thread interrupted
                 while (true) {
                     boolean alreadyDone = false;
                     try {
                         alreadyDone = dbg.isTerminated();
-                    } catch (Throwable ignore) {
-                        // tolerate weird debug engine states
-                    }
+                    } catch (Throwable ignore) { }
                     if (alreadyDone) {
                         break;
                     }
 
-                    // If executor canceled us (timeout / shutdown), exit gracefully
                     if (Thread.currentThread().isInterrupted()) {
                         break;
                     }
 
-                    // Advance one step in the debug engine
                     last = dbg.step();
 
-                    // Update latest snapshot for /api/debug/state so UI can poll and display progress
                     try {
                         if (last != null && last.getNewState() != null) {
-                            getSnapshots().put(debugId, last.getNewState());
+                            getSnapshots().put(debugIdRef, last.getNewState());
                         }
-                    } catch (Throwable ignore) {
-                        // best-effort snapshot update
-                    }
+                    } catch (Throwable ignore) { }
                 }
 
-                // ===== Aggregated credit charge for RESUME =====
-                // We charge ONCE for all cycles executed during this entire resume window.
+                // aggregated billing for resume
                 try {
-                    DebugStateDTO endSnap = getSnapshots().get(debugId);
+                    DebugStateDTO endSnap = getSnapshots().get(debugIdRef);
                     long endCycles = (endSnap != null) ? endSnap.getCyclesSoFar() : resumeStartCycles;
                     long totalDelta = endCycles - resumeStartCycles;
                     if (totalDelta < 0L) {
@@ -454,60 +402,37 @@ public class DebugServlet extends HttpServlet {
                     }
 
                     if (usernameCaptured != null && totalDelta > 0L) {
-                        // TODO(credits): if the user does not have enough credits to cover totalDelta,
-                        // we should stop earlier, mark "ended due to insufficient credits",
-                        // and return an error instead of silently running to completion.
+                        // TODO(credits): if user does not have enough credits to cover totalDelta,
+                        // persist partial history (ended due to insufficient credits) and close session.
                         umCaptured.adjustCredits(usernameCaptured, (int) (-totalDelta));
                     }
+
+                    // write debug history at the end of resume
+                    saveHistoryForDebugSession(debugIdRef, endSnap);
+
                 } catch (Throwable ignore) {
-                    // best-effort charging; do not fail the whole resume flow
+                    // best-effort billing + history. Do not crash resume if this fails.
                 }
 
-                // NOTE:
-                // We DO NOT remove the debug session from getSessions() here.
-                // We DO NOT clear getSnapshots() here.
-                //
-                // We leave:
-                //   - getSessions().get(debugId) == dbg
-                //   - getSnapshots().get(debugId) == final state
-                //
-                // so that the client can:
-                //   1. ask /api/debug/terminated → gets terminated=true
-                //   2. call /api/debug/state    → gets the final snapshot
-                //
-                // Actual teardown is delayed and will happen in handleTerminated(...).
-
-            } catch (Throwable t) {
-                // If resume crashes mid-run:
-                // We STILL do not purge the session/snapshot here.
-                // The client can still inspect /api/debug/state or try /api/debug/terminated.
-                throw t;
             } finally {
-                // Always release and drop the per-session lock so this debugId is no longer "actively running".
                 try {
                     lock.release();
-                } catch (Throwable ignore) {
-                    // swallow
-                }
-                getLocks().remove(debugId);
+                } catch (Throwable ignore) { }
+                getLocks().remove(debugIdRef);
             }
 
             return null;
         });
 
         if (!submitResult.isAccepted()) {
-            // Executor is overloaded. Tell the client to retry later.
             int retryMs = submitResult.getRetryAfterMs();
             int retrySec = (int) Math.ceil(retryMs / 1000.0);
             resp.setHeader("Retry-After", String.valueOf(retrySec));
 
-            // Since job was NOT accepted, we must free the lock now.
             try {
                 lock.release();
-            } catch (Throwable ignore) {
-                // swallow
-            }
-            getLocks().remove(debugId);
+            } catch (Throwable ignore) { }
+            getLocks().remove(debugIdRef);
 
             JsonObject out = new JsonObject();
             out.addProperty("error", "busy");
@@ -515,13 +440,22 @@ public class DebugServlet extends HttpServlet {
             writeJson(resp, SC_TOO_MANY_REQUESTS, out);
             return;
         }
+
         JsonObject out = new JsonObject();
         out.addProperty("debugId", debugId);
         writeJson(resp, HttpServletResponse.SC_ACCEPTED, out);
     }
 
-
-    /** POST /api/debug/stop — stops a specific session (by debugId) and clears snapshot. */
+    /**
+     * POST /api/debug/stop
+     * Body or param: debugId
+     * User explicitly stopped debugging.
+     * We persist debug history now (mode="DEBUG") and then clean up the session.
+     * This also covers the "back to opening" flow, assuming the client calls /api/debug/stop.
+     *
+     * TODO(history): if the UI can navigate away without calling /api/debug/stop,
+     * add a dedicated endpoint and call saveHistoryForDebugSession(...) there too.
+     */
     private void handleStop(HttpServletRequest req, HttpServletResponse resp) throws IOException {
         String debugId = readDebugId(req);
         if (debugId == null) {
@@ -535,9 +469,15 @@ public class DebugServlet extends HttpServlet {
             return;
         }
 
-        // Remove lock and snapshot for this session
+        DebugStateDTO snap = getSnapshots().get(debugId);
+
+        // write history before tearing down
+        saveHistoryForDebugSession(debugId, snap);
+
+        // full cleanup
         getLocks().remove(debugId);
         getSnapshots().remove(debugId);
+        getDebugMetas().remove(debugId);
 
         boolean anyLeft = !getSessions().isEmpty();
         getServletContext().setAttribute(ATTR_DBG_BUSY, anyLeft ? Boolean.TRUE : Boolean.FALSE);
@@ -550,7 +490,11 @@ public class DebugServlet extends HttpServlet {
     }
 
     /**
-     * POST /api/debug/terminated (query/body: debugId)
+     * POST /api/debug/terminated
+     * Body or param: debugId
+     * Client asks "are we done" and also wants the final credits.
+     * If terminated=true we persist debug history (if not already persisted),
+     * and schedule async cleanup (with grace so the client can still pull /api/debug/state).
      */
     private void handleTerminated(HttpServletRequest req, HttpServletResponse resp) throws IOException {
         String debugId = readDebugId(req);
@@ -563,27 +507,22 @@ public class DebugServlet extends HttpServlet {
         DebugAPI dbg = getSessions().get(debugId);
 
         if (dbg == null) {
-            // Session already cleaned up earlier (e.g. user pressed Stop).
-            // From the client's POV, it's definitely done.
+            // Session already cleaned up (for example after stop)
             term = true;
         } else {
             boolean done = false;
             try {
                 done = dbg.isTerminated();
-            } catch (Throwable ignore) {
-                // tolerate any weird internal engine state
-            }
+            } catch (Throwable ignore) { }
             term = done;
 
             if (term) {
-                // Program really is finished now.
-                // We still KEEP the snapshot and session for a tiny grace window,
-                // so the client can immediately fetch /api/debug/state.
-                //
-                // After that short grace window, we'll wipe everything using
-                // cleanupDebugSessionSoon(debugId), which:
-                //   - removes session / snapshot / lock from the maps
-                //   - updates ATTR_DBG_BUSY to reflect no active debug
+                DebugStateDTO snap = getSnapshots().get(debugId);
+
+                // persist debug history (if not already persisted)
+                saveHistoryForDebugSession(debugId, snap);
+
+                // cleanup will run after a short grace window
                 cleanupDebugSessionSoon(debugId);
             }
         }
@@ -612,8 +551,10 @@ public class DebugServlet extends HttpServlet {
         writeJson(resp, HttpServletResponse.SC_OK, out);
     }
 
-
-    /** GET /api/debug/state?debugId=... → { debugId, state: DebugStateDTO } or 204/404 */
+    /**
+     * GET /api/debug/state?debugId=...
+     * Returns latest snapshot for that debug session.
+     */
     private void handleState(HttpServletRequest req, HttpServletResponse resp) throws IOException {
         String debugId = req.getParameter("debugId");
         if (debugId == null || debugId.isBlank()) {
@@ -630,8 +571,6 @@ public class DebugServlet extends HttpServlet {
             return;
         }
 
-        // No snapshot available yet:
-        // If session exists, return 204 (no content yet). If session does not exist, return 404.
         if (getSessions().containsKey(debugId)) {
             resp.setStatus(HttpServletResponse.SC_NO_CONTENT); // 204
         } else {
@@ -639,6 +578,10 @@ public class DebugServlet extends HttpServlet {
         }
     }
 
+    /**
+     * This is legacy handler left from previous stages.
+     * Keeping it as-is.
+     */
     private void handleHistory(HttpServletRequest req, HttpServletResponse resp) throws IOException {
         DisplayAPI root = getRootOrError(resp);
         if (root == null) return;
@@ -661,6 +604,69 @@ public class DebugServlet extends HttpServlet {
         } catch (Exception ex) {
             writeJsonError(resp, HttpServletResponse.SC_INTERNAL_SERVER_ERROR,
                     "debug history failed: " + ex.getMessage());
+        }
+    }
+
+    // -------- History persistence helper --------
+
+    /**
+     * Persist this debug session into HistoryManager (mode="DEBUG"), once per session.
+     * Uses DebugSessionMeta + latest DebugStateDTO snapshot.
+     * Also marks the session meta as recorded to avoid duplicates.
+     */
+    private void saveHistoryForDebugSession(String debugId, DebugStateDTO finalSnap) {
+        DebugSessionMeta meta = getDebugMetas().get(debugId);
+        if (meta == null) {
+            return;
+        }
+
+        synchronized (meta) {
+            if (meta.isRecorded()) {
+                return;
+            }
+
+            HistoryManager hmLocal = AppContextListener.getHistory(getServletContext());
+            if (hmLocal == null) {
+                return;
+            }
+
+            String username = meta.getUsername();
+            if (username == null || username.isBlank()) {
+                return;
+            }
+
+            String targetType = meta.getTargetType();
+            String targetName = meta.getTargetName();
+            String architectureType = meta.getArchitectureType();
+            int degree = meta.getDegree();
+
+            long cyclesCount = (finalSnap != null) ? finalSnap.getCyclesSoFar() : 0L;
+
+            long finalY = 0L;
+            // TODO(history): pull Y register from finalSnap if DebugStateDTO exposes it
+
+            List<Long> inputsList = meta.getInputs();
+
+            List<String> outputsSnapshot = new ArrayList<>();
+            if (finalSnap != null) {
+                // keep a serialized view of the last known machine state
+                outputsSnapshot.add(gson.toJson(finalSnap));
+            }
+
+            hmLocal.addRunRecord(
+                    username,
+                    targetType,
+                    targetName,
+                    architectureType,
+                    degree,
+                    finalY,
+                    cyclesCount,
+                    inputsList,
+                    outputsSnapshot,
+                    "DEBUG"
+            );
+
+            meta.markRecorded();
         }
     }
 
@@ -718,6 +724,15 @@ public class DebugServlet extends HttpServlet {
         return created;
     }
 
+    @SuppressWarnings("unchecked")
+    private Map<String, DebugSessionMeta> getDebugMetas() {
+        Object obj = getServletContext().getAttribute(ATTR_DEBUG_META);
+        if (obj instanceof Map<?, ?> m) return (Map<String, DebugSessionMeta>) m;
+        Map<String, DebugSessionMeta> created = new ConcurrentHashMap<>();
+        getServletContext().setAttribute(ATTR_DEBUG_META, created);
+        return created;
+    }
+
     private String readDebugId(HttpServletRequest req) throws IOException {
         String debugId = req.getParameter("debugId");
         if (debugId == null || debugId.isBlank()) {
@@ -740,31 +755,27 @@ public class DebugServlet extends HttpServlet {
     }
 
     /**
-     * Gracefully destroy a finished debug session after a short delay.
+     * After a short delay, clean up all maps for this debugId and update busy flag.
+     * We also remove meta here to avoid leaks.
      */
     private void cleanupDebugSessionSoon(final String debugId) {
-        Thread cleaner = new Thread(new Runnable() {
-            @Override
-            public void run() {
-                try {
-                    // Small grace period so the client can still read /api/debug/state
-                    Thread.sleep(500L);
-                } catch (InterruptedException ignored) {
-                    Thread.currentThread().interrupt();
-                }
-
-                // Remove the debug session, its lock, and its last snapshot
-                getSessions().remove(debugId);
-                getLocks().remove(debugId);
-                getSnapshots().remove(debugId);
-
-                // Update "busy" flag: if there are no more sessions, dbgBusy=false
-                boolean anyLeft = !getSessions().isEmpty();
-                getServletContext().setAttribute(ATTR_DBG_BUSY, anyLeft ? Boolean.TRUE : Boolean.FALSE);
+        Thread cleaner = new Thread(() -> {
+            try {
+                Thread.sleep(500L);
+            } catch (InterruptedException ignored) {
+                Thread.currentThread().interrupt();
             }
+
+            getSessions().remove(debugId);
+            getLocks().remove(debugId);
+            getSnapshots().remove(debugId);
+            getDebugMetas().remove(debugId);
+
+            boolean anyLeft = !getSessions().isEmpty();
+            getServletContext().setAttribute(ATTR_DBG_BUSY, anyLeft ? Boolean.TRUE : Boolean.FALSE);
         }, "debug-cleanup-" + debugId);
 
-        cleaner.setDaemon(true); // does not block server shutdown
+        cleaner.setDaemon(true);
         cleaner.start();
     }
 
@@ -775,7 +786,6 @@ public class DebugServlet extends HttpServlet {
             return (Map<String, DisplayAPI>) m;
         }
 
-        // First access: create empty registry so we never get null
         Map<String, DisplayAPI> created = new ConcurrentHashMap<>();
         getServletContext().setAttribute(ATTR_DISPLAY_REGISTRY, created);
         return created;
@@ -783,9 +793,8 @@ public class DebugServlet extends HttpServlet {
 
     private DisplayAPI resolveTargetFromRegistry(String programKey, String functionKey, HttpServletResponse resp) throws IOException {
         Map<String, DisplayAPI> registry = getDisplayRegistry();
-        DisplayAPI target = null;
+        DisplayAPI target;
         if (functionKey != null && !functionKey.isBlank()) {
-            // User asked to debug a function directly
             target = registry.get(functionKey);
             if (target == null) {
                 writeJsonError(resp,
@@ -794,7 +803,6 @@ public class DebugServlet extends HttpServlet {
                 return null;
             }
         } else {
-            // User asked to debug the whole program
             if (programKey == null || programKey.isBlank()) {
                 writeJsonError(resp,
                         HttpServletResponse.SC_BAD_REQUEST,
@@ -818,5 +826,4 @@ public class DebugServlet extends HttpServlet {
 
         return target;
     }
-
 }

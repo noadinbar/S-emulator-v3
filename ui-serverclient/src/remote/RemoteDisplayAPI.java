@@ -9,7 +9,6 @@ import client.responses.runtime.ExpandResponder;
 import client.responses.runtime.HistoryResponder;
 import display.DisplayDTO;
 import display.ExpandDTO;
-import execution.HistoryDTO;
 import okhttp3.Request;
 
 import java.nio.file.Path;
@@ -105,16 +104,6 @@ public class RemoteDisplayAPI implements DisplayAPI {
             return new RemoteExecutionAPI(programName);
         } else {
             return new RemoteExecutionAPI(programName, name);
-        }
-    }
-
-    @Override
-    public HistoryDTO getHistory() {
-        try {
-            Request req = History.build(name);
-            return HistoryResponder.get(req);
-        } catch (Exception e) {
-            throw new RuntimeException("History failed: " + e.getMessage(), e);
         }
     }
 

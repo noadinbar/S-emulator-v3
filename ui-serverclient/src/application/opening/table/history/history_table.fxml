@@ -7,25 +7,32 @@
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.VBox?>
 
-<VBox xmlns="http://javafx.com/javafx/24.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="application.opening.table.history.HistoryController">
+<VBox prefHeight="209.0" prefWidth="421.0" xmlns="http://javafx.com/javafx/24.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="application.opening.table.history.HistoryController">
+
     <children>
+
         <TableView fx:id="tblHistory" prefHeight="180.0" styleClass="history-root">
+
             <columns>
-                <TableColumn fx:id="colRunId" prefWidth="60.0" text="#Run" />
-                <TableColumn fx:id="colDegree" prefWidth="80.0" text="Degree" />
-                <TableColumn fx:id="colInputs" prefWidth="220.0" text="Inputs" />
-                <TableColumn fx:id="colY" prefWidth="100.0" text="Result(y)" />
-                <TableColumn fx:id="colCycles" prefWidth="90.0" text="Cycles" />
+                <TableColumn fx:id="colRunId" prefWidth="44.0" text="#Run" />
+                <TableColumn fx:id="colType" prefWidth="73.33331298828125" text="Type" />
+                <TableColumn fx:id="colName" prefWidth="100.0" text="Name" />
+                <TableColumn fx:id="colArch" prefWidth="39.333343505859375" text="Arch" />
+                <TableColumn fx:id="colDegree" prefWidth="44.0" text="Deg" />
+                <TableColumn fx:id="colY" prefWidth="57.33331298828125" text="Result(y)" />
+                <TableColumn fx:id="colCycles" prefWidth="53.99993896484375" text="Cycles" />
             </columns>
         </TableView>
-      <HBox prefHeight="29.0" prefWidth="553.0" spacing="10.0">
-         <children>
-            <Button fx:id="btnShow" mnemonicParsing="false" text="Show" />
-            <Button fx:id="btnRerun" mnemonicParsing="false" text="Re-run" />
-         </children>
-         <padding>
-            <Insets left="10.0" />
-         </padding>
-      </HBox>
+
+        <HBox prefHeight="29.0" prefWidth="553.0" spacing="10.0">
+            <children>
+                <Button fx:id="btnShow" mnemonicParsing="false" text="Show" />
+                <Button fx:id="btnRerun" mnemonicParsing="false" text="Re-run" />
+            </children>
+            <padding>
+                <Insets left="10.0" />
+            </padding>
+        </HBox>
+
     </children>
 </VBox>

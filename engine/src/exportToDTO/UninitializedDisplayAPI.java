@@ -5,7 +5,6 @@ import api.DisplayAPI;
 import api.ExecutionAPI;
 import display.DisplayDTO;
 import display.ExpandDTO;
-import execution.HistoryDTO;
 import exceptions.ProgramNotLoadedException;
 
 import java.nio.file.Path;
@@ -41,10 +40,10 @@ public class UninitializedDisplayAPI implements DisplayAPI {
     @Override
     public DebugAPI debugForDegree(int degree) { throw notLoaded(); }
 
-    @Override
+    /*@Override
     public HistoryDTO getHistory() {
         throw notLoaded();
-    }
+    }*/
 
     @Override
     public void saveState(Path path) {

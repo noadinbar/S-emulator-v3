@@ -1,12 +1,15 @@
 package application.opening;
 
+import client.requests.runtime.History;
 import client.responses.authentication.CreditsResponder;
+import client.responses.runtime.HistoryResponder;
 import com.google.gson.JsonObject;
 import execution.RunHistoryEntryDTO;
 
 import java.io.File;
 import java.util.List;
 
+import javafx.application.Platform;
 import javafx.concurrent.Task;
 import javafx.concurrent.WorkerStateEvent;
 import javafx.fxml.FXML;
@@ -18,6 +21,7 @@ import application.opening.header.HeaderController;
 import application.opening.programs.ProgramsController;
 import application.opening.table.history.HistoryController;
 import application.opening.users.UsersController;
+import okhttp3.Request;
 
 public class OpeningSceneController {
     @FXML private BorderPane openingRoot;
@@ -26,7 +30,6 @@ public class OpeningSceneController {
     @FXML private ProgramsController programsController;
     @FXML private FunctionsController functionsController;
     @FXML private HistoryController historyController;
-
     private Window hostWindow;
 
     @FXML
@@ -41,6 +44,8 @@ public class OpeningSceneController {
         functionsController.startFunctionsRefresher();
         usersController.loadOnceAsync();      // see all users immediately
         usersController.startUsersRefresher();
+        usersController.setOnUserSelectionChanged(this::handleUserSelectionChanged);
+        loadHistoryAsync(null);
     }
 
     public void setHostWindow(Window window) {
@@ -130,6 +135,37 @@ public class OpeningSceneController {
         Thread t = new Thread(task, "charge-credits");
         t.setDaemon(true);
         t.start();
+    }
+
+    private void handleUserSelectionChanged(String usernameOrNull) {
+        loadHistoryAsync(usernameOrNull);
+    }
+
+    private void loadHistoryAsync(String usernameOrNull) {
+        Task<List<RunHistoryEntryDTO>> t =
+                new Task<>() {
+                    @Override
+                    protected List<RunHistoryEntryDTO> call() throws Exception {
+                        Request req = History.build(usernameOrNull);
+                        return HistoryResponder.get(req);
+                    }
+                };
+
+        t.setOnSucceeded(ev -> {
+            List<RunHistoryEntryDTO> data = t.getValue();
+            if (historyController != null) {
+                Platform.runLater(() -> historyController.setHistory(data));
+            }
+        });
+
+        t.setOnFailed(ev -> {
+            if (historyController != null) {
+                Platform.runLater(() -> historyController.clear());
+            }
+        });
+        Thread bg = new Thread(t, "history-load");
+        bg.setDaemon(true);
+        bg.start();
     }
 
     public void stopAllRefreshers() {

@@ -643,7 +643,9 @@ public class DebugServlet extends HttpServlet {
             long cyclesCount = (finalSnap != null) ? finalSnap.getCyclesSoFar() : 0L;
 
             long finalY = 0L;
-            // TODO(history): pull Y register from finalSnap if DebugStateDTO exposes it
+            if (finalSnap != null) {
+                finalY = finalSnap.getY();
+            }
 
             List<Long> inputsList = meta.getInputs();
 
@@ -665,7 +667,6 @@ public class DebugServlet extends HttpServlet {
                     outputsSnapshot,
                     "DEBUG"
             );
-
             meta.markRecorded();
         }
     }

@@ -37,6 +37,7 @@ public class UsersController {
     private UsersRefresher refresher;
     private String selectedUserName;
     private Consumer<String> onUserSelectionChanged;
+    private boolean suppressSelectionEvents = false;
 
     @FXML
     private void initialize() {
@@ -53,16 +54,17 @@ public class UsersController {
                 usersTable.getSelectionModel().selectedItemProperty().isNull()
         );
 
-        // track selection and notify listener
         usersTable.getSelectionModel().selectedItemProperty().addListener((obs, oldVal, newVal) -> {
             selectedUserName = (newVal != null ? newVal.getName() : null);
-
+            if (suppressSelectionEvents) {
+                return;
+            }
             if (onUserSelectionChanged != null) {
                 if (newVal == null) {
-                    // no selection -> show current user's history
+                    // no selection -> show current user's own history
                     onUserSelectionChanged.accept(null);
                 } else {
-                    // a specific user row was selected -> show that user's history
+                    // specific user selected -> show that user's history
                     onUserSelectionChanged.accept(newVal.getName());
                 }
             }
@@ -110,20 +112,22 @@ public class UsersController {
 
     private void applyRows(List<UserTableRowDTO> rows) {
         String keep = selectedUserName;
-
+        // block selection listener while we refresh table content and restore selection
+        suppressSelectionEvents = true;
         usersTable.getItems().setAll(rows);
-
         if (keep != null) {
             for (int i = 0; i < rows.size(); i++) {
                 if (keep.equalsIgnoreCase(rows.get(i).getName())) {
                     usersTable.getSelectionModel().select(i);
                     usersTable.scrollTo(i);
+                    suppressSelectionEvents = false;
                     return;
                 }
             }
         }
-        // if the previously selected user no longer exists in the refreshed list
+        // previous selected user no longer exists
         usersTable.getSelectionModel().clearSelection();
+        suppressSelectionEvents = false;
     }
 
     public void setOnUserSelectionChanged(Consumer<String> consumer) {

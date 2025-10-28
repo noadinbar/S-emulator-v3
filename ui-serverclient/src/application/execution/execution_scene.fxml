@@ -57,7 +57,7 @@
             
                                             <HBox alignment="CENTER_RIGHT">
                                                 <children>
-                                                    <javafx.scene.control.Button fx:id="btnBackToOpening" onAction="#onBackToOpening" text="Back to dashboard" />
+                                                    <javafx.scene.control.Button fx:id="btnBackToDashboard" onAction="#onBackToDashboard" text="Back to dashboard" />
                                                 </children>
                                             </HBox>
                                             </children>

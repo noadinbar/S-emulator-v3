@@ -55,7 +55,7 @@ public class ExecutionSceneController {
     @FXML private OutputsController         outputsController;
     @FXML private InputsController          inputsController;
     @FXML private ComboBox<String> cmbArchitecture;
-    @FXML private Button btnBackToOpening;
+    @FXML private Button btnBackToDashboard;
 
     private Consumer<String> onArchitectureSelected;
     private String userName;
@@ -109,9 +109,15 @@ public class ExecutionSceneController {
     }
 
     @FXML
-    private void onBackToOpening() {
+    private void onBackToDashboard() {
         try {
-            openOpeningAndReplace();
+            if (debugActive && debugId != null) {
+                debugStopRequested = true;
+                stopDebugPoller();
+                stopResumeWatcher();
+                debugStop(); // async call that sends /api/debug/stop
+            }
+            openDashboardAndReplace();
         } catch (Exception ex) {
             ex.printStackTrace();
         }
@@ -880,7 +886,7 @@ public class ExecutionSceneController {
         }
     }
 
-    private void openOpeningAndReplace() throws Exception {
+    private void openDashboardAndReplace() throws Exception {
         FXMLLoader loader = new FXMLLoader(getClass().getResource("/application/opening/opening_scene.fxml"));
         Parent root = loader.load();
         OpeningSceneController opening = loader.getController();
@@ -949,7 +955,7 @@ public class ExecutionSceneController {
         return cmbArchitecture.getSelectionModel().getSelectedItem();
     }
 
-    public void setOnBackToOpening(Runnable cb) { /* reserved for future use */ }
+    public void setOnBackToDashboard(Runnable cb) { /* reserved for future use */ }
     public void setOnArchitectureSelected(Consumer<String> cb) { this.onArchitectureSelected = cb; }
     public void setUserName(String name) {
         this.userName = name;

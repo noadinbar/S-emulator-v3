@@ -66,11 +66,9 @@ public final class RunHistoryEntryDTO {
         return degree;
     }
 
-
     public long getFinalY() {
         return finalY;
     }
-
 
     public long getCyclesCount() {
         return cyclesCount;

@@ -23,14 +23,11 @@ public class HeaderController {
     @FXML private Label userNameLabel;
     @FXML private Label dashboardTitle;
     @FXML private Label availableCreditsField;
-
-    // --- bottom row ---
     @FXML private Button loadFileButton;
     @FXML private TextField loadedFilePathField;
     @FXML private Button chargeCreditsButton;
     @FXML private TextField chargeAmountField;
     private Window hostWindow;
-
     private Consumer<File> onLocalFileChosen;
     private Consumer<Integer> onChargeCredits;
     private final AtomicBoolean creditsShouldUpdate = new AtomicBoolean(false);

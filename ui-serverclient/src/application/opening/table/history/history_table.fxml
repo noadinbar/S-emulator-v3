@@ -26,8 +26,8 @@
 
         <HBox prefHeight="29.0" prefWidth="553.0" spacing="10.0">
             <children>
-                <Button fx:id="btnShow" mnemonicParsing="false" text="Show" />
-                <Button fx:id="btnRerun" mnemonicParsing="false" text="Re-run" />
+                <Button fx:id="btnShow" mnemonicParsing="false" onAction="#onShowAction" text="Show" />
+                <Button fx:id="btnRerun" mnemonicParsing="false" onAction="#onRerunAction" text="Re-run" />
             </children>
             <padding>
                 <Insets left="10.0" />

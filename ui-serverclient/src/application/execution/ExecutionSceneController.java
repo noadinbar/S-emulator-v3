@@ -70,7 +70,7 @@ public class ExecutionSceneController {
     // If we opened a full program, it's that program's own name.
     // If we opened a function, it's the parent program's name for that function.
     private String programContextName;
-
+    private List<Long> pendingPrefillInputs;
 
     // --- Debug session state (server-driven) ---
     private volatile String       debugId            = null;
@@ -81,6 +81,13 @@ public class ExecutionSceneController {
     private boolean debugMode    = false; // user chose "Debug"
     private boolean debugStarted = false; // init completed
     private Thread resumeWatcher = null;
+
+    // --- data coming from "Rerun" ---
+    private int pendingDegree = -1;
+    private String pendingArch = null;
+    private List<Long> pendingInputs = null;
+    private String pendingMode = null; // "EXECUTION" or "DEBUG"
+
 
     private static final Pattern X_VAR_PATTERN = Pattern.compile("\\bx(\\d+)\\b");
     private static final Pattern Z_VAR_PATTERN = Pattern.compile("\\bz(\\d+)\\b");
@@ -202,6 +209,7 @@ public class ExecutionSceneController {
                     if (runOptionsController != null) {
                         runOptionsController.startEnabled(false);
                     }
+                    applyPendingRerunPresetIfReady();
                 });
             } catch (Exception ex) {
                 ex.printStackTrace();
@@ -879,12 +887,73 @@ public class ExecutionSceneController {
         // לא נוגעים ב-inputs כאן; אם תרצי – הפכי אותם ללא-עריכים רק כשהדיבאג פעיל.
     }
 
+    private void applyPendingRerunPresetIfReady() {
+        // apply degree into header (again, now that everything exists)
+        if (pendingDegree >= 0 && headerController != null) {
+            headerController.setCurrentDegree(pendingDegree);
+        }
+
+        // apply architecture into the combo box
+        if (pendingArch != null && !pendingArch.isEmpty()) {
+            selectArchitecture(pendingArch);
+        }
+
+        // show and fill the inputs section
+        if (inputsController != null && display != null) {
+            // make sure the inputs box is visible for this program/function
+            inputsController.show(display);
+
+            // user should be able to edit before pressing Execute
+            inputsController.setInputsEditable(true);
+
+            // fill previous inputs from history
+            if (pendingInputs != null && !pendingInputs.isEmpty()) {
+                inputsController.fillInputs(pendingInputs);
+            }
+        }
+
+        // set Run vs Debug selection
+        if (pendingMode != null) {
+            boolean wantDebug = "DEBUG".equalsIgnoreCase(pendingMode);
+
+            // sync internal flag so runExecute() knows what to do
+            this.debugMode = wantDebug;
+
+            // reflect the choice visually in the run options area
+            if (runOptionsController != null) {
+                runOptionsController.applyPreset(wantDebug);
+            }
+        }
+    }
+
+    public void prepareFromHistory(int degree,
+                                   String generation,
+                                   List<Long> inputs,
+                                   String mode) {
+        // remember everything so we can apply it once the UI is ready
+        this.pendingDegree = degree;
+        this.pendingArch = generation;
+        this.pendingInputs = (inputs != null) ? new ArrayList<Long>(inputs) : null;
+        this.pendingMode = mode;
+
+        // update what we can immediately (header text etc.)
+        if (headerController != null) {
+            headerController.setCurrentDegree(degree);
+            headerController.refreshStatus();
+        }
+
+        if (generation != null && !generation.isEmpty()) {
+            selectArchitecture(generation);
+        }
+    }
+
     private void stopResumeWatcher() {
         if (resumeWatcher != null) {
             try { resumeWatcher.interrupt(); } catch (Throwable ignore) {}
             resumeWatcher = null;
         }
     }
+
 
     private void openDashboardAndReplace() throws Exception {
         FXMLLoader loader = new FXMLLoader(getClass().getResource("/application/opening/opening_scene.fxml"));
@@ -963,6 +1032,49 @@ public class ExecutionSceneController {
     }
 
     // ****helpers****
+
+    public void prepareFromHistory(int degree,
+                                   String generation,
+                                   List<Long> inputs) {
+
+        // keep for next step (when we wire actual inputs prefill)
+        pendingPrefillInputs = (inputs != null) ? new ArrayList<>(inputs) : null;
+
+        if (headerController != null) {
+            headerController.setCurrentDegree(degree);
+            headerController.refreshStatus();
+        }
+        if (generation != null && !generation.isEmpty()) {
+            selectArchitecture(generation);
+        }
+
+        // Make sure inputs panel is visible and editable.
+        Runnable apply = () -> {
+            if (inputsController != null) {
+                // show the inputs form for the current display and allow editing
+                inputsController.show(display);
+                inputsController.setInputsEditable(true);
+
+                // TODO(next step): prefill the fields using pendingPrefillInputs
+                // if InputsController exposes a setter for values.
+            }
+        };
+
+        if (display != null) {
+            Platform.runLater(apply);
+        } else {
+            // display loads async; wait briefly then apply
+            new Thread(() -> {
+                try {
+                    for (int i = 0; i < 30 && display == null; i++) {
+                        Thread.sleep(50);
+                    }
+                } catch (InterruptedException ignored) { }
+                Platform.runLater(apply);
+            }, "prep-rerun-wait-display").start();
+        }
+    }
+
     private void showError(String title, String msg) {
         Platform.runLater(() -> {
             Alert alert = new Alert(Alert.AlertType.ERROR);

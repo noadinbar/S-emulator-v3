@@ -143,4 +143,29 @@ public class RunOptionsController {
     public void setExecuteForceDisabled(boolean disabled) {
         executeForceDisabled.set(disabled);
     }
+
+    public void applyPreset(boolean debugSelected) {
+        // allow user to interact with the run/debug mode right away
+        setButtonsEnabled(true);
+        // allow Start button to be clickable (UI feels "armed")
+        startEnabled(true);
+        if (debugSelected) {
+            // choose DEBUG mode in the UI
+            if (chkDebug != null) {
+                chkDebug.setSelected(true);
+            }
+            if (chkRun != null) {
+                chkRun.setSelected(false);
+            }
+        } else {
+            // choose RUN mode in the UI
+            if (chkRun != null) {
+                chkRun.setSelected(true);
+            }
+            if (chkDebug != null) {
+                chkDebug.setSelected(false);
+            }
+        }
+    }
+
 }

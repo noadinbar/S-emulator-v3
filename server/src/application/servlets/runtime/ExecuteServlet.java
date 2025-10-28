@@ -9,6 +9,7 @@ import com.google.gson.JsonObject;
 import display.DisplayDTO;
 import execution.ExecutionDTO;
 import execution.ExecutionRequestDTO;
+import execution.VarValueDTO;
 import execution.debug.DebugStateDTO;
 import execution.debug.DebugStepDTO;
 import jakarta.servlet.annotation.WebServlet;
@@ -19,14 +20,14 @@ import application.execution.ExecutionTaskManager;
 import application.execution.ExecutionTaskManager.Job;
 import application.execution.ExecutionTaskManager.Status;
 import application.execution.JobSubmitResult;
+import types.VarOptionsDTO;
+import types.VarRefDTO;
 import users.UserManager;
 
 import api.DisplayAPI;
 
 import java.io.BufferedReader;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 import static utils.Constants.*;
@@ -148,10 +149,7 @@ public class ExecuteServlet extends HttpServlet {
                     long finalY = 0L;
                     finalY=lastState.getY();
                     List<Long> inputsList = execReqRef.getInputs();
-
-                    List<String> outputsSnapshot = new ArrayList<>();
-                    // Keep a serialized final snapshot for "show status" button
-                    outputsSnapshot.add(gson.toJson(lastState));
+                    List<String> outputsSnapshot = buildOutputsSnapshot(lastState);
 
                     if (username != null && hmRef != null) {
                         hmRef.addRunRecord(
@@ -283,5 +281,62 @@ public class ExecuteServlet extends HttpServlet {
         Map<String, DisplayAPI> created = new ConcurrentHashMap<>();
         getServletContext().setAttribute(ATTR_DISPLAY_REGISTRY, created);
         return created;
+    }
+
+    /**
+     * Build a readable snapshot of final variable values in the order:
+     * y, then all x..., then all z...
+     */
+    private static List<String> buildOutputsSnapshot(DebugStateDTO state) {
+        List<String> lines = new ArrayList<>();
+
+        if (state == null || state.getVars() == null) {
+            lines.add("y = 0");
+            return lines;
+        }
+
+        long yVal = 0L;
+        Map<String, Long> valuesByName = new HashMap<>();
+        Set<Integer> xSet = new TreeSet<>();
+        Set<Integer> zSet = new TreeSet<>();
+
+        for (VarValueDTO vv : state.getVars()) {
+            VarRefDTO ref = vv.getVar();
+            if (ref == null) {
+                continue;
+            }
+            VarOptionsDTO kind = ref.getVariable();
+            int idx = ref.getIndex();
+
+            switch (kind) {
+                case y:
+                    yVal = vv.getValue();
+                    break;
+                case x:
+                    if (idx > 0) {
+                        xSet.add(idx);
+                        valuesByName.put("x" + idx, vv.getValue());
+                    }
+                    break;
+                case z:
+                    if (idx > 0) {
+                        zSet.add(idx);
+                        valuesByName.put("z" + idx, vv.getValue());
+                    }
+                    break;
+            }
+        }
+        lines.add("y = " + yVal);
+        for (Integer xi : xSet) {
+            Long v = valuesByName.get("x" + xi);
+            long val = (v == null ? 0L : v);
+            lines.add("x" + xi + " = " + val);
+        }
+        for (Integer zi : zSet) {
+            Long v = valuesByName.get("z" + zi);
+            long val = (v == null ? 0L : v);
+            lines.add("z" + zi + " = " + val);
+        }
+        return lines;
     }
 }

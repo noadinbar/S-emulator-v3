@@ -5,7 +5,7 @@ import types.VarRefDTO;
 
 public class InstructionBodyDTO {
     private final InstrOpDTO op;
-
+    private final String functionName;
     private final VarRefDTO variable;
     private final VarRefDTO dest;
     private final VarRefDTO source;
@@ -39,6 +39,7 @@ public class InstructionBodyDTO {
                               String userString,
                               String functionArgs) {
         this.op = op;
+        this.functionName=functionName;
         this.variable = variable;
         this.dest = dest;
         this.source = source;
@@ -60,4 +61,5 @@ public class InstructionBodyDTO {
     public LabelDTO getJumpTo() { return jumpTo; }
     public String getUserString() { return userString; }
     public String getFunctionArgs() { return functionArgs; }
+    public String getFunctionName() { return functionName; }
 }

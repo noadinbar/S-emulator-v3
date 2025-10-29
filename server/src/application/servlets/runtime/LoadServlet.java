@@ -32,13 +32,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.LinkedHashSet;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 import static utils.Constants.API_LOAD;
@@ -118,6 +112,7 @@ public class LoadServlet extends HttpServlet {
             UserManager um = (UserManager)
                     getServletContext().getAttribute(AppContextListener.ATTR_USERS);
             Map<String, DisplayAPI> registry = getDisplayRegistry();
+            Map<String, String> nameIndex = getFunctionNameMap();
 
             // --------------------------
             // Step 3: business validation (no mutation yet)
@@ -185,83 +180,161 @@ public class LoadServlet extends HttpServlet {
                 }
             }
 
-            // Step 4: dependency resolution with fixpoint
+            // Step 4: dependency resolution with fixpoint (fixed)
+
             while (true) {
-                // Collect the calls from the current program snapshot
+
+                // Snapshot after any functions we've already attached
                 DisplayDTO currentDto = display.getDisplay();
-                Set<String> needed = extractCalledFunctionUserStrings(currentDto);
 
-                // What functions are currently inside the uploaded program
+                // Map of local functions in the current program right now:
+                // functionName (internal) -> userString (alias)
+                Map<String, String> inProgramNameToUserString = new HashMap<String, String>();
+
+                // All userStrings that are already part of this program
+                // (functions that are currently attached)
                 List<String> haveList = uploadedImpl.listFunctionUserStrings();
-                Set<String> haveSet = new LinkedHashSet<>(haveList);
+                Set<String> haveSet = new LinkedHashSet<String>(haveList);
 
-                // Prepare a batch of external Function objects to attach
-                List<Function> batchToAttach = new LinkedList<>();
+                List<FunctionDTO> funcsNow = currentDto.getFunctions();
+                if (funcsNow != null) {
+                    for (FunctionDTO f : funcsNow) {
+                        if (f == null) {
+                            continue;
+                        }
+                        String fName = f.getName();
+                        String fUser = f.getUserString();
+                        if (fName != null && !fName.isBlank()
+                                && fUser != null && !fUser.isBlank()) {
+                            inProgramNameToUserString.put(fName, fUser);
+                            haveSet.add(fUser);
+                        }
+                    }
+                }
 
-                // Track unresolved calls we cannot satisfy from registry
-                Set<String> unresolved = new LinkedHashSet<>();
+                // Collect all function calls (direct QUOTE/JUMP_EQUAL_FUNCTION
+                // and nested/composed calls in their arguments).
+                // namesCalled can contain either internal function names
+                // (e.g. "Smaller_Equal_Than") OR already the userString alias
+                // (e.g. "<=") depending on how the DTO was built.
+                // ustrCalled are explicit userStrings on the instruction body.
+                Set<String> namesCalled = new LinkedHashSet<String>();
+                Set<String> ustrCalled  = new LinkedHashSet<String>();
+                collectCalledFunctionsFromDisplayDTO(
+                        currentDto,
+                        namesCalled,
+                        ustrCalled
+                );
 
-                for (String callName : needed) {
-                    if (callName == null || callName.isBlank()) {
+                // Turn all collected identifiers into "aliases we need".
+                // An alias here means "the userString of a function we depend on".
+                //
+                // For each identifier 'id' from namesCalled:
+                // 1. If it's a known local functionName -> take its userString.
+                // 2. Else if it's already present as a local userString
+                //    (haveSet.contains(id)) -> treat it as that alias.
+                // 3. Else if global nameIndex knows id as functionName -> map to that alias.
+                // 4. Else fall back to treating 'id' itself as the alias. This covers
+                //    the case where 'id' is actually a userString defined in some
+                //    program we already loaded into the registry.
+
+                Set<String> neededAliases = new LinkedHashSet<>();
+
+                for (String id : namesCalled) {
+                    if (id == null || id.isBlank()) {
                         continue;
                     }
-                    if (haveSet.contains(callName)) {
-                        // already provided by current program
+
+                    String alias = resolveAliasForName(
+                            id,
+                            inProgramNameToUserString,
+                            haveSet,
+                            nameIndex,
+                            registry
+                    );
+
+                    if (alias != null && !alias.isBlank()) {
+                        neededAliases.add(alias.trim());
+                    }
+                }
+
+
+                // Also include direct userStrings taken from instruction bodies
+                for (String u : ustrCalled) {
+                    if (u == null || u.isBlank()) {
+                        continue;
+                    }
+                    neededAliases.add(u.trim());
+                }
+
+                // Now figure out which aliases we still do NOT have locally
+                neededAliases.removeAll(haveSet);
+                if (neededAliases.isEmpty()) {
+                    // We have all required functions already
+                    break;
+                }
+
+                // Try to import those missing aliases from the global registry.
+                // registry is userString -> DisplayAPI
+                List<Function> batchToAttach = new LinkedList<Function>();
+                Set<String> unresolvedAlias = new LinkedHashSet<String>();
+
+                for (String alias : neededAliases) {
+                    if (alias == null || alias.isBlank()) {
                         continue;
                     }
 
-                    // resolve from registry using the function userString as key
-                    DisplayAPI depApi = registry.get(callName);
+                    DisplayAPI depApi = registry.get(alias);
                     if (depApi == null) {
-                        unresolved.add(callName);
+                        // We do not have an implementation for this alias anywhere
+                        unresolvedAlias.add(alias);
                         continue;
                     }
 
                     DisplayAPIImpl depImpl = (DisplayAPIImpl) depApi;
-                    Function externalFn = depImpl.findFunctionByUserString(callName);
+                    Function externalFn = depImpl.findFunctionByUserString(alias);
                     if (externalFn == null) {
-                        unresolved.add(callName);
+                        unresolvedAlias.add(alias);
                         continue;
                     }
 
-                    // queue this external function to be attached
-                    haveSet.add(callName);
+                    // Queue this external function to be attached into the uploaded program
+                    haveSet.add(alias);
                     batchToAttach.add(externalFn);
                 }
 
-                // if we have unresolved calls -> fail now, no commit
-                if (!unresolved.isEmpty()) {
+                // If some aliases are still unresolved after checking registry,
+                // the upload is invalid: those functions truly do not exist anywhere.
+                if (!unresolvedAlias.isEmpty()) {
                     StringBuilder sb = new StringBuilder();
                     sb.append("Unknown function(s): ");
                     boolean firstMiss = true;
-                    for (String us : unresolved) {
+                    for (String us : unresolvedAlias) {
                         if (!firstMiss) {
                             sb.append(", ");
                         }
                         sb.append("'").append(us).append("'");
                         firstMiss = false;
                     }
+
                     writeUploadResult(resp,
                             HttpServletResponse.SC_OK,
                             UploadResultDTO.error(sb.toString()));
                     return;
                 }
 
-                // if there is nothing new to attach -> fixpoint reached
+                // If there is nothing new to attach, we are done
                 if (batchToAttach.isEmpty()) {
                     break;
                 }
 
-                // otherwise, attach this batch to the uploaded program.
-                // This mutates the engine Program internally.
+                // Otherwise attach the external functions and loop again.
                 uploadedImpl.attachFunctions(batchToAttach);
-
-                // then loop again, because attached functions might call more
             }
 
-            // After the loop: program is now "closed" under dependencies.
-            // Rebuild final DTO reflecting attached external functions.
+            // After fixpoint we rebuild the final DTO
             DisplayDTO finalDto = display.getDisplay();
+            DisplayDTO cleanDto = buildCleanDisplayDTO(finalDto);
 
             // --------------------------
             // Step 5: commit to global state
@@ -282,19 +355,20 @@ public class LoadServlet extends HttpServlet {
 
             // 5b. ProgramManager
             if (pm != null) {
-                pm.put(baseName, finalDto);
+                // store the cleaned DTO (no null userString in QUOTE rows)
+                pm.put(baseName, cleanDto);
 
                 int maxDegree = 0;
                 try {
                     maxDegree = display.execution().getMaxDegree();
                 } catch (Exception ignore) {
-                    // execution().getMaxDegree() may throw in some cases
+                    // ignore
                 }
 
                 pm.putRecord(new ProgramTableRow(
                         baseName,
                         uploader,
-                        finalDto.numberOfInstructions(),
+                        cleanDto.numberOfInstructions(),
                         maxDegree
                 ));
 
@@ -302,7 +376,7 @@ public class LoadServlet extends HttpServlet {
                     try {
                         um.onMainProgramUploaded(uploader);
                     } catch (Exception ignore) {
-                        // ignore user stats failure
+                        // ignore
                     }
                 }
             }
@@ -313,15 +387,12 @@ public class LoadServlet extends HttpServlet {
             if (fm != null) {
                 for (Map.Entry<String, DisplayAPI> entry : fnMap.entrySet()) {
                     String userString = entry.getKey();
-
                     // only if userString originally came from this file
                     if (!localUserStrings.contains(userString)) {
                         continue;
                     }
-
                     DisplayAPI fApi = entry.getValue();
                     DisplayDTO fDto = fApi.getDisplay();
-
                     int fInstrCount = fDto.numberOfInstructions();
                     int fMaxDegree = 0;
                     try {
@@ -344,6 +415,24 @@ public class LoadServlet extends HttpServlet {
                             um.onFunctionUploaded(uploader);
                         } catch (Exception ignore) {
                             // ignore
+                        }
+                    }
+                }
+            }
+
+            // 5d. Update the global functionName -> userString index.
+            if (nameIndex != null) {
+                List<FunctionDTO> finalFunctions = cleanDto.getFunctions();
+                if (finalFunctions != null) {
+                    for (FunctionDTO f : finalFunctions) {
+                        if (f == null) {
+                            continue;
+                        }
+                        String fname = f.getName();
+                        String ustr  = f.getUserString();
+                        if (fname != null && !fname.isBlank()
+                                && ustr != null && !ustr.isBlank()) {
+                            nameIndex.put(fname, ustr);
                         }
                     }
                 }
@@ -378,34 +467,44 @@ public class LoadServlet extends HttpServlet {
         }
     }
 
-    /**
-     * Collect all called function userStrings from:
-     * - main program instructions
-     * - every function body in this DisplayDTO
-     */
-    private Set<String> extractCalledFunctionUserStrings(DisplayDTO dto) {
-        Set<String> out = new LinkedHashSet<>();
+    private void collectFunctionsFromArgs(String argsText, Set<String> namesOut) {
+        if (argsText == null) {
+            return;
+        }
+        String text = argsText.trim();
+        if (text.isEmpty()) {
+            return;
+        }
+        // Split into top-level arguments, same logic as buildArgToXMap / expand(...)
+        List<String> parts = splitTopArguments(text);
 
-        collectCallsFrom(dto.getInstructions(), out);
+        for (String raw : parts) {
+            if (raw == null) {
+                continue;
+            }
+            String token = raw.trim();
+            if (token.isEmpty()) {
+                continue;
+            }
 
-        List<FunctionDTO> funcs = dto.getFunctions();
-        if (funcs != null) {
-            for (FunctionDTO f : funcs) {
-                if (f == null) {
-                    continue;
+            if (token.startsWith("(") && token.endsWith(")")) {
+                String[] fa = splitFuncNameAndArgs(token);
+                String fname = fa[0];
+                String innerArgs = fa[1];
+                if (fname != null && !fname.isBlank()) {
+                    namesOut.add(fname.trim());
                 }
-                collectCallsFrom(f.getInstructions(), out);
+                collectFunctionsFromArgs(innerArgs, namesOut);
+                continue;
             }
         }
-
-        return out;
     }
 
-    /**
-     * For each instruction, if the op means "call a function" and carries a userString,
-     * record that userString.
-     */
-    private void collectCallsFrom(List<InstructionDTO> instructions, Set<String> out) {
+    private void collectCalledFunctionsFromInstructionList(
+            List<InstructionDTO> instructions,
+            Set<String> namesOut,
+            Set<String> userStringsOut) {
+
         if (instructions == null) {
             return;
         }
@@ -414,7 +513,6 @@ public class LoadServlet extends HttpServlet {
             if (ins == null) {
                 continue;
             }
-
             InstructionBodyDTO body = ins.getBody();
             if (body == null) {
                 continue;
@@ -425,14 +523,326 @@ public class LoadServlet extends HttpServlet {
                 continue;
             }
 
-            // Update this list if there are more call-like ops in your InstructionBodyDTO
             if (op == InstrOpDTO.QUOTE || op == InstrOpDTO.JUMP_EQUAL_FUNCTION) {
-                String us = body.getUserString();
-                if (us != null && !us.isBlank()) {
-                    out.add(us.trim());
+
+                // Direct function reference by internal name
+                String fName = body.getFunctionName();
+                if (fName != null && !fName.isBlank()) {
+                    namesOut.add(fName.trim());
+                }
+
+                // Direct userString reference (may already be known if defined in this file)
+                String ustr = body.getUserString();
+                if (ustr != null && !ustr.isBlank()) {
+                    userStringsOut.add(ustr.trim());
+                }
+
+                // Now parse nested/composed calls from the arguments string
+                String argsText = body.getFunctionArgs();
+                collectFunctionsFromArgs(argsText, namesOut);
+            }
+        }
+    }
+
+    private void collectCalledFunctionsFromDisplayDTO(
+            DisplayDTO dto,
+            Set<String> namesOut,
+            Set<String> userStringsOut) {
+
+        if (dto == null) {
+            return;
+        }
+
+        // main instructions of the program
+        collectCalledFunctionsFromInstructionList(
+                dto.getInstructions(),
+                namesOut,
+                userStringsOut
+        );
+
+        List<FunctionDTO> funcs = dto.getFunctions();
+        if (funcs != null) {
+            for (FunctionDTO f : funcs) {
+                if (f == null) {
+                    continue;
+                }
+                collectCalledFunctionsFromInstructionList(
+                        f.getInstructions(),
+                        namesOut,
+                        userStringsOut
+                );
+            }
+        }
+    }
+
+    private String resolveAliasForName(String internalName,
+                                       Map<String, String> inProgramNameToUserString,
+                                       Set<String> haveSet,
+                                       Map<String, String> nameIndex,
+                                       Map<String, DisplayAPI> registry) {
+
+        if (internalName == null || internalName.isBlank()) {
+            return "";
+        }
+
+        // 1. local mapping inside the current uploaded program
+        String localAlias = inProgramNameToUserString.get(internalName);
+        if (localAlias != null && !localAlias.isBlank()) {
+            return localAlias.trim();
+        }
+
+        // 2. maybe the internalName is itself already a userString we attached
+        if (haveSet.contains(internalName)) {
+            return internalName.trim();
+        }
+
+        // 3. global map from previous uploads: functionName -> userString
+        String globalAlias = nameIndex.get(internalName);
+        if (globalAlias != null && !globalAlias.isBlank()) {
+            return globalAlias.trim();
+        }
+
+        // 4. last resort: scan all known functions in the registry
+        //    and see if any of them declares this internalName.
+        for (DisplayAPI api : registry.values()) {
+            if (api == null) {
+                continue;
+            }
+            DisplayDTO d = api.getDisplay();
+            List<FunctionDTO> fList = d.getFunctions();
+            if (fList == null) {
+                continue;
+            }
+            for (FunctionDTO f : fList) {
+                if (f == null) {
+                    continue;
+                }
+                String fName = f.getName();
+                String fUser = f.getUserString();
+                if (fName == null || fUser == null) {
+                    continue;
+                }
+                if (fName.isBlank() || fUser.isBlank()) {
+                    continue;
+                }
+                if (fName.equals(internalName)) {
+                    // learn this mapping for future uploads in this JVM
+                    nameIndex.put(fName, fUser);
+                    return fUser.trim();
                 }
             }
         }
+
+        // 5. could not resolve. return the internal name as-is.
+        return internalName.trim();
+    }
+
+    // Build a cleaned clone of the DisplayDTO so UI will never see null for function calls.
+    // We only touch QUOTE and JUMP_EQUAL_FUNCTION instructions.
+    private DisplayDTO buildCleanDisplayDTO(DisplayDTO dto) {
+
+        if (dto == null) {
+            return null;
+        }
+
+        // aliasMap: internal function name -> userString from the final program
+        // example: "Minus" -> "-", "Smaller_Than" -> "<", "AND" -> "&&"
+        Map<String, String> aliasMap = new HashMap<>();
+        List<FunctionDTO> origFuncs = dto.getFunctions();
+        if (origFuncs != null) {
+            for (FunctionDTO f : origFuncs) {
+                if (f == null) {
+                    continue;
+                }
+                String fname = f.getName();
+                String ustr  = f.getUserString();
+                if (fname != null && !fname.isBlank()
+                        && ustr != null && !ustr.isBlank()) {
+                    aliasMap.put(fname, ustr);
+                }
+            }
+        }
+
+        // Clone main program instructions with fixed userString where needed
+        List<InstructionDTO> fixedMain = new ArrayList<>();
+        List<InstructionDTO> origMain = dto.getInstructions();
+        if (origMain != null) {
+            for (InstructionDTO ins : origMain) {
+
+                if (ins == null) {
+                    fixedMain.add(null);
+                    continue;
+                }
+
+                InstructionBodyDTO body = ins.getBody();
+                InstrOpDTO op = (body == null ? null : body.getOp());
+
+                // Only rewrite QUOTE / JUMP_EQUAL_FUNCTION
+                if (op != InstrOpDTO.QUOTE && op != InstrOpDTO.JUMP_EQUAL_FUNCTION) {
+                    fixedMain.add(ins);
+                    continue;
+                }
+
+                String funcName   = body.getFunctionName();   // internal name, e.g. "Minus"
+                String aliasShown = body.getUserString();     // may be null
+                String args       = body.getFunctionArgs();   // "(Minus,x1,x2)" etc.
+
+                // Choose alias to show:
+                // 1. if body already had userString -> keep it
+                // 2. else use aliasMap.get(funcName)
+                // 3. else fall back to funcName itself
+                if (aliasShown == null || aliasShown.isBlank()) {
+                    String mapped = (funcName == null ? null : aliasMap.get(funcName));
+                    if (mapped != null && !mapped.isBlank()) {
+                        aliasShown = mapped;
+                    } else if (funcName != null && !funcName.isBlank()) {
+                        aliasShown = funcName;
+                    } else {
+                        aliasShown = "";
+                    }
+                }
+
+                InstructionBodyDTO newBody;
+                if (op == InstrOpDTO.QUOTE) {
+                    newBody = new InstructionBodyDTO(
+                            op,
+                            body.getVariable(),   // result var (destination)
+                            null,
+                            null,
+                            null,
+                            null,
+                            0L,
+                            null,
+                            funcName,             // internal name
+                            aliasShown,           // fixed alias for UI
+                            args
+                    );
+                } else {
+                    // JUMP_EQUAL_FUNCTION
+                    newBody = new InstructionBodyDTO(
+                            op,
+                            body.getVariable(),   // variable to test
+                            null,
+                            null,
+                            body.getCompare(),    // compare var
+                            null,
+                            0L,
+                            body.getJumpTo(),     // jump target label
+                            funcName,
+                            aliasShown,
+                            args
+                    );
+                }
+
+                InstructionDTO newDTO = new InstructionDTO(
+                        ins.getNumber(),
+                        ins.getKind(),
+                        ins.getLabel(),
+                        newBody,
+                        ins.getCycles(),
+                        ins.getGeneration()
+                );
+
+                fixedMain.add(newDTO);
+            }
+        }
+
+        // Clone each function with same logic so inside functions also looks nice
+        List<FunctionDTO> fixedFuncs = new ArrayList<>();
+        if (origFuncs != null) {
+            for (FunctionDTO origF : origFuncs) {
+
+                if (origF == null) {
+                    fixedFuncs.add(null);
+                    continue;
+                }
+
+                List<InstructionDTO> fixedBodyList = new ArrayList<>();
+                List<InstructionDTO> origBodyList = origF.getInstructions();
+
+                if (origBodyList != null) {
+                    for (InstructionDTO ins : origBodyList) {
+
+                        if (ins == null) {
+                            fixedBodyList.add(null);
+                            continue;
+                        }
+
+                        InstructionBodyDTO body = ins.getBody();
+                        InstrOpDTO op = (body == null ? null : body.getOp());
+
+                        if (op != InstrOpDTO.QUOTE && op != InstrOpDTO.JUMP_EQUAL_FUNCTION) {
+                            fixedBodyList.add(ins);
+                            continue;
+                        }
+
+                        String funcName   = body.getFunctionName();
+                        String aliasShown = body.getUserString();
+                        String args       = body.getFunctionArgs();
+
+                        if (aliasShown == null || aliasShown.isBlank()) {
+                            String mapped = (funcName == null ? null : aliasMap.get(funcName));
+                            if (mapped != null && !mapped.isBlank()) {
+                                aliasShown = mapped;
+                            } else if (funcName != null && !funcName.isBlank()) {
+                                aliasShown = funcName;
+                            } else {
+                                aliasShown = "";
+                            }
+                        }
+
+                        InstructionBodyDTO newBody;
+                        if (op == InstrOpDTO.QUOTE) {
+                            newBody = new InstructionBodyDTO(
+                                    op,
+                                    body.getVariable(),
+                                    null,
+                                    null,
+                                    null,
+                                    null,
+                                    0L,
+                                    null,
+                                    funcName,
+                                    aliasShown,
+                                    args
+                            );
+                        } else {
+                            newBody = new InstructionBodyDTO(
+                                    op,
+                                    body.getVariable(),
+                                    null,
+                                    null,
+                                    body.getCompare(),
+                                    null,
+                                    0L,
+                                    body.getJumpTo(),
+                                    funcName,
+                                    aliasShown,
+                                    args
+                            );
+                        }
+
+                        InstructionDTO newDTO = new InstructionDTO(
+                                ins.getNumber(),
+                                ins.getKind(),
+                                ins.getLabel(),
+                                newBody,
+                                ins.getCycles(),
+                                ins.getGeneration()
+                        );
+                        fixedBodyList.add(newDTO);
+                    }
+                }
+                fixedFuncs.add(new FunctionDTO(
+                        origF.getName(),
+                        origF.getUserString(),
+                        fixedBodyList
+                ));
+            }
+        }
+
+        // We reuse the rest of the metadata (programName, inputsInUse, labelsInUse)
+        return new DisplayDTO( dto.getProgramName(), dto.getInputsInUse(), dto.getLabelsInUse(), fixedMain, fixedFuncs);
     }
 
     /**
@@ -448,6 +858,21 @@ public class LoadServlet extends HttpServlet {
     }
 
     @SuppressWarnings("unchecked")
+    private Map<String, String> getFunctionNameMap() {
+        Object obj = getServletContext()
+                .getAttribute(AppContextListener.ATTR_FUNCTION_NAMES);
+
+        if (obj instanceof Map) {
+            return (Map<String, String>) obj;
+        }
+
+        // If for some reason it does not exist yet, create it now.
+        Map<String, String> created = new ConcurrentHashMap<>();
+        getServletContext().setAttribute(AppContextListener.ATTR_FUNCTION_NAMES, created);
+        return created;
+    }
+
+    @SuppressWarnings("unchecked")
     private Map<String, DisplayAPI> getDisplayRegistry() {
         Object obj = getServletContext().getAttribute(ATTR_DISPLAY_REGISTRY);
         if (obj instanceof Map) {
@@ -457,5 +882,53 @@ public class LoadServlet extends HttpServlet {
         Map<String, DisplayAPI> created = new ConcurrentHashMap<>();
         getServletContext().setAttribute(ATTR_DISPLAY_REGISTRY, created);
         return created;
+    }
+
+    public List<String> splitTopArguments(String s) {
+        List<String> out = new ArrayList<>();
+        if (s == null) return out;
+        StringBuilder cur = new StringBuilder();
+        int depth = 0;
+        for (int i = 0; i < s.length(); i++) {
+            char c = s.charAt(i);
+            if (c == '(') { depth++; cur.append(c); continue; }
+            if (c == ')') { depth--; cur.append(c); continue; }
+            if (c == ',' && depth == 0) {
+                out.add(cur.toString().trim());
+                cur.setLength(0);
+                continue;
+            }
+            cur.append(c);
+        }
+        out.add(cur.toString().trim());
+        return out;
+    }
+
+    public String[] splitFuncNameAndArgs(String expr) {
+        String inner = removeOuterParentheses(expr);
+        if (inner == null) return new String[] {"", ""};
+        int cut = indexOfTopLevelComma(inner);
+        String fname = (cut == -1) ? inner.trim() : inner.substring(0, cut).trim();
+        String fargs = (cut == -1) ? "" : inner.substring(cut + 1).trim();
+        return new String[] { fname, fargs };
+    }
+
+    public String removeOuterParentheses(String s) {
+        if (s != null && s.length() >= 2 && s.charAt(0) == '(' && s.charAt(s.length() - 1) == ')') {
+            return s.substring(1, s.length() - 1).trim();
+        }
+        return s;
+    }
+
+    public int indexOfTopLevelComma(String s) {
+        if (s == null) return -1;
+        int depth = 0;
+        for (int i = 0; i < s.length(); i++) {
+            char c = s.charAt(i);
+            if (c == '(') depth++;
+            else if (c == ')') depth--;
+            else if (c == ',' && depth == 0) return i;
+        }
+        return -1;
     }
 }

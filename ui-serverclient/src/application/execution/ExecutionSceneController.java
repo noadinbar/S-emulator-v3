@@ -225,9 +225,23 @@ public class ExecutionSceneController {
         int target = Math.max(0, Math.min(requestedDegree, maxDegree));
         currentDegree = target;
         if (headerController != null) { headerController.setCurrentDegree(currentDegree); }
+
+        if (cmbArchitecture != null) {
+            cmbArchitecture.getSelectionModel().clearSelection();
+        }
+
+        if (runOptionsController != null) {
+            runOptionsController.setButtonsEnabled(false);
+            runOptionsController.startEnabled(false);
+        }
+
         if (inputsController != null) {
             inputsController.clear();
             inputsController.setInputsEditable(false);
+        }
+
+        if (outputsController != null) {
+            outputsController.clear();
         }
 
         new Thread(() -> {
@@ -257,10 +271,6 @@ public class ExecutionSceneController {
         }, "expand-" + target).start();
     }
 
-    // =====================================================================================
-    // v2 entry point: single button that decides RUN vs DEBUG based on debugMode.
-    // Call this from RunOptionsController's Execute button (recommended).
-    // =====================================================================================
     public void runExecute() {
         if (!Platform.isFxApplicationThread()) {
             Platform.runLater(this::runExecute);
@@ -272,7 +282,6 @@ public class ExecutionSceneController {
             ensureDebugInit(); // will pull the first state immediately and enable buttons
             return;
         }
-
         // Regular run:
         executeRun();
     }
@@ -888,38 +897,40 @@ public class ExecutionSceneController {
     }
 
     private void applyPendingRerunPresetIfReady() {
-        // apply degree into header (again, now that everything exists)
+        boolean hasPreset =
+                (pendingDegree >= 0) ||
+                        (pendingArch != null && !pendingArch.isEmpty()) ||
+                        (pendingInputs != null && !pendingInputs.isEmpty()) ||
+                        (pendingMode != null);
+
+        if (!hasPreset) {
+            if (inputsController != null) {
+                inputsController.clear();
+                inputsController.setInputsEditable(false);
+            }
+            return;
+        }
+
         if (pendingDegree >= 0 && headerController != null) {
             headerController.setCurrentDegree(pendingDegree);
         }
 
-        // apply architecture into the combo box
         if (pendingArch != null && !pendingArch.isEmpty()) {
             selectArchitecture(pendingArch);
         }
 
-        // show and fill the inputs section
         if (inputsController != null && display != null) {
-            // make sure the inputs box is visible for this program/function
             inputsController.show(display);
-
-            // user should be able to edit before pressing Execute
             inputsController.setInputsEditable(true);
 
-            // fill previous inputs from history
             if (pendingInputs != null && !pendingInputs.isEmpty()) {
                 inputsController.fillInputs(pendingInputs);
             }
         }
 
-        // set Run vs Debug selection
         if (pendingMode != null) {
             boolean wantDebug = "DEBUG".equalsIgnoreCase(pendingMode);
-
-            // sync internal flag so runExecute() knows what to do
             this.debugMode = wantDebug;
-
-            // reflect the choice visually in the run options area
             if (runOptionsController != null) {
                 runOptionsController.applyPreset(wantDebug);
             }
@@ -1008,11 +1019,13 @@ public class ExecutionSceneController {
 
     public void showInputsForEditing() {
         if (display == null || inputsController == null) return;
+        if (outputsController != null) {
+            outputsController.clear();
+        }
         inputsController.show(display);
         inputsController.setInputsEditable(true);
         Platform.runLater(inputsController::focusFirstField);
     }
-
 
     public void setArchitectureOptions(List<String> options) {
         cmbArchitecture.getItems().setAll(options);
@@ -1214,11 +1227,19 @@ public class ExecutionSceneController {
 
     private void executeGenerationCheck() {
         if (runOptionsController == null || programTableController == null) return;
-        String sel = getSelectedArchitecture();
-        String maxInTable = programTableController.getMaxGenerationValue();
-        int selRank = convertRomanToInteger(sel);
+
+        String sel = getSelectedArchitecture();                     // מה המשתמש בחר ב-combo
+        String maxInTable = programTableController.getMaxGenerationValue(); // מה התוכנית דורשת בדרגה הנוכחית
+
+        int selRank = convertRomanToInteger(sel);       // I=1 II=2 III=3 IV=4
         int maxRank = convertRomanToInteger(maxInTable);
-        boolean shouldDisable = sel != null && selRank > 0 && maxRank > 0 && (selRank < maxRank);
-        runOptionsController.startEnabled(!shouldDisable);
+
+        boolean archChosen = (sel != null && selRank > 0);                 // בכלל נבחר משהו?
+        boolean tooWeak    = archChosen && maxRank > 0 && (selRank < maxRank);
+
+        boolean disableStart = (!archChosen) || tooWeak;
+
+        runOptionsController.startEnabled(!disableStart);
     }
+
 }

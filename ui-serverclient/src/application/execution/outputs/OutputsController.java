@@ -12,13 +12,9 @@ import java.util.stream.Collectors;
 
 public class OutputsController {
 
-    @FXML
-    private VBox linesBox;
-    @FXML
-    private TextField txtCycles;
-
+    @FXML private VBox linesBox;
+    @FXML private TextField txtCycles;
     private final Map<String, Label> varLabels = new HashMap<>();
-
 
     @FXML
     private void initialize() {

@@ -1,6 +1,7 @@
 package application.opening.header;
 
 import java.io.File;
+import java.nio.file.Path;
 import java.util.Timer;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
@@ -32,6 +33,8 @@ public class HeaderController {
     private Consumer<Integer> onChargeCredits;
     private final AtomicBoolean creditsShouldUpdate = new AtomicBoolean(false);
     private Timer creditsTimer;
+    private Path lastValidXmlPath;
+    private File lastDir;
 
     @FXML
     private void initialize() {
@@ -55,9 +58,22 @@ public class HeaderController {
         FileChooser chooser = new FileChooser();
         chooser.setTitle("Select XML file");
         chooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("XML Files", "*.xml"));
+        try {
+            if (lastDir != null && lastDir.isDirectory()) {
+                chooser.setInitialDirectory(lastDir);
+            } else if (lastValidXmlPath!= null && lastValidXmlPath.getParent() != null) {
+                File parent = lastValidXmlPath.getParent().toFile();
+                if (parent.isDirectory()) chooser.setInitialDirectory(parent);
+            } else {
+                File home = new File(System.getProperty("user.home"));
+                if (home.isDirectory()) chooser.setInitialDirectory(home);
+            }
+        } catch (SecurityException ignore) {
+
+        }
         File file = chooser.showOpenDialog(w);
         if (file == null) return;
-
+        lastDir = file.getParentFile();
         if (loadedFilePathField != null) {
             loadedFilePathField.setText(file.getAbsolutePath());
         }

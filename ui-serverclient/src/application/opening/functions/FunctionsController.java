@@ -40,6 +40,7 @@ public class FunctionsController {
 
     @FXML
     public void initialize() {
+
         // Bind columns to DTO getters
         nameCol.setCellValueFactory(new PropertyValueFactory<>("name"));
         programCol.setCellValueFactory(new PropertyValueFactory<>("programName"));

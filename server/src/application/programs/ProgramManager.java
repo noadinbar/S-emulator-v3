@@ -56,7 +56,7 @@ public class ProgramManager {
     }
 
     /** +1 to runCount for a given program, if it exists. */
-    public void incRunCount(String name) {
+    public void incRunCount(String name, long credits) {
         if (name == null) return;
         String key = name.trim();
         ProgramTableRow row = rows.get(key);
@@ -64,6 +64,7 @@ public class ProgramManager {
             // Keep it simple; rows is concurrent, but we only mutate a single int.
             synchronized (row) {
                 row.setRunCount(row.getRunCount() + 1);
+                row.setTotalCreditsAndAvg(credits);
             }
         }
     }

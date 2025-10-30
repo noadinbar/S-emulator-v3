@@ -4,6 +4,7 @@ import api.DebugAPI;
 import application.credits.Generation;
 import application.history.HistoryManager;
 import application.listeners.AppContextListener;
+import application.programs.ProgramManager;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import display.DisplayDTO;
@@ -35,10 +36,11 @@ import static utils.Constants.*;
 @WebServlet(name = "ExecuteServlet", urlPatterns = {API_EXECUTE})
 public class ExecuteServlet extends HttpServlet {
     private final Gson gson = new Gson();
+    private Generation architecture;
 
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) {
-
+        final long[] totalCycles = new long[1];
         resp.setContentType("application/json");
         try {
             StringBuilder sb = new StringBuilder();
@@ -96,11 +98,12 @@ public class ExecuteServlet extends HttpServlet {
             final HistoryManager hmRef = AppContextListener.getHistory(getServletContext());
 
             JobSubmitResult res = ExecutionTaskManager.trySubmit(() -> {
-
+            try{
                 // Build DebugAPI for this run
                 final DebugAPI dbgApi = targetRef.debugForDegree(degree);
 
                 final Generation gen = Generation.valueOf(execReqRef.getGeneration());
+                architecture=gen;
                 // TODO(input): if you want fail-fast 400 on bad generation, validate before scheduling.
 
                 // 1) One-time opening charge for the selected generation
@@ -145,6 +148,7 @@ public class ExecuteServlet extends HttpServlet {
 
                     String architectureType = execReqRef.getGeneration();
                     long cyclesCount = lastState.getCyclesSoFar();
+                    totalCycles[0] =cyclesCount;
 
                     long finalY = 0L;
                     finalY=lastState.getY();
@@ -176,6 +180,16 @@ public class ExecuteServlet extends HttpServlet {
                 }
 
                 return result;
+            } finally {
+                // increment #runs for PROGRAM runs (not for FUNCTION runs)
+                if (functionUserStringRef == null || functionUserStringRef.isBlank()) {
+                    ProgramManager pm = AppContextListener.getPrograms(getServletContext());
+                    if (pm != null && programKeyRef != null && !programKeyRef.isBlank()) {
+                        long totalCredits=architecture.getCredits()+totalCycles[0];
+                        pm.incRunCount(programKeyRef,totalCredits );
+                    }
+                }
+            }
             });
 
             if (!res.isAccepted()) {

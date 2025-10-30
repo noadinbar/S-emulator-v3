@@ -5,6 +5,7 @@ import api.DisplayAPI;
 import application.credits.Generation;
 import application.history.HistoryManager;
 import application.listeners.AppContextListener;
+import application.programs.ProgramManager;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import display.DisplayDTO;
@@ -37,6 +38,7 @@ import static utils.ServletUtils.writeJsonError;
 @WebServlet(name = "DebugServlet", urlPatterns = { API_DEBUG_INIT, API_DEBUG_STEP, API_DEBUG_RESUME, API_DEBUG_STOP, API_DEBUG_TERMINATED, API_DEBUG_HISTORY, API_DEBUG_STATE})
 public class DebugServlet extends HttpServlet {
     private final Gson gson = new Gson();
+    private Generation architecture;
 
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException {
@@ -117,6 +119,7 @@ public class DebugServlet extends HttpServlet {
         int creditsNowAfterInit = 0;
         try {
             Generation gen = Generation.valueOf(execReq.getGeneration());
+            architecture=gen;
 
             if (username != null) {
                 // TODO(credits): if not enough credits to afford gen.getCredits(),
@@ -663,6 +666,14 @@ public class DebugServlet extends HttpServlet {
                     "DEBUG"
             );
             meta.markRecorded();
+            // count a run for PROGRAM targets (once per session)
+            if ("PROGRAM".equals(targetType) && targetName != null && !targetName.isBlank()) {
+                ProgramManager pm = AppContextListener.getPrograms(getServletContext());
+                if (pm != null) {
+                    long totalCredits=architecture.getCredits()+cyclesCount;
+                    pm.incRunCount(targetName, totalCredits);
+                }
+            }
         }
     }
 

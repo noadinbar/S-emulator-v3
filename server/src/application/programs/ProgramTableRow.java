@@ -7,6 +7,7 @@ public class ProgramTableRow {
     private final int maxDegree;
     private int runCount;
     private double avgCredits;
+    private long totalCredits=0;
 
     public ProgramTableRow(String name, String uploader, int baseInstrCount, int maxDegree) {
         this.name = name;
@@ -34,7 +35,12 @@ public class ProgramTableRow {
         this.runCount = runCount;
     }
 
-    public void setAvgCredits(double avgCredits) {
-        this.avgCredits = avgCredits;
+    public void setTotalCreditsAndAvg(long credits) {
+        this.totalCredits+= credits;
+        setAvgCredits();
+    }
+
+    public void setAvgCredits() {
+        this.avgCredits = (double) totalCredits / runCount;
     }
 }

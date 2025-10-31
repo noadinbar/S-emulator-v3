@@ -7,12 +7,11 @@ import execution.debug.DebugStepDTO;
 public final class DebugResults {
     private DebugResults() {}
     public record Stop(boolean stopped, String debugId) {}
-    public record Terminated(boolean terminated, int creditsCurrent) {}
+    public record Terminated(boolean terminated, int creditsCurrent, boolean outOfCredits) {}
     public record History(boolean ok, int runNumber) {}
-    public record StepResult( DebugStepDTO step, int creditsCurrent, int creditsUsed, boolean terminated) {}
+    public record StepResult( DebugStepDTO step, int creditsCurrent, int creditsUsed, boolean terminated, boolean outOfCredits) {}
     public record InitResult(boolean accepted, String debugId, int retryMs, boolean locked, int creditsCurrent) {}
 
-    /** Generic async submit result for 202/429/409 */
     public record Submit(boolean accepted, String debugId, int retryMs, boolean locked) {}
     public static Submit accepted(String id) {
         return new Submit(true, id, 0, false);

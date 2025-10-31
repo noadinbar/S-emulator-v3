@@ -90,49 +90,46 @@ public final class DebugResponder {
     }
 
     public static DebugResults.StepResult step(Request req) throws Exception {
-        try (Response res = HttpClientUtil.runSync(req)) {
-            String body = (res.body() != null) ? res.body().string() : "";
-            if (res.code() != 200) {
-                throw new RuntimeException(
-                        "DEBUG step failed: HTTP " + res.code() + " | " + body
-                );
+        try (Response rs = HttpClientUtil.runSync(req)) {
+            String body = rs.body() != null ? rs.body().string() : "";
+            int code = rs.code();
+            if (code < 200 || code >= 300) {
+                throw new RuntimeException("STEP failed: HTTP " + code + " | " + body);
             }
 
-            JsonObject root = JsonUtils.GSON.fromJson(body, JsonObject.class);
-            if (root == null) {
-                throw new RuntimeException("DEBUG step failed: empty JSON");
-            }
+            JsonObject obj = JsonUtils.GSON.fromJson(body, JsonObject.class);
 
-            // the inner "step" object from server → real engine step dto
             DebugStepDTO stepDto = null;
-            if (root.has("step") && !root.get("step").isJsonNull()) {
-                stepDto = JsonUtils.GSON.fromJson(root.get("step"), DebugStepDTO.class);
+            if (obj != null && obj.has("step") && !obj.get("step").isJsonNull()) {
+                stepDto = JsonUtils.GSON.fromJson(obj.get("step"), DebugStepDTO.class);
             }
 
-            // credits info (remaining + used)
             int creditsCurrent = 0;
-            int creditsUsed = 0;
-            if (root.has("credits") && root.get("credits").isJsonObject()) {
-                JsonObject c = root.getAsJsonObject("credits");
-                if (c.has("current") && !c.get("current").isJsonNull()) {
-                    creditsCurrent = c.get("current").getAsInt();
-                }
-                if (c.has("used") && !c.get("used").isJsonNull()) {
-                    creditsUsed = c.get("used").getAsInt();
-                }
+            if (obj != null && obj.has("creditsCurrent")) {
+                creditsCurrent = obj.get("creditsCurrent").getAsInt();
             }
 
-            // did the server tell us this debug session is done?
+            int creditsUsed = 0;
+            if (obj != null && obj.has("creditsUsed")) {
+                creditsUsed = obj.get("creditsUsed").getAsInt();
+            }
+
             boolean terminated = false;
-            if (root.has("terminated") && !root.get("terminated").isJsonNull()) {
-                terminated = root.get("terminated").getAsBoolean();
+            if (obj != null && obj.has("terminated")) {
+                terminated = obj.get("terminated").getAsBoolean();
+            }
+
+            boolean outOfCredits = false;
+            if (obj != null && obj.has("outOfCredits")) {
+                outOfCredits = obj.get("outOfCredits").getAsBoolean();
             }
 
             return new DebugResults.StepResult(
                     stepDto,
                     creditsCurrent,
                     creditsUsed,
-                    terminated
+                    terminated,
+                    outOfCredits
             );
         }
     }
@@ -153,25 +150,35 @@ public final class DebugResponder {
     }
 
     public static DebugResults.Terminated terminated(Request req) throws Exception {
-        try (Response res = HttpClientUtil.runSync(req)) {
-            String body = (res.body() != null) ? res.body().string() : "";
-            if (res.code() != 200) {
-                throw new RuntimeException(
-                        "DEBUG terminated failed: HTTP " + res.code() + " | " + body
-                );
+        try (Response rs = HttpClientUtil.runSync(req)) {
+            String body = rs.body() != null ? rs.body().string() : "";
+            int code = rs.code();
+            if (code < 200 || code >= 300) {
+                throw new RuntimeException("TERMINATED failed: HTTP " + code + " | " + body);
             }
-            JsonObject root = JsonUtils.GSON.fromJson(body, JsonObject.class);
-            boolean term = false;
+
+            JsonObject obj = JsonUtils.GSON.fromJson(body, JsonObject.class);
+
+            boolean terminated = false;
+            if (obj != null && obj.has("terminated")) {
+                terminated = obj.get("terminated").getAsBoolean();
+            }
+
             int creditsCurrent = 0;
-            if (root != null) {
-                if (root.has("terminated") && !root.get("terminated").isJsonNull()) {
-                    term = root.get("terminated").getAsBoolean();
-                }
-                if (root.has("creditsCurrent") && !root.get("creditsCurrent").isJsonNull()) {
-                    creditsCurrent = root.get("creditsCurrent").getAsInt();
-                }
+            if (obj != null && obj.has("creditsCurrent")) {
+                creditsCurrent = obj.get("creditsCurrent").getAsInt();
             }
-            return new DebugResults.Terminated(term, creditsCurrent);
+
+            boolean outOfCredits = false;
+            if (obj != null && obj.has("outOfCredits")) {
+                outOfCredits = obj.get("outOfCredits").getAsBoolean();
+            }
+
+            return new DebugResults.Terminated(
+                    terminated,
+                    creditsCurrent,
+                    outOfCredits
+            );
         }
     }
 

@@ -13,14 +13,19 @@ public class ExecutionPollDTO {
     private Status status;
     private ExecutionDTO result;
     private String error;
+    private boolean outOfCredits;
 
-    public ExecutionPollDTO(Status status, ExecutionDTO result, String error) {
+    public ExecutionPollDTO(Status status, ExecutionDTO result, String error, boolean outOfCredits) {
         this.status = status;
         this.result = result;
         this.error = error;
+        this.outOfCredits = outOfCredits;
     }
 
     public Status getStatus() { return status; }
     public ExecutionDTO getResult() { return result; }
     public String getError() { return error; }
+    public boolean isOutOfCredits() {
+        return outOfCredits;
+    }
 }

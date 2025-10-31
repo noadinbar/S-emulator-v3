@@ -93,8 +93,6 @@ public final class ExecutionTaskManager {
         }, 60, 60, TimeUnit.SECONDS);
     }
 
-    // ---------- New API: non-throwing submit with BUSY response ----------
-
     /**
      * Submits a job if capacity allows. Returns ACCEPTED(jobId) or BUSY(retryAfterMs).
      * The supplied task should do the heavy execute() work (no repository locks here).

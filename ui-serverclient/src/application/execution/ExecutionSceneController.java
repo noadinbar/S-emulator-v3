@@ -319,10 +319,12 @@ public class ExecutionSceneController {
                 // 3) POLL until terminal state
                 ExecutionDTO result = null;
                 String errorMsg = null;
+                boolean outOfCreditsFlag = false;
 
                 while (true) {
                     Request pollReq = ExecuteResponder.buildPollRequest(executeUrl, jobId);
                     ExecutionPollDTO pr = ExecuteResponder.poll(pollReq);
+                    outOfCreditsFlag = pr.isOutOfCredits();
 
                     switch (pr.getStatus()) {
                         case PENDING:
@@ -377,10 +379,17 @@ public class ExecutionSceneController {
 
                 if (result != null) {
                     final ExecutionDTO finalResult = result;
+                    boolean creditsEnded = outOfCreditsFlag;
                     Platform.runLater(() -> {
                         outputsController.showExecution(finalResult);
                         if (inputsController != null) {
                             inputsController.setInputsEditable(false);
+                        }
+                        if (creditsEnded) {
+                            showErrorAndExitToDashboard(
+                                    "Insufficient credits",
+                                    "Not enough credits to continue execution. Please load more credits."
+                            );
                         }
                     });
                 } else {
@@ -596,19 +605,14 @@ public class ExecutionSceneController {
 
         // Clear step-change highlight when switching to continuous run
         if (outputsController != null) {
-            Platform.runLater(() -> outputsController.highlightChanged(Set.of()));
+            Platform.runLater(() -> outputsController.highlightChanged(java.util.Set.of()));
         }
 
         debugStopRequested = false;
 
-        // This thread will:
-        //   1. send /resume
-        //   2. wait until /terminated says we're done
-        //   3. pull final state
-        //   4. update UI + header credits
         resumeWatcher = new Thread(() -> {
             try {
-                // 1) send resume (retry a bit if server is busy)
+                // 1) send /resume (with simple retry if server is busy)
                 int attempts = 0;
                 while (attempts < 5) {
                     DebugResults.Submit res = DebugResponder.resume(Debug.resume(id));
@@ -626,12 +630,18 @@ public class ExecutionSceneController {
                 // 2) wait until server reports terminated()
                 //    while we're waiting, remember the final creditsCurrent
                 int creditsAfterResume = -1;
+                boolean noCreditsStop = false;
+
                 while (debugActive && !debugStopRequested) {
-                    DebugResults.Terminated done = DebugResponder.terminated(Debug.terminated(id));
+                    DebugResults.Terminated done =
+                            DebugResponder.terminated(Debug.terminated(id));
+
                     if (done != null && done.terminated()) {
                         creditsAfterResume = done.creditsCurrent();
+                        noCreditsStop = done.outOfCredits(); // <--- NEW
                         break;
                     }
+
                     try {
                         Thread.sleep(Math.max(300, Constants.REFRESH_RATE_MS));
                     } catch (InterruptedException ie) {
@@ -644,30 +654,41 @@ public class ExecutionSceneController {
                 try {
                     finalState = DebugResponder.state(Debug.state(id));
                 } catch (Exception ignore) {
-                    // If /state is already closed by the server, fall back to the last known state
                     finalState = lastDebugState;
                 }
 
                 final DebugStateDTO fs = finalState;
                 final int creditsFinal = creditsAfterResume;
+                final boolean outOfCreditsStop = noCreditsStop;
 
                 Platform.runLater(() -> {
                     // draw final state (registers, outputs, cycles...)
                     showDebugState(fs);
 
                     if (outputsController != null) {
-                        outputsController.highlightChanged(Set.of());
+                        outputsController.highlightChanged(java.util.Set.of());
                     }
 
-                    // update header credits to reflect the aggregated resume charge
+                    // update header credits to reflect the cost of this resume run
                     if (headerController != null && creditsFinal >= 0) {
                         headerController.setAvailableCredits(creditsFinal);
                     }
+
+                    // mark locally as finished (disables buttons etc.)
                     onDebugTerminated(fs);
+
+                    // if credits ended mid-run: popup + go back to dashboard
+                    if (outOfCreditsStop) {
+                        showErrorAndExitToDashboard(
+                                "Insufficient credits",
+                                "Not enough credits to continue execution. Please load more credits."
+                        );
+                    }
                 });
 
             } catch (Exception ex) {
-                Platform.runLater(() -> showError("Resume failed", ex.getMessage()));
+                Platform.runLater(() ->
+                        showError("Resume failed", ex.getMessage()));
             }
         }, "dbg-resume-waiter");
 
@@ -686,11 +707,42 @@ public class ExecutionSceneController {
 
                 final int creditsAfter = result.creditsCurrent();
                 final boolean terminatedNow = result.terminated();
+                final boolean noCreditsStop = result.outOfCredits();
                 final DebugStepDTO stepDto = result.step();
                 final DebugStateDTO st = (stepDto != null) ? stepDto.getNewState() : null;
 
                 // We detect which vars changed BEFORE we update lastDebugState
                 final Set<String> changed = diffChangedNames(lastDebugState, st);
+
+                // ===== NEW BLOCK: ran out of credits mid-debug =====
+                if (noCreditsStop) {
+                    // treat like end-of-run:
+                    if (st != null) {
+                        lastDebugState = st;
+                    }
+                    Platform.runLater(() -> {
+                        // update credits in header
+                        if (headerController != null) {
+                            headerController.setAvailableCredits(creditsAfter);
+                        }
+
+                        // paint final state in outputs panel
+                        showDebugState(st);
+                        if (outputsController != null) {
+                            outputsController.highlightChanged(Set.of());
+                        }
+
+                        // close debug session locally (disable buttons, etc.)
+                        onDebugTerminated(st);
+
+                        // show popup and jump back to dashboard
+                        showErrorAndExitToDashboard(
+                                "Insufficient credits",
+                                "Not enough credits to continue execution. Please load more credits."
+                        );
+                    });
+                    return;
+                }
 
                 if (terminatedNow) {
                     // Program finished after this step.
@@ -1067,48 +1119,6 @@ public class ExecutionSceneController {
 
     // ****helpers****
 
-    public void prepareFromHistory(int degree,
-                                   String generation,
-                                   List<Long> inputs) {
-
-        // keep for next step (when we wire actual inputs prefill)
-        pendingPrefillInputs = (inputs != null) ? new ArrayList<>(inputs) : null;
-
-        if (headerController != null) {
-            headerController.setCurrentDegree(degree);
-            headerController.refreshStatus();
-        }
-        if (generation != null && !generation.isEmpty()) {
-            selectArchitecture(generation);
-        }
-
-        // Make sure inputs panel is visible and editable.
-        Runnable apply = () -> {
-            if (inputsController != null) {
-                // show the inputs form for the current display and allow editing
-                inputsController.show(display);
-                inputsController.setInputsEditable(true);
-
-                // TODO(next step): prefill the fields using pendingPrefillInputs
-                // if InputsController exposes a setter for values.
-            }
-        };
-
-        if (display != null) {
-            Platform.runLater(apply);
-        } else {
-            // display loads async; wait briefly then apply
-            new Thread(() -> {
-                try {
-                    for (int i = 0; i < 30 && display == null; i++) {
-                        Thread.sleep(50);
-                    }
-                } catch (InterruptedException ignored) { }
-                Platform.runLater(apply);
-            }, "prep-rerun-wait-display").start();
-        }
-    }
-
     private void showError(String title, String msg) {
         Platform.runLater(() -> {
             Alert alert = new Alert(Alert.AlertType.ERROR);
@@ -1121,6 +1131,19 @@ public class ExecutionSceneController {
             alert.showAndWait();
         });
     }
+
+    private void showErrorAndExitToDashboard(String title, String msg) {
+        // Show error popup, then go back to opening_scene.fxml
+        Platform.runLater(() -> {
+            showError(title, msg);
+            try {
+                openDashboardAndReplace(); // go back to opening scene
+            } catch (Exception ignore) {
+                // we intentionally swallow, no extra prints to console
+            }
+        });
+    }
+
 
     /** Pretty-print variables in the required order for the outputs box. */
     private static List<String> formatVarsForDisplay(List<VarValueDTO> vars) {
@@ -1248,18 +1271,13 @@ public class ExecutionSceneController {
 
     private void executeGenerationCheck() {
         if (runOptionsController == null || programTableController == null) return;
-
-        String sel = getSelectedArchitecture();                     // מה המשתמש בחר ב-combo
-        String maxInTable = programTableController.getMaxGenerationValue(); // מה התוכנית דורשת בדרגה הנוכחית
-
+        String sel = getSelectedArchitecture();
+        String maxInTable = programTableController.getMaxGenerationValue();
         int selRank = convertRomanToInteger(sel);       // I=1 II=2 III=3 IV=4
         int maxRank = convertRomanToInteger(maxInTable);
-
-        boolean archChosen = (sel != null && selRank > 0);                 // בכלל נבחר משהו?
+        boolean archChosen = (sel != null && selRank > 0);
         boolean tooWeak    = archChosen && maxRank > 0 && (selRank < maxRank);
-
         boolean disableStart = (!archChosen) || tooWeak;
-
         runOptionsController.startEnabled(!disableStart);
     }
 

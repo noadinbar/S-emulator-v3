@@ -6,7 +6,6 @@ import application.credits.Generation;
 import application.history.HistoryManager;
 import application.listeners.AppContextListener;
 import application.programs.ProgramManager;
-import application.programs.ProgramTableRow;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import display.DisplayDTO;
@@ -118,52 +117,12 @@ public class DebugServlet extends HttpServlet {
         UserManager um = AppContextListener.getUsers(getServletContext());
 
         int creditsNowAfterInit = 0;
-
-        // --- Credits gate before creating debug session ---
-        // Only enforce for main PROGRAM debug (not FUNCTION debug)
-        if (username != null
-                && (functionKey == null || functionKey.isBlank())
-                && programKey != null
-                && !programKey.isBlank()) {
-
-            ProgramManager pmGate = AppContextListener.getPrograms(getServletContext());
-            UserTableRow userRowGate = um.get(username);
-
-            if (pmGate != null && userRowGate != null) {
-                ProgramTableRow progRowGate = pmGate.getRecord(programKey);
-
-                double avgCost = 0.0;
-                if (progRowGate != null) {
-                    avgCost = progRowGate.getAvgCredits();
-                }
-
-                Generation genGate;
-                try {
-                    genGate = Generation.valueOf(execReq.getGeneration());
-                } catch (Exception e) {
-                    JsonObject badGen = new JsonObject();
-                    badGen.addProperty("error", "bad generation");
-                    writeJson(resp, HttpServletResponse.SC_BAD_REQUEST, badGen);
-                    return;
-                }
-
-                int needCredits = (int) Math.ceil(avgCost) + genGate.getCredits();
-                int haveCredits = userRowGate.getCreditsCurrent();
-
-                if (haveCredits < needCredits) {
-                    JsonObject outErr = new JsonObject();
-                    outErr.addProperty("error", "insufficient_credits");
-                    writeJson(resp, HttpServletResponse.SC_FORBIDDEN, outErr);
-                    return;
-                }
-            }
-        }
-
         try {
             Generation gen = Generation.valueOf(execReq.getGeneration());
             architecture=gen;
 
             if (username != null) {
+                // TODO(credits): if not enough credits to afford gen.getCredits(),
                 // return an error instead of going forward.
                 um.adjustCredits(username, -gen.getCredits());
 

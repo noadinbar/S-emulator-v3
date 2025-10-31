@@ -39,6 +39,7 @@ import static utils.Constants.*;
 public class ExecuteServlet extends HttpServlet {
     private final Gson gson = new Gson();
     private Generation architecture;
+    boolean outOfCredits = false;
 
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) {
@@ -126,7 +127,7 @@ public class ExecuteServlet extends HttpServlet {
                         return;
                     }
 
-                    int needCredits = (int) Math.ceil(avgCost) + genGate.getCredits();
+                    int needCredits = (int) Math.ceil(avgCost);
                     int haveCredits = userRowGate.getCreditsCurrent();
 
                     if (haveCredits < needCredits) {
@@ -139,98 +140,139 @@ public class ExecuteServlet extends HttpServlet {
             }
 
             JobSubmitResult res = ExecutionTaskManager.trySubmit(() -> {
-            try{
-                // Build DebugAPI for this run
-                final DebugAPI dbgApi = targetRef.debugForDegree(degree);
-
-                final Generation gen = Generation.valueOf(execReqRef.getGeneration());
-                architecture=gen;
-                // TODO(input): if you want fail-fast 400 on bad generation, validate before scheduling.
-
-                // 1) One-time opening charge for the selected generation
-                if (username != null) {
-                    um.adjustCredits(username, -gen.getCredits());
-                    // TODO(credits): define rollback policy on CANCEL/ERROR (whether to refund gen cost).
-                }
-
-                // 2) Step program and charge AFTER each command according to actual cycles
-                DebugStateDTO state = dbgApi.init(execReqRef);
-                long prev = state.getCyclesSoFar();
-
-                DebugStateDTO lastState = state;
-
-                while (!dbgApi.isTerminated()) {
-                    DebugStepDTO step = dbgApi.step();
-                    DebugStateDTO newState = step.getNewState();
-                    long curr = newState.getCyclesSoFar();
-                    long delta = Math.max(0L, curr - prev);
-
-                    if (username != null && delta > 0L) {
-                        um.adjustCredits(username, (int) -delta); // charge after the command completed
-                        // TODO(credits): if not enough credits for this step → abort gracefully and return an error.
-                    }
-
-                    prev = curr;
-                    lastState = newState;
-                }
-
-                // 3) Finalize result
-                DisplayDTO executedDisplay = dbgApi.executedDisplaySnapshot();
-                ExecutionDTO result = dbgApi.finalizeExecution(execReqRef, executedDisplay);
-
-                // 4) Persist run history entry (mode = EXECUTION)
                 try {
-                    String targetType = (functionUserStringRef != null && !functionUserStringRef.isBlank())
-                            ? "FUNCTION"
-                            : "PROGRAM";
-                    String targetName = (functionUserStringRef != null && !functionUserStringRef.isBlank())
-                            ? functionUserStringRef
-                            : programKeyRef;
+                    // DebugAPI for this specific degree
+                    DebugAPI dbgApi = targetRef.debugForDegree(degree);
 
-                    String architectureType = execReqRef.getGeneration();
-                    long cyclesCount = lastState.getCyclesSoFar();
-                    totalCycles[0] =cyclesCount;
+                    Generation gen = Generation.valueOf(execReqRef.getGeneration());
+                    architecture = gen;
 
-                    long finalY = 0L;
-                    finalY=lastState.getY();
-                    List<Long> inputsList = execReqRef.getInputs();
-                    List<String> outputsSnapshot = buildOutputsSnapshot(lastState);
-
-                    if (username != null && hmRef != null) {
-                        hmRef.addRunRecord(
-                                username,
-                                targetType,
-                                targetName,
-                                architectureType,
-                                degree,
-                                finalY,
-                                cyclesCount,
-                                inputsList,
-                                outputsSnapshot,
-                                "EXECUTION"
-                        );
+                    // 1) upfront charge for the chosen architecture ("generation")
+                    if (username != null) {
+                        um.adjustCredits(username, -gen.getCredits());
                     }
-                } catch (Exception ignore) {
-                    // best-effort only, history failure should not kill the run
-                }
 
-                // 5) Optional aggregate metrics (kept from previous code)
-                if (username != null) {
-                    um.onRunExecuted(username, 0);
-                    // TODO(history): when implementing per-user run history, persist full record (inputs, y, cycles, generation, timestamp).
-                }
+                    // 2) init machine state
+                    DebugStateDTO state = dbgApi.init(execReqRef);
+                    long prevCycles = state.getCyclesSoFar();
 
-                return result;
-            } finally {
-                // increment #runs for PROGRAM runs (not for FUNCTION runs)
-                if (functionUserStringRef == null || functionUserStringRef.isBlank()) {
-                    ProgramManager pm = AppContextListener.getPrograms(getServletContext());
-                    if (pm != null && programKeyRef != null && !programKeyRef.isBlank()) {
-                        long totalCredits=architecture.getCredits()+totalCycles[0];
-                        pm.incRunCount(programKeyRef,totalCredits );
+                    // paidState = last fully-paid state
+                    DebugStateDTO paidState = state;
+
+                    while (true) {
+                        boolean alreadyTerminated = false;
+                        try {
+                            alreadyTerminated = dbgApi.isTerminated();
+                        } catch (Throwable ignore) { }
+
+                        if (alreadyTerminated) {
+                            break;
+                        }
+
+                        DebugStepDTO step = dbgApi.step();
+                        DebugStateDTO newState = step.getNewState();
+
+                        long currCycles = newState.getCyclesSoFar();
+                        long delta = currCycles - prevCycles;
+                        if (delta < 0L) {
+                            delta = 0L;
+                        }
+
+                        if (username != null && delta > 0L) {
+                            // check if the user can afford this command
+                            UserTableRow rowNow = um.get(username);
+                            int haveNow = 0;
+                            if (rowNow != null) {
+                                haveNow = rowNow.getCreditsCurrent();
+                            }
+
+                            if (haveNow < delta) {
+                                outOfCredits = true;
+                                break;
+                            }
+
+                            // charge delta (this command is fully paid)
+                            um.adjustCredits(username, (int)(-delta));
+                        }
+
+                        prevCycles = currCycles;
+                        paidState = newState;
+                    }
+
+                    // final snapshot for history / client is the last fully-paid state
+                    DebugStateDTO finalStateForHistory = paidState;
+
+                    long finalCycles = finalStateForHistory.getCyclesSoFar();
+                    long finalY = finalStateForHistory.getY();
+                    List<VarValueDTO> finalVars = finalStateForHistory.getVars();
+
+                    // executedProgram is the expanded program that actually ran
+                    DisplayDTO executedDisplay = dbgApi.executedDisplaySnapshot();
+
+                    // Build the DTO we return to the client poll
+                    ExecutionDTO result = new ExecutionDTO(
+                            finalY,
+                            finalCycles,
+                            finalVars,
+                            executedDisplay
+                    );
+
+                    // 3) history record (mode = EXECUTION)
+                    try {
+                        String targetType = (functionUserStringRef != null && !functionUserStringRef.isBlank())
+                                ? "FUNCTION"
+                                : "PROGRAM";
+
+                        String targetName = (functionUserStringRef != null && !functionUserStringRef.isBlank())
+                                ? functionUserStringRef
+                                : programKeyRef;
+
+                        String architectureType = execReqRef.getGeneration();
+
+                        long cyclesCount = finalCycles;
+                        totalCycles[0] = cyclesCount;
+
+                        List<Long> inputsList = execReqRef.getInputs();
+                        List<String> outputsSnapshot = buildOutputsSnapshot(finalStateForHistory);
+
+                        if (username != null && hmRef != null) {
+                            hmRef.addRunRecord(
+                                    username,
+                                    targetType,
+                                    targetName,
+                                    architectureType,
+                                    degree,
+                                    finalY,
+                                    cyclesCount,
+                                    inputsList,
+                                    outputsSnapshot,
+                                    "EXECUTION"
+                            );
+                        }
+
+                    } catch (Exception ignore) {
+                        // best-effort only
+                    }
+
+                    // 4) per-user aggregate metrics (unchanged)
+                    if (username != null) {
+                        um.onRunExecuted(username, 0);
+                    }
+
+                    // NOTE: we keep outOfCredits in a local boolean.
+                    // next step: we will expose it on the Job and return it in doGet().
+
+                    return result;
+
+                } finally {
+                    // count this run toward averages for PROGRAM targets
+                    if (functionUserStringRef == null || functionUserStringRef.isBlank()) {
+                        ProgramManager pm = AppContextListener.getPrograms(getServletContext());
+                        if (pm != null && programKeyRef != null && !programKeyRef.isBlank()) {
+                            pm.incRunCount(programKeyRef, totalCycles[0]);
+                        }
                     }
                 }
-            }
             });
 
             if (!res.isAccepted()) {
@@ -260,46 +302,95 @@ public class ExecuteServlet extends HttpServlet {
             String jobId = req.getParameter("jobId");
             if (jobId == null || jobId.isBlank()) {
                 resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
-                resp.getWriter().write("{\"status\":\"UNKNOWN\",\"error\":\"missing jobId\"}");
+
+                JsonObject outBad = new JsonObject();
+                outBad.addProperty("status", "UNKNOWN");
+                outBad.addProperty("error", "missing jobId");
+                outBad.addProperty("outOfCredits", false);
+
+                resp.getWriter().write(gson.toJson(outBad));
                 return;
             }
 
             Job job = ExecutionTaskManager.get(jobId);
             if (job == null) {
                 resp.setStatus(HttpServletResponse.SC_NOT_FOUND);
-                resp.getWriter().write("{\"status\":\"UNKNOWN\",\"error\":\"no such job\"}");
+
+                JsonObject outMissing = new JsonObject();
+                outMissing.addProperty("status", "UNKNOWN");
+                outMissing.addProperty("error", "no such job");
+                outMissing.addProperty("outOfCredits", false);
+
+                resp.getWriter().write(gson.toJson(outMissing));
                 return;
             }
 
+            boolean outOfCreditsFlag = outOfCredits;
             Status st = job.status;
+
             if (st == Status.DONE) {
                 resp.setStatus(HttpServletResponse.SC_OK);
-                resp.getWriter().write("{\"status\":\"DONE\",\"result\":" + gson.toJson(job.result) + "}");
+
+                JsonObject outDone = new JsonObject();
+                outDone.addProperty("status", "DONE");
+                outDone.add("result", gson.toJsonTree(job.result));
+                outDone.addProperty("outOfCredits", outOfCreditsFlag);
+
+                resp.getWriter().write(gson.toJson(outDone));
                 return;
             }
+
             if (st == Status.ERROR) {
                 resp.setStatus(HttpServletResponse.SC_OK);
-                resp.getWriter().write("{\"status\":\"ERROR\",\"error\":" + gson.toJson(job.error) + "}");
+
+                JsonObject outErr = new JsonObject();
+                outErr.addProperty("status", "ERROR");
+                outErr.add("error", gson.toJsonTree(job.error));
+                outErr.addProperty("outOfCredits", outOfCreditsFlag);
+
+                resp.getWriter().write(gson.toJson(outErr));
                 return;
             }
+
             if (st == Status.CANCELED) {
                 resp.setStatus(HttpServletResponse.SC_OK);
-                resp.getWriter().write("{\"status\":\"CANCELED\"}");
+
+                JsonObject outCanceled = new JsonObject();
+                outCanceled.addProperty("status", "CANCELED");
+                outCanceled.addProperty("outOfCredits", outOfCreditsFlag);
+
+                resp.getWriter().write(gson.toJson(outCanceled));
                 return;
             }
+
             if (st == Status.TIMED_OUT) {
                 resp.setStatus(HttpServletResponse.SC_OK);
-                resp.getWriter().write("{\"status\":\"TIMED_OUT\"}");
+
+                JsonObject outTimeout = new JsonObject();
+                outTimeout.addProperty("status", "TIMED_OUT");
+                outTimeout.addProperty("outOfCredits", outOfCreditsFlag);
+
+                resp.getWriter().write(gson.toJson(outTimeout));
                 return;
             }
 
             resp.setStatus(HttpServletResponse.SC_OK);
-            resp.getWriter().write("{\"status\":\"" + st + "\"}");
+
+            JsonObject outPending = new JsonObject();
+            outPending.addProperty("status", st.toString());
+            outPending.addProperty("outOfCredits", outOfCreditsFlag);
+
+            resp.getWriter().write(gson.toJson(outPending));
 
         } catch (Exception ex) {
             try {
                 resp.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
-                resp.getWriter().write("{\"error\":\"" + ex.getMessage() + "\"}");
+
+                JsonObject outFail = new JsonObject();
+                outFail.addProperty("error", ex.getMessage());
+                outFail.addProperty("outOfCredits", false);
+
+                resp.getWriter().write(gson.toJson(outFail));
             } catch (Exception ignore) {
             }
         }
@@ -394,4 +485,24 @@ public class ExecuteServlet extends HttpServlet {
         }
         return lines;
     }
+
+    private static class RunOutcome {
+        // what the client expects normally
+        private final ExecutionDTO exec;
+        private final boolean outOfCredits;
+
+        RunOutcome(ExecutionDTO exec, boolean outOfCredits) {
+            this.exec = exec;
+            this.outOfCredits = outOfCredits;
+        }
+
+        public ExecutionDTO getExec() {
+            return exec;
+        }
+
+        public boolean isOutOfCredits() {
+            return outOfCredits;
+        }
+    }
+
 }

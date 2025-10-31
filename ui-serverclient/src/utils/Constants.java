@@ -4,7 +4,7 @@ import okhttp3.MediaType;
 
 public class Constants {
     public static final String BASE_URL = "http://localhost:8080/server_Web_exploded";
-    // Existing endpoints
+
     public static final String API_LOAD     = "/api/load-file";
     public static final String API_STATUS   = "/api/status";
     public static final String API_EXPAND   = "/api/expand";
@@ -25,7 +25,6 @@ public class Constants {
     public static final String API_USERS = "/api/users";
     public static final String API_CREDITS_CHARGE = "/api/credits/charge";
 
-    // Headers / Content types
     public static final String HEADER_ACCEPT     = "Accept";
     public static final String CONTENT_TYPE_JSON = "application/json";
 

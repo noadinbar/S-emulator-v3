@@ -102,6 +102,7 @@ public class ExecuteResponder {
             if (rs.code() < 200 || rs.code() >= 300) {
                 throw new RuntimeException("POLL failed: HTTP " + rs.code() + " | " + body);
             }
+
             JsonObject obj = JsonUtils.GSON.fromJson(body, JsonObject.class);
             if (obj == null || !obj.has("status")) {
                 throw new RuntimeException("POLL malformed response: " + body);
@@ -113,10 +114,10 @@ public class ExecuteResponder {
             try {
                 status = ExecutionPollDTO.Status.valueOf(statusStr);
             } catch (IllegalArgumentException ex) {
-                status = ExecutionPollDTO.Status.ERROR; // fallback on unknown
+                status = ExecutionPollDTO.Status.ERROR;
             }
 
-            // result (when DONE)
+            // result (only when DONE)
             ExecutionDTO dto = null;
             if (status == ExecutionPollDTO.Status.DONE && obj.has("result")) {
                 JsonElement res = obj.get("result");
@@ -125,13 +126,19 @@ public class ExecuteResponder {
                 }
             }
 
-            // error (when ERROR)
+            // error (present on ERROR or other failure statuses)
             String err = null;
             if (obj.has("error") && !obj.get("error").isJsonNull()) {
                 JsonElement er = obj.get("error");
-                err = er.isJsonPrimitive() ? er.getAsString() : er.toString(); // stringify object if needed
+                err = er.isJsonPrimitive() ? er.getAsString() : er.toString();
             }
-            return new ExecutionPollDTO(status, dto, err);
+
+            boolean outOfCredits = false;
+            if (obj.has("outOfCredits") && !obj.get("outOfCredits").isJsonNull()) {
+                outOfCredits = obj.get("outOfCredits").getAsBoolean();
+            }
+
+            return new ExecutionPollDTO(status, dto, err, outOfCredits);
         }
     }
 

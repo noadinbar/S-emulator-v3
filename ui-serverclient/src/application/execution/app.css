@@ -1,0 +1,36 @@
+/* מבטל את המסגרת הכחולה מכל הטבלאות */
+.table-view:focused {
+    -fx-focus-color: transparent;
+    -fx-faint-focus-color: transparent;
+}
+
+/* מבטל את המסגרת הכחולה מתוך תאים או שורות ממוקדות בטבלאות */
+.table-view .table-row-cell:focused {
+    -fx-border-color: transparent;
+    -fx-border-insets: 0;
+}
+
+/* מבטל את המסגרת הכחולה מרשימות (ListView) */
+.list-view:focused {
+    -fx-focus-color: transparent;
+    -fx-faint-focus-color: transparent;
+}
+
+/* מבטל את המסגרת הכחולה מפריטים ממוקדים בתוך רשימות */
+.list-view .list-cell:focused {
+    -fx-border-color: transparent;
+}
+
+/* כלל גנרי עבור כפתורים, שדות טקסט ורכיבים אחרים */
+.root *:focused {
+    -fx-focus-color: transparent;
+    -fx-faint-focus-color: transparent;
+    -fx-border-color: transparent;
+}
+
+/* אם עדיין יש סימון כלשהו, זה כנראה ה-focus-traversable */
+/* אפשר לנסות לאפס את הצל או האפקט שנוצר עם הפוקוס */
+.root *:focused {
+    -fx-effect: none;
+    -fx-border-width: 0;
+}

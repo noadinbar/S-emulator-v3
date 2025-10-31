@@ -171,7 +171,6 @@ public class OpeningSceneController {
             );
 
         } catch (Exception ex) {
-            ex.printStackTrace();
             showInfoPopup(
                     "Rerun failed",
                     null,

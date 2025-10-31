@@ -126,7 +126,6 @@ public class ExecutionSceneController {
             }
             openDashboardAndReplace();
         } catch (Exception ex) {
-            ex.printStackTrace();
         }
     }
 
@@ -212,7 +211,6 @@ public class ExecutionSceneController {
                     applyPendingRerunPresetIfReady();
                 });
             } catch (Exception ex) {
-                ex.printStackTrace();
             }
         }, "exec-load-" + ((target == ExecTarget.PROGRAM) ? "program" : "function")).start();
     }
@@ -392,9 +390,22 @@ public class ExecutionSceneController {
                 }
 
             } catch (Exception ex) {
-                ex.printStackTrace();
-                Platform.runLater(() ->
-                        showError("Execution failed", ex.getMessage()));
+                String msg = ex.getMessage();
+                boolean noCredits = (msg != null
+                        && msg.contains("403")
+                        && msg.contains("insufficient_credits"));
+
+                if (noCredits) {
+                    showError(
+                            "Insufficient credits",
+                            "Not enough credits to execute, you need to load more credits"
+                    );
+                } else {
+                    showError(
+                            "Execution failed",
+                            (msg == null ? "Unknown error" : msg)
+                    );
+                }
             }
         }, "execute-run").start();
     }
@@ -546,8 +557,22 @@ public class ExecutionSceneController {
                 });
 
             } catch (Exception ex) {
-                ex.printStackTrace();
-                showError("Debug error", ex.getMessage());
+                String msg = ex.getMessage();
+                boolean noCredits = (msg != null
+                        && msg.contains("403")
+                        && msg.contains("insufficient_credits"));
+
+                if (noCredits) {
+                    showError(
+                            "Insufficient credits",
+                            "Not enough credits to execute, you need to load more credits"
+                    );
+                } else {
+                    showError(
+                            "Debug error",
+                            (msg == null ? "Unknown error" : msg)
+                    );
+                }
             }
         }, "dbg-init").start();
     }
@@ -642,7 +667,6 @@ public class ExecutionSceneController {
                 });
 
             } catch (Exception ex) {
-                ex.printStackTrace();
                 Platform.runLater(() -> showError("Resume failed", ex.getMessage()));
             }
         }, "dbg-resume-waiter");
@@ -722,7 +746,6 @@ public class ExecutionSceneController {
                 }
 
             } catch (Exception ex) {
-                ex.printStackTrace();
                 showError("Step failed", ex.getMessage());
             }
         }, "dbg-step").start();
@@ -739,7 +762,6 @@ public class ExecutionSceneController {
             try {
                 DebugResults.Stop res = DebugResponder.stop(Debug.stop(id));
             } catch (Exception ex) {
-                ex.printStackTrace();
                 showError("Stop failed", ex.getMessage());
             } finally {
                 // UI cleanup
@@ -804,7 +826,6 @@ public class ExecutionSceneController {
                 } catch (InterruptedException ie) {
                     return;
                 } catch (Exception ex) {
-                    ex.printStackTrace();
                     showError("Debug polling error", ex.getMessage());
                     return;
                 }

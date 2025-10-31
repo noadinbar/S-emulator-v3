@@ -70,7 +70,6 @@ public class ProgramsController {
                     sel.getName(),
                     sel.getMaxDegree(), sel.getName());
         } catch (Exception ex) {
-            ex.printStackTrace();
         }
     }
 

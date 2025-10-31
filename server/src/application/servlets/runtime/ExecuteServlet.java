@@ -5,6 +5,7 @@ import application.credits.Generation;
 import application.history.HistoryManager;
 import application.listeners.AppContextListener;
 import application.programs.ProgramManager;
+import application.programs.ProgramTableRow;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import display.DisplayDTO;
@@ -26,6 +27,7 @@ import types.VarRefDTO;
 import users.UserManager;
 
 import api.DisplayAPI;
+import users.UserTableRow;
 
 import java.io.BufferedReader;
 import java.util.*;
@@ -96,6 +98,45 @@ public class ExecuteServlet extends HttpServlet {
 
             final UserManager um = AppContextListener.getUsers(getServletContext());
             final HistoryManager hmRef = AppContextListener.getHistory(getServletContext());
+
+            // --- Credits gate before scheduling ---
+            // Only block main PROGRAM runs (not FUNCTION runs)
+            if (username != null
+                    && (functionUserString == null || functionUserString.isBlank())
+                    && programKey != null
+                    && !programKey.isBlank()) {
+
+                ProgramManager pmGate = AppContextListener.getPrograms(getServletContext());
+                UserTableRow userRowGate = um.get(username);
+
+                if (pmGate != null && userRowGate != null) {
+                    ProgramTableRow progRowGate = pmGate.getRecord(programKey);
+
+                    double avgCost = 0.0;
+                    if (progRowGate != null) {
+                        avgCost = progRowGate.getAvgCredits();
+                    }
+
+                    Generation genGate;
+                    try {
+                        genGate = Generation.valueOf(execReq.getGeneration());
+                    } catch (Exception e) {
+                        resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+                        resp.getWriter().write("{\"error\":\"bad generation\"}");
+                        return;
+                    }
+
+                    int needCredits = (int) Math.ceil(avgCost) + genGate.getCredits();
+                    int haveCredits = userRowGate.getCreditsCurrent();
+
+                    if (haveCredits < needCredits) {
+                        // Not enough credits to even start
+                        resp.setStatus(HttpServletResponse.SC_FORBIDDEN);
+                        resp.getWriter().write("{\"error\":\"insufficient_credits\"}");
+                        return;
+                    }
+                }
+            }
 
             JobSubmitResult res = ExecutionTaskManager.trySubmit(() -> {
             try{

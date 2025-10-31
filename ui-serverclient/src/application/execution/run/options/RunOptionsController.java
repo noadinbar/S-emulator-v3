@@ -1,4 +1,3 @@
-// file: application/execution/run/options/RunOptionsController.java
 package application.execution.run.options;
 
 import application.execution.ExecutionSceneController;
@@ -77,14 +76,10 @@ public class RunOptionsController {
         if (chkDebug != null) chkDebug.setDisable(false);
         if (main != null) main.showInputsForEditing();
     }
-
     @FXML
     private void onExecuteAction() {
-        // v2-style: a single entry point; main decides RUN vs DEBUG based on debugMode
         if (main != null) main.runExecute();
         startEnabled(true);
-        // DO NOT enable debug buttons here; they will be enabled after init
-        // setButtonsEnabled(debug) — removed by design
     }
 
     @FXML

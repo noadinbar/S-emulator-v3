@@ -13,7 +13,6 @@ import java.util.concurrent.ConcurrentHashMap;
  * per-row synchronization inside UserTableRow.
  */
 public class UserManager {
-
     private final Map<String, UserTableRow> users = new ConcurrentHashMap<>();
 
     /** Add user if absent and return the row (existing or newly created). */

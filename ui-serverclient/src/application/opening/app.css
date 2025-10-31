@@ -1,0 +1,29 @@
+.table-view:focused {
+    -fx-focus-color: transparent;
+    -fx-faint-focus-color: transparent;
+}
+
+.table-view .table-row-cell:focused {
+    -fx-border-color: transparent;
+    -fx-border-insets: 0;
+}
+
+.list-view:focused {
+    -fx-focus-color: transparent;
+    -fx-faint-focus-color: transparent;
+}
+
+.list-view .list-cell:focused {
+    -fx-border-color: transparent;
+}
+
+.root *:focused {
+    -fx-focus-color: transparent;
+    -fx-faint-focus-color: transparent;
+    -fx-border-color: transparent;
+}
+
+.root *:focused {
+    -fx-effect: none;
+    -fx-border-width: 0;
+}

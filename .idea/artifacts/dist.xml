@@ -1,11 +1,10 @@
 <component name="ArtifactManager">
-  <artifact name="dist">
+  <artifact build-on-make="true" name="dist">
     <output-path>$PROJECT_DIR$/dist</output-path>
     <root id="root">
       <element id="artifact" artifact-name="dto" />
       <element id="artifact" artifact-name="engine" />
-      <element id="artifact" artifact-name="ui" />
-      <element id="artifact" artifact-name="ui-fx" />
+      <element id="artifact" artifact-name="ui-serverclient:jar" />
     </root>
   </artifact>
 </component>

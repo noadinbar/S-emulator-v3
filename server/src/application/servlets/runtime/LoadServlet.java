@@ -307,7 +307,7 @@ public class LoadServlet extends HttpServlet {
                 // the upload is invalid: those functions truly do not exist anywhere.
                 if (!unresolvedAlias.isEmpty()) {
                     StringBuilder sb = new StringBuilder();
-                    sb.append("Unknown function(s): ");
+                    sb.append("Missing function/s: ");
                     boolean firstMiss = true;
                     for (String us : unresolvedAlias) {
                         if (!firstMiss) {

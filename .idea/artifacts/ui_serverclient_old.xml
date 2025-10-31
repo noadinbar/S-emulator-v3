@@ -1,0 +1,14 @@
+<component name="ArtifactManager">
+  <artifact type="jar" name="ui-serverclient-old">
+    <output-path>$PROJECT_DIR$/out/artifacts/ui_serverclient_old</output-path>
+    <root id="archive" name="ui-serverclient-old.jar">
+      <element id="library" level="project" name="jaxb" />
+      <element id="library" level="project" name="gson-2.11.0" />
+      <element id="library" level="project" name="okhttp" />
+      <element id="library" level="project" name="jfx" />
+      <element id="module-output" name="ui-serverclient" />
+      <element id="module-output" name="dto" />
+      <element id="module-output" name="engine" />
+    </root>
+  </artifact>
+</component>

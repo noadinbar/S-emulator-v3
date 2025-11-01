@@ -3,6 +3,7 @@ package application.opening;
 import application.execution.ExecutionSceneController;
 import client.requests.runtime.History;
 import client.responses.authentication.CreditsResponder;
+import client.responses.info.StatusResponder;
 import client.responses.runtime.HistoryResponder;
 import com.google.gson.JsonObject;
 import execution.RunHistoryEntryDTO;
@@ -51,7 +52,7 @@ public class OpeningSceneController {
         programsController.startProgramsRefresher();
         functionsController.loadOnceAsync();
         functionsController.startFunctionsRefresher();
-        usersController.loadOnceAsync();      // see all users immediately
+        usersController.loadOnceAsync();
         usersController.startUsersRefresher();
         usersController.setOnUserSelectionChanged(this::handleUserSelectionChanged);
         historyController.setOnShow(this::handleHistoryShow);
@@ -140,7 +141,10 @@ public class OpeningSceneController {
         if (row == null) {
             return;
         }
-
+        String programContextName = row.getTargetName();
+        if (!ensureCreditsPositive(programContextName)) {
+            return;
+        }
         try {
             // open the Execution scene window and grab its controller
             ExecutionSceneController execCtrl =
@@ -285,5 +289,39 @@ public class OpeningSceneController {
         stage.setScene(new Scene(root));
         stage.show();
         return controller;
+    }
+
+    private boolean ensureCreditsPositive(String programContextName) {
+        try {
+            JsonObject js = StatusResponder.get(programContextName);
+
+            if (js != null &&
+                    js.has("creditsCurrent") &&
+                    !js.get("creditsCurrent").isJsonNull()) {
+
+                int credits = js.get("creditsCurrent").getAsInt();
+                if (credits > 0) {
+                    return true;
+                }
+            }
+        } catch (Exception ignore) {
+        }
+        showNoCreditsAlert();
+        return false;
+    }
+
+    /**
+     * Show an error popup for "no credits".
+     */
+    private void showNoCreditsAlert() {
+        TextArea area = new TextArea("You must charge credits before trying to execute");
+        area.setEditable(false);
+        area.setWrapText(true);
+
+        Alert alert = new Alert(Alert.AlertType.ERROR);
+        alert.setTitle("Insufficient credits");
+        alert.setHeaderText(null);
+        alert.getDialogPane().setContent(area);
+        alert.showAndWait();
     }
 }

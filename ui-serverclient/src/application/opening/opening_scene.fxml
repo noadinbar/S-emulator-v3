@@ -1,34 +1,94 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <?import javafx.geometry.Insets?>
+<?import javafx.scene.control.ScrollPane?>
 <?import javafx.scene.layout.BorderPane?>
 <?import javafx.scene.layout.ColumnConstraints?>
 <?import javafx.scene.layout.GridPane?>
 <?import javafx.scene.layout.RowConstraints?>
+<?import javafx.scene.layout.VBox?>
 
-<BorderPane fx:id="openingRoot" prefHeight="600.0" prefWidth="900.0" xmlns="http://javafx.com/javafx/24.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="application.opening.OpeningSceneController">
-    <top>
-        <fx:include fx:id="header" source="header/header.fxml" />
-    </top>
+<!--
+Opening scene layout.
 
-    <!-- 2x2: (row 0) Users | Programs
-              (row 1) History | Functions -->
-    <center>
-        <GridPane hgap="10" vgap="10" BorderPane.alignment="CENTER">
-            <padding><Insets bottom="12" left="12" right="12" top="8" /></padding>
-            <columnConstraints>
-                <ColumnConstraints hgrow="ALWAYS" percentWidth="42.0" />
-                <ColumnConstraints hgrow="ALWAYS" percentWidth="58.0" />
-            </columnConstraints>
-            <rowConstraints>
-                <RowConstraints percentHeight="50" vgrow="ALWAYS" />
-                <RowConstraints percentHeight="50" vgrow="ALWAYS" />
-            </rowConstraints>
+Top    : header bar
+Center : 2x2 grid of panels (Users | Programs / History | Functions)
 
-            <fx:include fx:id="users" source="users/users_list.fxml" GridPane.columnIndex="0" GridPane.hgrow="ALWAYS" GridPane.rowIndex="0" GridPane.vgrow="ALWAYS" />
-            <fx:include fx:id="programs" source="programs/programs.fxml" GridPane.columnIndex="1" GridPane.hgrow="ALWAYS" GridPane.rowIndex="0" GridPane.vgrow="ALWAYS" />
-            <fx:include fx:id="history" source="table/history/history_table.fxml" GridPane.columnIndex="0" GridPane.hgrow="ALWAYS" GridPane.rowIndex="1" GridPane.vgrow="ALWAYS" />
-            <fx:include fx:id="functions" source="functions/functions.fxml" GridPane.columnIndex="1" GridPane.hgrow="ALWAYS" GridPane.rowIndex="1" GridPane.vgrow="ALWAYS" />
-        </GridPane>
-    </center>
-</BorderPane>
+Each panel is wrapped in a VBox with identical padding and growth rules so:
+- left/top matches left/bottom in width
+- right/top matches right/bottom in width
+- bottom row panels align at the same top Y
+-->
+
+
+<ScrollPane xmlns="http://javafx.com/javafx/24.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="application.opening.OpeningSceneController">
+   <content>
+      <BorderPane fx:id="openingRoot" prefHeight="600.0" prefWidth="900.0">
+      
+          <!-- header bar -->
+          <top>
+              <fx:include fx:id="header" source="header/header.fxml" />
+          </top>
+      
+          <!-- main grid -->
+          <center>
+              <GridPane hgap="6" vgap="4" BorderPane.alignment="CENTER">
+      
+                  <!-- small outer padding so tables get max space -->
+                  <padding>
+                      <Insets bottom="6" left="6" right="6" top="6" />
+                  </padding>
+      
+                  <!-- two equal-width columns -->
+                  <columnConstraints>
+                      <ColumnConstraints hgrow="ALWAYS" percentWidth="50.0" />
+                      <ColumnConstraints hgrow="ALWAYS" percentWidth="50.0" />
+                  </columnConstraints>
+      
+                  <!-- two equal-height rows -->
+                  <rowConstraints>
+                      <RowConstraints percentHeight="50.0" vgrow="ALWAYS" />
+                      <RowConstraints percentHeight="50.0" vgrow="ALWAYS" />
+                  </rowConstraints>
+      
+                  <!-- USERS (row 0, col 0) -->
+                  <VBox fillWidth="TRUE" GridPane.columnIndex="0" GridPane.hgrow="ALWAYS" GridPane.rowIndex="0" GridPane.valignment="TOP" GridPane.vgrow="ALWAYS">
+                      <padding>
+                          <Insets bottom="0" left="0" right="0" top="0" />
+                      </padding>
+      
+                      <fx:include fx:id="users" source="users/users_list.fxml" VBox.vgrow="ALWAYS" />
+                  </VBox>
+      
+                  <!-- PROGRAMS (row 0, col 1) -->
+                  <VBox fillWidth="TRUE" GridPane.columnIndex="1" GridPane.hgrow="ALWAYS" GridPane.rowIndex="0" GridPane.valignment="TOP" GridPane.vgrow="ALWAYS">
+                      <padding>
+                          <Insets bottom="0" left="0" right="0" top="0" />
+                      </padding>
+      
+                      <fx:include fx:id="programs" source="programs/programs.fxml" VBox.vgrow="ALWAYS" />
+                  </VBox>
+      
+                  <!-- HISTORY (row 1, col 0) -->
+                  <VBox fillWidth="TRUE" GridPane.columnIndex="0" GridPane.hgrow="ALWAYS" GridPane.rowIndex="1" GridPane.valignment="TOP" GridPane.vgrow="ALWAYS">
+                      <padding>
+                          <Insets bottom="0" left="0" right="0" top="0" />
+                      </padding>
+      
+                      <fx:include fx:id="history" source="table/history/history_table.fxml" VBox.vgrow="ALWAYS" />
+                  </VBox>
+      
+                  <!-- FUNCTIONS (row 1, col 1) -->
+                  <VBox fillWidth="TRUE" GridPane.columnIndex="1" GridPane.hgrow="ALWAYS" GridPane.rowIndex="1" GridPane.valignment="TOP" GridPane.vgrow="ALWAYS">
+                      <padding>
+                          <Insets bottom="0" left="0" right="0" top="0" />
+                      </padding>
+      
+                      <fx:include fx:id="functions" source="functions/functions.fxml" VBox.vgrow="ALWAYS" />
+                  </VBox>
+      
+              </GridPane>
+          </center>
+      </BorderPane>
+   </content>
+</ScrollPane>

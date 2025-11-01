@@ -1281,4 +1281,31 @@ public class ExecutionSceneController {
         runOptionsController.startEnabled(!disableStart);
     }
 
+    public void lockAfterExecute() {
+        if (debugMode) {
+            // In debug mode we keep controls alive for Resume / Step etc.
+            return;
+        }
+
+        // Disable run/debug controls (back to initial "locked" look)
+        if (runOptionsController != null) {
+            runOptionsController.startEnabled(false);
+            runOptionsController.setButtonsEnabled(false);
+            runOptionsController.setDebugBtnsDisabled(true);
+            runOptionsController.setExecuteForceDisabled(true);
+            runOptionsController.clearRunCheckBox();
+        }
+
+        // Return architecture selection to "no selection", like at screen load
+        if (cmbArchitecture != null) {
+            cmbArchitecture.getSelectionModel().clearSelection();
+        }
+
+        // Inputs are no longer editable after the run
+        if (inputsController != null) {
+            inputsController.setInputsEditable(false);
+        }
+    }
+
+
 }

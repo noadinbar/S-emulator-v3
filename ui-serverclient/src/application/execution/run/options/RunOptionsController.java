@@ -12,7 +12,6 @@ public class RunOptionsController {
     @FXML private Button btnStop;
     @FXML private Button btnResume;
     @FXML private Button btnStepOver;
-    @FXML private Button btnStepBack;
     @FXML private Button btnExecute;
     @FXML private CheckBox chkRun;
     @FXML private CheckBox chkDebug;
@@ -78,8 +77,9 @@ public class RunOptionsController {
     }
     @FXML
     private void onExecuteAction() {
+        setExecuteForceDisabled(true);
         if (main != null) main.runExecute();
-        startEnabled(true);
+        main.lockAfterExecute();
     }
 
     @FXML
@@ -112,7 +112,6 @@ public class RunOptionsController {
         if (btnStepOver != null) btnStepOver.setDisable(disabled);
         if (btnResume   != null) btnResume.setDisable(disabled);
         if (btnStop     != null) btnStop.setDisable(disabled);
-        if (btnStepBack != null) btnStepBack.setDisable(disabled);
     }
 
     /** Enable/disable the RUN/DEBUG selectors as a group; keeps debug buttons OFF. */

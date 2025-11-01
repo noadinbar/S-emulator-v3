@@ -43,11 +43,27 @@
 
         <HBox spacing="8" alignment="CENTER_LEFT">
             <Button fx:id="loadFileButton" text="Load File" onAction="#onLoadFile"/>
-            <TextField fx:id="loadedFilePathField" promptText="Currently Loaded File path"
-                       editable="false" HBox.hgrow="ALWAYS"/>
+
+            <TextField fx:id="loadedFilePathField"
+                       promptText="Currently Loaded File path"
+                       editable="false"
+                       HBox.hgrow="ALWAYS"/>
+
+            <HBox fx:id="loadingBox"
+                  spacing="6"
+                  alignment="CENTER_LEFT"
+                  visible="false"
+                  managed="false">
+                <ProgressIndicator fx:id="loadSpinner"
+                                   prefWidth="16" prefHeight="16"
+                                   maxWidth="16" maxHeight="16"/>
+                <Label fx:id="loadingLabel" text="Loading..."/>
+            </HBox>
             <Region HBox.hgrow="ALWAYS"/>
+
             <Button fx:id="chargeCreditsButton" text="Charge Credits" onAction="#onChargeCredits"/>
             <TextField fx:id="chargeAmountField" promptText="credits" prefColumnCount="6"/>
         </HBox>
+
     </children>
 </VBox>

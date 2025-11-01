@@ -2,15 +2,15 @@ package application.opening.programs;
 
 import application.execution.ExecutionSceneController;
 import client.responses.info.ProgramsResponder;
+import client.responses.info.StatusResponder;
+import com.google.gson.JsonObject;
 import display.ProgramRowDTO;
 import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
-import javafx.scene.control.Button;
-import javafx.scene.control.TableColumn;
-import javafx.scene.control.TableView;
+import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.stage.Stage;
 import okhttp3.Request;
@@ -62,7 +62,10 @@ public class ProgramsController {
     private void onExecuteAction() {
         ProgramRowDTO sel = programsTable.getSelectionModel().getSelectedItem();
         if (sel == null) return;
-
+        String programContextName = sel.getName();
+        if (!ensureCreditsPositive(programContextName)) {
+            return;
+        }
         try {
             ExecutionSceneController controller =
                     openExecutionScene("Execution - Program: " + sel.getName());
@@ -127,6 +130,30 @@ public class ProgramsController {
     }
 
     /**
+     * Check that the user has credits > 0 for this program.
+     * Returns true if allowed to continue into execution.
+     * If not allowed, it shows an error popup and returns false.
+     */
+    private boolean ensureCreditsPositive(String programContextName) {
+        try {
+            JsonObject js = StatusResponder.get(programContextName);
+
+            if (js != null &&
+                    js.has("creditsCurrent") &&
+                    !js.get("creditsCurrent").isJsonNull()) {
+
+                int credits = js.get("creditsCurrent").getAsInt();
+                if (credits > 0) {
+                    return true;
+                }
+            }
+        } catch (Exception ignore) {
+        }
+        showNoCreditsAlert();
+        return false;
+    }
+
+    /**
      * Switch current window to the given FXML and return its controller.
      */
     private ExecutionSceneController openExecutionScene(String title) throws Exception {
@@ -139,5 +166,20 @@ public class ProgramsController {
         stage.setScene(new Scene(root));
         stage.show();
         return controller;
+    }
+
+    /**
+     * Show popup when user tries to execute with 0 credits.
+     */
+    private void showNoCreditsAlert() {
+        TextArea area = new TextArea("You must charge credits before trying to execute");
+        area.setEditable(false);
+        area.setWrapText(true);
+
+        Alert alert = new Alert(Alert.AlertType.ERROR);
+        alert.setTitle("Insufficient credits");
+        alert.setHeaderText(null);
+        alert.getDialogPane().setContent(area);
+        alert.showAndWait();
     }
 }

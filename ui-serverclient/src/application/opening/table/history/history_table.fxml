@@ -2,37 +2,53 @@
 
 <?import javafx.geometry.Insets?>
 <?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
 <?import javafx.scene.control.TableColumn?>
 <?import javafx.scene.control.TableView?>
+<?import javafx.scene.layout.BorderPane?>
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.VBox?>
 
+
 <VBox prefHeight="209.0" prefWidth="421.0" xmlns="http://javafx.com/javafx/24.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="application.opening.table.history.HistoryController">
 
-    <children>
+          <children>
+      <BorderPane>
+         <center>
+      
+                          <TableView fx:id="tblHistory" prefHeight="180.0" styleClass="history-root">
+      
+                              <columns>
+                      <TableColumn fx:id="colRunId" prefWidth="44.0" text="#Run" />
+                      <TableColumn fx:id="colType" prefWidth="73.33331298828125" text="Type" />
+                      <TableColumn fx:id="colName" prefWidth="100.0" text="Name" />
+                      <TableColumn fx:id="colArch" prefWidth="39.333343505859375" text="Arch" />
+                      <TableColumn fx:id="colDegree" prefWidth="44.0" text="Deg" />
+                      <TableColumn fx:id="colY" prefWidth="57.33331298828125" text="Result(y)" />
+                      <TableColumn fx:id="colCycles" prefWidth="53.99993896484375" text="Cycles" />
+                  </columns>
+              </TableView>
+         </center>
+         <bottom>
+      
+                    <HBox prefHeight="29.0" prefWidth="553.0" spacing="10.0" BorderPane.alignment="CENTER">
+                  <children>
+                      <Button fx:id="btnShow" mnemonicParsing="false" onAction="#onShowAction" text="Show" />
+                      <Button fx:id="btnRerun" mnemonicParsing="false" onAction="#onRerunAction" text="Re-run" />
+                  </children>
+                  <padding>
+                      <Insets left="10.0" />
+                  </padding>
+              </HBox>
+         </bottom>
+         <top>
+            <HBox BorderPane.alignment="CENTER">
+               <children>
+                  <Label text="User History" />
+               </children>
+            </HBox>
+         </top>
+      </BorderPane>
 
-        <TableView fx:id="tblHistory" prefHeight="180.0" styleClass="history-root">
-
-            <columns>
-                <TableColumn fx:id="colRunId" prefWidth="44.0" text="#Run" />
-                <TableColumn fx:id="colType" prefWidth="73.33331298828125" text="Type" />
-                <TableColumn fx:id="colName" prefWidth="100.0" text="Name" />
-                <TableColumn fx:id="colArch" prefWidth="39.333343505859375" text="Arch" />
-                <TableColumn fx:id="colDegree" prefWidth="44.0" text="Deg" />
-                <TableColumn fx:id="colY" prefWidth="57.33331298828125" text="Result(y)" />
-                <TableColumn fx:id="colCycles" prefWidth="53.99993896484375" text="Cycles" />
-            </columns>
-        </TableView>
-
-        <HBox prefHeight="29.0" prefWidth="553.0" spacing="10.0">
-            <children>
-                <Button fx:id="btnShow" mnemonicParsing="false" onAction="#onShowAction" text="Show" />
-                <Button fx:id="btnRerun" mnemonicParsing="false" onAction="#onRerunAction" text="Re-run" />
-            </children>
-            <padding>
-                <Insets left="10.0" />
-            </padding>
-        </HBox>
-
-    </children>
+          </children>
 </VBox>

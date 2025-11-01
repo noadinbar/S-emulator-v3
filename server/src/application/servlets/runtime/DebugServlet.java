@@ -39,6 +39,7 @@ import static utils.ServletUtils.writeJsonError;
 public class DebugServlet extends HttpServlet {
     private final Gson gson = new Gson();
     private Generation architecture;
+    private boolean outOfCredits = false;
 
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException {
@@ -250,24 +251,32 @@ public class DebugServlet extends HttpServlet {
         }
 
         try {
-            long prevCycles = 0L;
             DebugStateDTO beforeSnap = getSnapshots().get(debugId);
+            long prevCycles = 0L;
             if (beforeSnap != null) {
                 prevCycles = beforeSnap.getCyclesSoFar();
             }
 
-            DebugStepDTO step = dbg.step();
-
-            DebugStateDTO afterSnap = null;
-            if (step != null) {
-                afterSnap = step.getNewState();
-                if (afterSnap != null) {
-                    getSnapshots().put(debugId, afterSnap);
+            int creditsCurrentBefore = 0;
+            int creditsUsedBefore = 0;
+            if (username != null) {
+                UserTableRow rowBefore = um.get(username);
+                if (rowBefore != null) {
+                    creditsCurrentBefore = rowBefore.getCreditsCurrent();
+                    creditsUsedBefore = rowBefore.getCreditsUsed();
                 }
             }
 
-            int creditsCurrent = 0;
-            int creditsUsed = 0;
+            DebugStepDTO step = dbg.step();
+            DebugStateDTO afterSnap = null;
+            if (step != null) {
+                afterSnap = step.getNewState();
+            }
+
+            DebugStateDTO effectiveSnap = beforeSnap;
+            int creditsCurrentAfter = creditsCurrentBefore;
+            int creditsUsedAfter = creditsUsedBefore;
+            boolean localOutOfCredits = false;
 
             if (username != null && afterSnap != null) {
                 long currCycles = afterSnap.getCyclesSoFar();
@@ -277,16 +286,37 @@ public class DebugServlet extends HttpServlet {
                 }
 
                 if (delta > 0L) {
-                    // TODO(credits): if user does NOT have enough credits to pay for this step,
-                    // persist partial history (ended due to insufficient credits) and close session.
-                    um.adjustCredits(username, (int)(-delta));
-                }
+                    UserTableRow rowNow = um.get(username);
+                    int haveNow = 0;
+                    if (rowNow != null) {
+                        haveNow = rowNow.getCreditsCurrent();
+                    }
 
-                UserTableRow row = um.get(username);
-                if (row != null) {
-                    creditsCurrent = row.getCreditsCurrent();
-                    creditsUsed = row.getCreditsUsed();
+                    if (haveNow < delta) {
+                        localOutOfCredits = true;
+                    } else {
+                        um.adjustCredits(username, (int)(-delta));
+                        effectiveSnap = afterSnap;
+                        UserTableRow rowAfter = um.get(username);
+                        if (rowAfter != null) {
+                            creditsCurrentAfter = rowAfter.getCreditsCurrent();
+                            creditsUsedAfter = rowAfter.getCreditsUsed();
+                        }
+                    }
+                } else {
+                    effectiveSnap = afterSnap;
                 }
+            } else if (afterSnap != null && username == null) {
+                effectiveSnap = afterSnap;
+            }
+
+            if (effectiveSnap != null) {
+                getSnapshots().put(debugId, effectiveSnap);
+            }
+
+            if (localOutOfCredits) {
+                outOfCredits = true;
+                saveHistoryForDebugSession(debugId, effectiveSnap);
             }
 
             boolean term = false;
@@ -294,11 +324,8 @@ public class DebugServlet extends HttpServlet {
                 term = dbg.isTerminated();
             } catch (Throwable ignore) { }
 
-            // if program just finished because of this step -> write debug history now
             if (term) {
-                saveHistoryForDebugSession(debugId, afterSnap);
-                // we do NOT clean up here so the client can still call /api/debug/state
-                // cleanup will still happen after /api/debug/terminated
+                saveHistoryForDebugSession(debugId, effectiveSnap);
             }
 
             JsonObject root = new JsonObject();
@@ -306,11 +333,12 @@ public class DebugServlet extends HttpServlet {
             root.add("step", gson.toJsonTree(step));
 
             JsonObject creditsJson = new JsonObject();
-            creditsJson.addProperty("current", creditsCurrent);
-            creditsJson.addProperty("used", creditsUsed);
+            creditsJson.addProperty("current", creditsCurrentAfter);
+            creditsJson.addProperty("used", creditsUsedAfter);
             root.add("credits", creditsJson);
 
             root.addProperty("terminated", term);
+            root.addProperty("outOfCredits", outOfCredits);
 
             writeJson(resp, HttpServletResponse.SC_OK, root);
 
@@ -324,6 +352,7 @@ public class DebugServlet extends HttpServlet {
             lock.release();
         }
     }
+
 
     /**
      * POST /api/debug/resume
@@ -551,6 +580,7 @@ public class DebugServlet extends HttpServlet {
         JsonObject out = new JsonObject();
         out.addProperty("terminated", term);
         out.addProperty("creditsCurrent", creditsNow);
+        out.addProperty("outOfCredits", outOfCredits);
         writeJson(resp, HttpServletResponse.SC_OK, out);
     }
 

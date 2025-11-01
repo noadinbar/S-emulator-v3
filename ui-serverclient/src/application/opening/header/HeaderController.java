@@ -13,6 +13,7 @@ import display.UploadResultDTO;
 import javafx.concurrent.Task;
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
+import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import javafx.stage.FileChooser;
 import javafx.stage.Window;
@@ -28,6 +29,10 @@ public class HeaderController {
     @FXML private TextField loadedFilePathField;
     @FXML private Button chargeCreditsButton;
     @FXML private TextField chargeAmountField;
+    @FXML private HBox loadingBox;
+    @FXML private ProgressIndicator loadSpinner;
+    @FXML private Label loadingLabel;
+
     private Window hostWindow;
     private Consumer<File> onLocalFileChosen;
     private Consumer<Integer> onChargeCredits;
@@ -47,6 +52,7 @@ public class HeaderController {
         if (loadedFilePathField != null) {
             loadedFilePathField.setEditable(false);
         }
+        setLoadingVisible(false);
     }
 
     @FXML
@@ -69,17 +75,18 @@ public class HeaderController {
                 if (home.isDirectory()) chooser.setInitialDirectory(home);
             }
         } catch (SecurityException ignore) {
-
         }
+
         File file = chooser.showOpenDialog(w);
         if (file == null) return;
+
         lastDir = file.getParentFile();
         if (loadedFilePathField != null) {
             loadedFilePathField.setText(file.getAbsolutePath());
         }
 
-        // ---- Upload-only Task (no DisplayAPI/DisplayDTO) ----
         loadFileButton.setDisable(true);
+        setLoadingVisible(true);
 
         final File chosen = file;
         Task<UploadResultDTO> task = new Task<>() {
@@ -91,6 +98,8 @@ public class HeaderController {
 
         task.setOnSucceeded(ev -> {
             loadFileButton.setDisable(false);
+            setLoadingVisible(false);
+
             UploadResultDTO res = task.getValue();
             if (res == null) {
                 showError("Upload failed", "Server returned no result.");
@@ -101,10 +110,18 @@ public class HeaderController {
                 showError("Upload failed", msg);
                 return;
             }
+
+            Alert ok = new Alert(Alert.AlertType.INFORMATION);
+            ok.setTitle("Loaded");
+            ok.setHeaderText(null);
+            ok.setContentText("Program loaded successfully.");
+            ok.show();
         });
 
         task.setOnFailed(ev -> {
             loadFileButton.setDisable(false);
+            setLoadingVisible(false);
+
             Throwable ex = task.getException();
             showError("Upload failed",
                     (ex != null && ex.getMessage() != null) ? ex.getMessage() : "Unknown error");
@@ -140,7 +157,6 @@ public class HeaderController {
     public void setOnChargeCredits(Consumer<Integer> cb) { this.onChargeCredits = cb; }
     public void setChargeAmountField(String amount) { chargeAmountField.setText(amount); }
 
-
     public void refreshStatus() {
         Task<JsonObject> task = new Task<>() {
             @Override
@@ -155,7 +171,6 @@ public class HeaderController {
                 return;
             }
 
-            // username (may be null before login)
             if (js.has("username") && !js.get("username").isJsonNull()) {
                 String u = js.get("username").getAsString();
                 if (u != null && !u.isBlank()) {
@@ -163,7 +178,6 @@ public class HeaderController {
                 }
             }
 
-            // credits (show only when present)
             if (js.has("creditsCurrent") && !js.get("creditsCurrent").isJsonNull()) {
                 int credits = js.get("creditsCurrent").getAsInt();
                 setAvailableCredits(credits);
@@ -171,12 +185,10 @@ public class HeaderController {
         });
 
         task.setOnFailed(ev -> {
-            // ignore network errors; header stays as-is
         });
 
         new Thread(task, "opening-header-refresh-status").start();
     }
-
 
     public void startCreditsRefresher() {
         stopCreditsRefresher();
@@ -192,7 +204,6 @@ public class HeaderController {
                 Constants.REFRESH_RATE_MS
         );
     }
-
 
     private void applyStatusJson(JsonObject js) {
         if (js == null) return;
@@ -220,5 +231,12 @@ public class HeaderController {
         area.setWrapText(true);
         alert.getDialogPane().setContent(area);
         alert.showAndWait();
+    }
+
+    private void setLoadingVisible(boolean show) {
+        if (loadingBox != null) {
+            loadingBox.setVisible(show);
+            loadingBox.setManaged(show);
+        }
     }
 }

@@ -1,36 +1,38 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<?import javafx.geometry.Insets?>
-<?import javafx.scene.control.*?>
-<?import javafx.scene.layout.*?>
 
-<BorderPane xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml"
-            fx:controller="application.opening.programs.ProgramsController"
-            fx:id="programsRoot"
-            prefHeight="260.0" prefWidth="440.0" maxWidth="1.7976931348623157E308">
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.TableColumn?>
+<?import javafx.scene.control.TableView?>
+<?import javafx.scene.layout.BorderPane?>
+<?import javafx.scene.layout.HBox?>
+
+<BorderPane fx:id="programsRoot" maxWidth="1.7976931348623157E308" prefHeight="260.0" prefWidth="440.0" xmlns="http://javafx.com/javafx/24.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="application.opening.programs.ProgramsController">
 
     <top>
-        <Label fx:id="titleLabel" text="Available Programs" BorderPane.alignment="CENTER_LEFT"/>
+        <Label fx:id="titleLabel" text="Available Programs" BorderPane.alignment="CENTER_LEFT" />
     </top>
 
     <center>
         <TableView fx:id="programsTable" BorderPane.alignment="CENTER">
             <columns>
-                <TableColumn fx:id="nameCol"        text="Program"/>
-                <TableColumn fx:id="uploaderCol"    text="Uploader"/>
-                <TableColumn fx:id="instrCol"       text="#Instructions"/>
-                <TableColumn fx:id="degreeCol"      text="Max Degree"/>
-                <TableColumn fx:id="runsCol"        text="#Runs"/>
-                <TableColumn fx:id="avgCreditsCol"  text="Avg Credits"/>
+                <TableColumn fx:id="nameCol" prefWidth="62.66668701171875" text="Program" />
+                <TableColumn fx:id="uploaderCol" prefWidth="75.99996948242188" text="Uploader" />
+                <TableColumn fx:id="instrCol" prefWidth="78.66668701171875" text="#Instructions" />
+                <TableColumn fx:id="degreeCol" prefWidth="75.33331298828125" text="Max Degree" />
+                <TableColumn fx:id="runsCol" prefWidth="46.66668701171875" text="#Runs" />
+                <TableColumn fx:id="avgCreditsCol" text="Avg Credits" />
             </columns>
-            <placeholder><Label text="No programs yet"/></placeholder>
+            <placeholder><Label text="No programs yet" /></placeholder>
         </TableView>
     </center>
 
     <bottom>
-        <HBox spacing="8" alignment="CENTER_RIGHT" BorderPane.alignment="CENTER_RIGHT">
-            <Button fx:id="executeBtn" text="Execute program" onAction="#onExecuteAction"/>
+        <HBox alignment="CENTER_RIGHT" spacing="8" BorderPane.alignment="CENTER_RIGHT">
+            <Button fx:id="executeBtn" onAction="#onExecuteAction" text="Execute program" />
         </HBox>
     </bottom>
 
-    <padding><Insets top="10" right="10" bottom="10" left="10"/></padding>
+    <padding><Insets bottom="10" left="10" right="10" top="10" /></padding>
 </BorderPane>

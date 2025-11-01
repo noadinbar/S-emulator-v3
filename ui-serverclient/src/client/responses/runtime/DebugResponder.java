@@ -105,22 +105,35 @@ public final class DebugResponder {
             }
 
             int creditsCurrent = 0;
-            if (obj != null && obj.has("creditsCurrent")) {
-                creditsCurrent = obj.get("creditsCurrent").getAsInt();
+            int creditsUsed = 0;
+
+            if (obj != null && obj.has("credits") && !obj.get("credits").isJsonNull()) {
+                JsonObject creditsObj = obj.getAsJsonObject("credits");
+                if (creditsObj != null) {
+                    if (creditsObj.has("current") && !creditsObj.get("current").isJsonNull()) {
+                        creditsCurrent = creditsObj.get("current").getAsInt();
+                    }
+                    if (creditsObj.has("used") && !creditsObj.get("used").isJsonNull()) {
+                        creditsUsed = creditsObj.get("used").getAsInt();
+                    }
+                }
             }
 
-            int creditsUsed = 0;
-            if (obj != null && obj.has("creditsUsed")) {
+            if (creditsCurrent == 0 && obj != null && obj.has("creditsCurrent") && !obj.get("creditsCurrent").isJsonNull()) {
+                creditsCurrent = obj.get("creditsCurrent").getAsInt();
+            }
+            if (creditsUsed == 0 && obj != null && obj.has("creditsUsed") && !obj.get("creditsUsed").isJsonNull()) {
                 creditsUsed = obj.get("creditsUsed").getAsInt();
             }
 
+            // terminated / outOfCredits
             boolean terminated = false;
-            if (obj != null && obj.has("terminated")) {
+            if (obj != null && obj.has("terminated") && !obj.get("terminated").isJsonNull()) {
                 terminated = obj.get("terminated").getAsBoolean();
             }
 
             boolean outOfCredits = false;
-            if (obj != null && obj.has("outOfCredits")) {
+            if (obj != null && obj.has("outOfCredits") && !obj.get("outOfCredits").isJsonNull()) {
                 outOfCredits = obj.get("outOfCredits").getAsBoolean();
             }
 
@@ -133,6 +146,7 @@ public final class DebugResponder {
             );
         }
     }
+
 
     public static DebugResults.Stop stop(Request req) throws Exception {
         try (Response res = HttpClientUtil.runSync(req)) {

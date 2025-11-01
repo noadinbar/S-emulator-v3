@@ -39,6 +39,7 @@ public class RunOptionsController {
                     if (main != null) main.setDebugMode(false);
                     setDebugBtnsDisabled(true);   // keep debug buttons OFF
                     if (btnStart != null) btnStart.setDisable(false);
+                    setExecuteForceDisabled(false);
                 }
             });
             chkDebug.selectedProperty().addListener((o, was, is) -> {
@@ -49,6 +50,7 @@ public class RunOptionsController {
                     // They will be enabled AFTER successful debug init from the main controller.
                     setDebugBtnsDisabled(true);
                     if (btnStart != null) btnStart.setDisable(true);
+                    setExecuteForceDisabled(false);
                 } else {
                     setDebugBtnsDisabled(true);
                     if (main != null) main.setDebugMode(false);

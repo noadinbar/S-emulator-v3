@@ -224,10 +224,6 @@ public class ExecutionSceneController {
         currentDegree = target;
         if (headerController != null) { headerController.setCurrentDegree(currentDegree); }
 
-        if (cmbArchitecture != null) {
-            cmbArchitecture.getSelectionModel().clearSelection();
-        }
-
         if (runOptionsController != null) {
             runOptionsController.setButtonsEnabled(false);
             runOptionsController.startEnabled(false);

@@ -185,4 +185,8 @@ public class FunctionsController {
         alert.showAndWait();
     }
 
+    public TableView<FunctionRowDTO> getFunctionsTable() {
+        return functionsTable;
+    }
+
 }

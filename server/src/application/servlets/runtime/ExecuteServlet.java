@@ -14,6 +14,7 @@ import execution.ExecutionRequestDTO;
 import execution.VarValueDTO;
 import execution.debug.DebugStateDTO;
 import execution.debug.DebugStepDTO;
+import jakarta.servlet.ServletContext;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
@@ -39,7 +40,6 @@ import static utils.Constants.*;
 public class ExecuteServlet extends HttpServlet {
     private final Gson gson = new Gson();
     private Generation architecture;
-    boolean outOfCredits = false;
 
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) {
@@ -139,6 +139,43 @@ public class ExecuteServlet extends HttpServlet {
                 }
             }
 
+            // Reset "out of credits" flag for this user at the start of a new run.
+            AppContextListener.clearUserOutOfCredits(getServletContext(), username);
+
+// Parse generation (architecture) to know upfront cost.
+            Generation genUpfront;
+            try {
+                genUpfront = Generation.valueOf(execReq.getGeneration());
+            } catch (Exception e) {
+                resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+                resp.getWriter().write("{\"error\":\"bad generation\"}");
+                return;
+            }
+
+            // User must be able to afford the chosen generation right now.
+            // If not, we stop BEFORE scheduling any background job.
+            // If yes, we charge it immediately here (once).
+            if (username != null) {
+                UserTableRow rowBefore = um.get(username);
+                if (rowBefore != null) {
+                    int haveBefore = rowBefore.getCreditsCurrent();
+                    int cost = genUpfront.getCredits();
+
+                    if (haveBefore < cost) {
+                        resp.setStatus(HttpServletResponse.SC_FORBIDDEN);
+                        resp.getWriter().write("{\"error\":\"insufficient_credits\"}");
+                        return;
+                    }
+
+                    // Deduct upfront generation cost now.
+                    um.adjustCredits(username, -cost);
+                }
+            }
+
+            // We also want the async job to be able to mark "out of credits" later.
+            final ServletContext ctxRef = getServletContext();
+
+
             JobSubmitResult res = ExecutionTaskManager.trySubmit(() -> {
                 try {
                     // DebugAPI for this specific degree
@@ -146,11 +183,6 @@ public class ExecuteServlet extends HttpServlet {
 
                     Generation gen = Generation.valueOf(execReqRef.getGeneration());
                     architecture = gen;
-
-                    // 1) upfront charge for the chosen architecture ("generation")
-                    if (username != null) {
-                        um.adjustCredits(username, -gen.getCredits());
-                    }
 
                     // 2) init machine state
                     DebugStateDTO state = dbgApi.init(execReqRef);
@@ -187,7 +219,7 @@ public class ExecuteServlet extends HttpServlet {
                             }
 
                             if (haveNow < delta) {
-                                outOfCredits = true;
+                                AppContextListener.markUserOutOfCredits(ctxRef, username);
                                 break;
                             }
 
@@ -325,7 +357,16 @@ public class ExecuteServlet extends HttpServlet {
                 return;
             }
 
-            boolean outOfCreditsFlag = outOfCredits;
+            // get username from the session for this request
+            String username = (String) (req.getSession(false) != null
+                    ? req.getSession(false).getAttribute(SESSION_USERNAME)
+                    : null);
+
+            // ask global map if this user ran out of credits in this run
+            boolean outOfCreditsFlag = AppContextListener.isUserOutOfCredits(
+                    getServletContext(),
+                    username
+            );
             Status st = job.status;
 
             if (st == Status.DONE) {

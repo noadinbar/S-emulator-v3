@@ -961,8 +961,6 @@ public class ExecutionSceneController {
             runOptionsController.startEnabled(true);
             runOptionsController.clearRunCheckBox();
         }
-
-        // לא נוגעים ב-inputs כאן; אם תרצי – הפכי אותם ללא-עריכים רק כשהדיבאג פעיל.
     }
 
     private void applyPendingRerunPresetIfReady() {
@@ -980,14 +978,18 @@ public class ExecutionSceneController {
             return;
         }
 
-        if (pendingDegree >= 0 && headerController != null) {
-            headerController.setCurrentDegree(pendingDegree);
+        // 1. show the correct degree from history (including expanded instructions table)
+        if (pendingDegree >= 0) {
+            doApply(pendingDegree);
+            this.currentDegree=pendingDegree;
         }
 
+        // 2. select the architecture that was used in the run (I / II / III / IV)
         if (pendingArch != null && !pendingArch.isEmpty()) {
-            selectArchitecture(pendingArch);
+            selectArchitecture(pendingArch); // this also triggers onArchitectureSelected -> summary update
         }
 
+        // 3. restore inputs from history (doApply cleared them, so we fill again)
         if (inputsController != null && display != null) {
             inputsController.show(display);
             inputsController.setInputsEditable(true);
@@ -997,14 +999,18 @@ public class ExecutionSceneController {
             }
         }
 
-        if (pendingMode != null) {
+        // 4. restore run/debug mode and arm the panel so Execute is clickable
+        if (pendingMode != null && runOptionsController != null) {
             boolean wantDebug = "DEBUG".equalsIgnoreCase(pendingMode);
             this.debugMode = wantDebug;
-            if (runOptionsController != null) {
-                runOptionsController.applyPreset(wantDebug);
-            }
+            runOptionsController.applyPreset(wantDebug);
+        }
+
+        if (headerController != null) {
+            headerController.refreshStatus();
         }
     }
+
 
     public void prepareFromHistory(int degree,
                                    String generation,

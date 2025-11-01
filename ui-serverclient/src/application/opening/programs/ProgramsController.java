@@ -182,4 +182,9 @@ public class ProgramsController {
         alert.getDialogPane().setContent(area);
         alert.showAndWait();
     }
+
+    public TableView<ProgramRowDTO> getProgramsTable() {
+        return programsTable;
+    }
+
 }

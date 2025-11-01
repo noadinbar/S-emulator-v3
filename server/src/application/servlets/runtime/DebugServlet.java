@@ -13,6 +13,7 @@ import execution.ExecutionRequestDTO;
 import execution.VarValueDTO;
 import execution.debug.DebugStateDTO;
 import execution.debug.DebugStepDTO;
+import jakarta.servlet.ServletContext;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
@@ -39,7 +40,6 @@ import static utils.ServletUtils.writeJsonError;
 public class DebugServlet extends HttpServlet {
     private final Gson gson = new Gson();
     private Generation architecture;
-    private boolean outOfCredits = false;
 
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException {
@@ -114,7 +114,7 @@ public class DebugServlet extends HttpServlet {
                 username = (String) u;
             }
         }
-
+        AppContextListener.clearUserOutOfCredits(getServletContext(), username);
         UserManager um = AppContextListener.getUsers(getServletContext());
 
         int creditsNowAfterInit = 0;
@@ -123,28 +123,25 @@ public class DebugServlet extends HttpServlet {
             architecture = gen;
 
             if (username != null) {
-                // Check upfront if the user can afford this architecture.
-                // If not, return 403 and DO NOT create a debug session.
-                int cost = gen.getCredits();
-
                 UserTableRow rowBefore = um.get(username);
                 int haveBefore = 0;
                 if (rowBefore != null) {
                     haveBefore = rowBefore.getCreditsCurrent();
                 }
 
+                int cost = gen.getCredits();
+
+                // Guard: user must be able to afford the chosen generation up-front.
                 if (haveBefore < cost) {
-                    // Not enough credits to even start debugging with this architecture.
                     JsonObject outNoCredits = new JsonObject();
                     outNoCredits.addProperty("error", "insufficient_credits");
                     outNoCredits.addProperty("needed", cost);
                     outNoCredits.addProperty("creditsCurrent", haveBefore);
-
                     writeJson(resp, HttpServletResponse.SC_FORBIDDEN, outNoCredits);
-                    return; // stop here: no billing, no session
+                    return;
                 }
 
-                // User has enough credits. Bill immediately for the chosen architecture.
+                // Deduct the generation cost immediately.
                 um.adjustCredits(username, -cost);
 
                 UserTableRow rowAfter = um.get(username);
@@ -334,7 +331,7 @@ public class DebugServlet extends HttpServlet {
             }
 
             if (localOutOfCredits) {
-                outOfCredits = true;
+                AppContextListener.markUserOutOfCredits(getServletContext(), username);
                 saveHistoryForDebugSession(debugId, effectiveSnap);
             }
 
@@ -355,8 +352,8 @@ public class DebugServlet extends HttpServlet {
             root.add("credits", creditsJson);
 
             root.addProperty("terminated", term);
-            root.addProperty("outOfCredits", outOfCredits);
-
+            root.addProperty("outOfCredits",
+                    AppContextListener.isUserOutOfCredits(getServletContext(), username));
             writeJson(resp, HttpServletResponse.SC_OK, root);
 
         } catch (Exception e) {
@@ -414,6 +411,7 @@ public class DebugServlet extends HttpServlet {
             writeJsonError(resp, HttpServletResponse.SC_CONFLICT, "busy");
             return;
         }
+        final ServletContext ctxRef = getServletContext();
 
         JobSubmitResult submitResult = ExecutionTaskManager.trySubmit(() -> {
             try {
@@ -451,16 +449,23 @@ public class DebugServlet extends HttpServlet {
                     }
 
                     if (usernameCaptured != null && totalDelta > 0L) {
-                        // TODO(credits): if user does not have enough credits to cover totalDelta,
-                        // persist partial history (ended due to insufficient credits) and close session.
-                        umCaptured.adjustCredits(usernameCaptured, (int) (-totalDelta));
+                        UserTableRow rowNow = umCaptured.get(usernameCaptured);
+                        if (rowNow != null) {
+                            int haveNow = rowNow.getCreditsCurrent();
+
+                            if (haveNow < totalDelta) {
+                                // User cannot afford the full remaining cycles.
+                                // Do not drive balance negative.
+                                AppContextListener.markUserOutOfCredits(ctxRef, usernameCaptured);
+                                // We still persist what we have so far.
+                            } else {
+                                // User can afford the resume burst; charge it.
+                                umCaptured.adjustCredits(usernameCaptured, (int)(-totalDelta));
+                            }
+                        }
                     }
-
-                    // write debug history at the end of resume
                     saveHistoryForDebugSession(debugIdRef, endSnap);
-
                 } catch (Throwable ignore) {
-                    // best-effort billing + history. Do not crash resume if this fails.
                 }
 
             } finally {
@@ -597,7 +602,8 @@ public class DebugServlet extends HttpServlet {
         JsonObject out = new JsonObject();
         out.addProperty("terminated", term);
         out.addProperty("creditsCurrent", creditsNow);
-        out.addProperty("outOfCredits", outOfCredits);
+        out.addProperty("outOfCredits",
+                AppContextListener.isUserOutOfCredits(getServletContext(), username));
         writeJson(resp, HttpServletResponse.SC_OK, out);
     }
 

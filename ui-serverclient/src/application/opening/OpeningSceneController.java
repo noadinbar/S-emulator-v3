@@ -6,6 +6,8 @@ import client.responses.authentication.CreditsResponder;
 import client.responses.info.StatusResponder;
 import client.responses.runtime.HistoryResponder;
 import com.google.gson.JsonObject;
+import display.FunctionRowDTO;
+import display.ProgramRowDTO;
 import execution.RunHistoryEntryDTO;
 
 import java.io.File;
@@ -158,11 +160,13 @@ public class OpeningSceneController {
                     ? ExecTarget.FUNCTION
                     : ExecTarget.PROGRAM;
 
+            int maxDegreeNow = getMaxDegreeCurrent(tgt, row.getTargetName());
+
             // init() builds the execution scene normally
             execCtrl.init(
                     tgt,
                     row.getTargetName(),   // program name OR function user-string
-                    row.getDegree(),       // we can reuse degree as maxDegree for the header
+                    maxDegreeNow,
                     row.getTargetName()    // programContextName; using same string is OK here
             );
 
@@ -308,6 +312,32 @@ public class OpeningSceneController {
         }
         showNoCreditsAlert();
         return false;
+    }
+
+    private int getMaxDegreeCurrent(ExecTarget targetKind, String targetName) {
+        if (targetKind == ExecTarget.PROGRAM) {
+            if (programsController == null || programsController.getProgramsTable() == null) {
+                return 0;
+            }
+            for (ProgramRowDTO row : programsController.getProgramsTable().getItems()) {
+                if (row.getName() != null &&
+                        row.getName().equalsIgnoreCase(targetName)) {
+                    return row.getMaxDegree();
+                }
+            }
+            return 0;
+        } else {
+            if (functionsController == null || functionsController.getFunctionsTable() == null) {
+                return 0;
+            }
+            for (FunctionRowDTO row : functionsController.getFunctionsTable().getItems()) {
+                if (row.getName() != null &&
+                        row.getName().equalsIgnoreCase(targetName)) {
+                    return row.getMaxDegree();
+                }
+            }
+            return 0;
+        }
     }
 
     /**

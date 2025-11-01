@@ -120,20 +120,39 @@ public class DebugServlet extends HttpServlet {
         int creditsNowAfterInit = 0;
         try {
             Generation gen = Generation.valueOf(execReq.getGeneration());
-            architecture=gen;
+            architecture = gen;
 
             if (username != null) {
-                // TODO(credits): if not enough credits to afford gen.getCredits(),
-                // return an error instead of going forward.
-                um.adjustCredits(username, -gen.getCredits());
+                // Check upfront if the user can afford this architecture.
+                // If not, return 403 and DO NOT create a debug session.
+                int cost = gen.getCredits();
 
-                UserTableRow row = um.get(username);
-                if (row != null) {
-                    creditsNowAfterInit = row.getCreditsCurrent();
+                UserTableRow rowBefore = um.get(username);
+                int haveBefore = 0;
+                if (rowBefore != null) {
+                    haveBefore = rowBefore.getCreditsCurrent();
+                }
+
+                if (haveBefore < cost) {
+                    // Not enough credits to even start debugging with this architecture.
+                    JsonObject outNoCredits = new JsonObject();
+                    outNoCredits.addProperty("error", "insufficient_credits");
+                    outNoCredits.addProperty("needed", cost);
+                    outNoCredits.addProperty("creditsCurrent", haveBefore);
+
+                    writeJson(resp, HttpServletResponse.SC_FORBIDDEN, outNoCredits);
+                    return; // stop here: no billing, no session
+                }
+
+                // User has enough credits. Bill immediately for the chosen architecture.
+                um.adjustCredits(username, -cost);
+
+                UserTableRow rowAfter = um.get(username);
+                if (rowAfter != null) {
+                    creditsNowAfterInit = rowAfter.getCreditsCurrent();
                 }
             }
         } catch (Exception ignore) {
-            // TODO(credits): consider refund / rollback on failure later.
         }
 
         String id = UUID.randomUUID().toString();
@@ -329,9 +348,7 @@ public class DebugServlet extends HttpServlet {
             }
 
             JsonObject root = new JsonObject();
-
             root.add("step", gson.toJsonTree(step));
-
             JsonObject creditsJson = new JsonObject();
             creditsJson.addProperty("current", creditsCurrentAfter);
             creditsJson.addProperty("used", creditsUsedAfter);
@@ -667,6 +684,8 @@ public class DebugServlet extends HttpServlet {
             if (username == null || username.isBlank()) {
                 return;
             }
+            final UserManager um = AppContextListener.getUsers(getServletContext());
+            um.onRunExecuted(username, 0);
 
             String targetType = meta.getTargetType();
             String targetName = meta.getTargetName();

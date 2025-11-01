@@ -20,6 +20,7 @@ public class AppContextListener implements ServletContextListener {
     public static final String ATTR_FUNCTIONS = "functionsRegistry";
     public static final String ATTR_HISTORY   = "historyManager";
     public static final String ATTR_FUNCTION_NAMES = "functionNameToUserString";
+    public static final String ATTR_USER_OUT_OF_CREDITS = "userOutOfCreditsMap";
 
     @Override
     public void contextInitialized(ServletContextEvent sce) {
@@ -29,6 +30,7 @@ public class AppContextListener implements ServletContextListener {
         ctx.setAttribute(ATTR_FUNCTIONS, new FunctionManager());
         ctx.setAttribute(ATTR_HISTORY,   new HistoryManager());
         ctx.setAttribute(ATTR_FUNCTION_NAMES, new ConcurrentHashMap<String, String>());
+        ctx.setAttribute(ATTR_USER_OUT_OF_CREDITS, new ConcurrentHashMap<String, Boolean>());
     }
 
     public static UserManager getUsers(ServletContext ctx) {
@@ -51,6 +53,37 @@ public class AppContextListener implements ServletContextListener {
     public static Map<String, String> getFunctionNames(ServletContext ctx) {
         return (Map<String, String>) ctx.getAttribute(ATTR_FUNCTION_NAMES);
     }
+
+    @SuppressWarnings("unchecked")
+    public static Map<String, Boolean> getUserOutOfCreditsMap(ServletContext ctx) {
+        return (Map<String, Boolean>) ctx.getAttribute(ATTR_USER_OUT_OF_CREDITS);
+    }
+
+    /** Called at the start of a new run/debug attempt to reset the flag for this user. */
+    public static void clearUserOutOfCredits(ServletContext ctx, String username) {
+        if (username == null) {
+            return;
+        }
+        getUserOutOfCreditsMap(ctx).remove(username);
+    }
+
+    /** Called when we detect the user cannot afford more cycles mid-run / mid-debug. */
+    public static void markUserOutOfCredits(ServletContext ctx, String username) {
+        if (username == null) {
+            return;
+        }
+        getUserOutOfCreditsMap(ctx).put(username, Boolean.TRUE);
+    }
+
+    /** Ask "did this user run out of credits in the current/last session?" */
+    public static boolean isUserOutOfCredits(ServletContext ctx, String username) {
+        if (username == null) {
+            return false;
+        }
+        Boolean v = getUserOutOfCreditsMap(ctx).get(username);
+        return v != null && v.booleanValue();
+    }
+
 
     @Override
     public void contextDestroyed(ServletContextEvent sce) {

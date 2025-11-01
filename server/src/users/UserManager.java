@@ -41,8 +41,6 @@ public class UserManager {
         users.remove(key);
     }
 
-    // --- Aggregation helpers to be called from application events ---
-
     /** Called when a main program is uploaded by this user. */
     public void onMainProgramUploaded(String name) {
         addIfAbsent(name).incMainPrograms();
